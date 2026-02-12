@@ -98,14 +98,14 @@ curl -X POST 'https://api.usecortex.ai/search/qna' \
 
 ### **Step 3: Give context to your agents**
 
-Use the recall endpoint: what should the agent know about the world, the user, and the task before acting?
+Use the recall endpoint: what should the agent know about the world, the user, and the task before acting? For context from your **documents**, use full-context recall; for **user memories**, use [recall preferences](/api-reference/endpoint/recall-preferences).
 
 ```mdx
-POST /recall/full-recall
+POST /recall/full_context_recall
 ```
 
 ```mdx
-curl -X POST 'https://api.usecortex.ai/recall/full_recall' \
+curl -X POST 'https://api.usecortex.ai/recall/full_context_recall' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{

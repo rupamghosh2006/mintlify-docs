@@ -1520,18 +1520,18 @@
         ]
       }
     },
-    "/recall/full_recall": {
+    "/recall/full_context_recall": {
       "post": {
         "tags": [
           "Search"
         ],
-        "summary": "Hybrid search",
-        "operationId": "hybrid_search_recall_full_recall_post",
+        "summary": "Full-context recall (sources)",
+        "operationId": "full_context_recall_recall_full_context_recall_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HybridSearchRequest"
+                "$ref": "#/components/schemas/RecallSearchRequest"
               }
             }
           },
@@ -1635,7 +1635,128 @@
           }
         ],
         "x-fern-sdk-group-name": "recall",
-        "x-fern-sdk-method-name": "full_recall",
+        "x-fern-sdk-method-name": "full_context_recall",
+        "x-fern-sdk-audience": [
+          "public"
+        ]
+      }
+    },
+    "/recall/recall_preferences": {
+      "post": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Recall preferences (memories)",
+        "operationId": "recall_preferences_recall_recall_preferences_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrievalResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-fern-sdk-group-name": "recall",
+        "x-fern-sdk-method-name": "recall_preferences",
         "x-fern-sdk-audience": [
           "public"
         ]
@@ -3510,128 +3631,6 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "HybridSearchRequest": {
-        "properties": {
-          "tenant_id": {
-            "type": "string",
-            "title": "Tenant Id",
-            "description": "Unique identifier for the tenant/organization",
-            "example": "tenant_1234"
-          },
-          "sub_tenant_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sub Tenant Id",
-            "description": "Optional sub-tenant identifier used to organize data within a tenant. If omitted, the default sub-tenant created during tenant setup will be used.",
-            "example": "sub_tenant_4567"
-          },
-          "query": {
-            "type": "string",
-            "title": "Query",
-            "description": "Search terms to find relevant content",
-            "example": "Which mode does user prefer"
-          },
-          "max_results": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Results",
-            "description": "Maximum number of results to return"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/RetrieveMode",
-            "description": "Retrieval mode to use ('fast' or 'thinking')",
-            "default": "fast"
-          },
-          "alpha": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "title": "Alpha",
-            "description": "Search ranking algorithm parameter (0.0-1.0 or 'auto')",
-            "default": 0.8
-          },
-          "recency_bias": {
-            "type": "number",
-            "title": "Recency Bias",
-            "description": "Preference for newer content (0.0 = no bias, 1.0 =             strong recency preference)",
-            "default": 0,
-            "example": 1.0
-          },
-          "personalise_recall": {
-            "type": "boolean",
-            "title": "Personalise Recall",
-            "description": "Enable personalized search results based on user preferences",
-            "default": false,
-            "example": true
-          },
-          "graph_context": {
-            "type": "boolean",
-            "title": "Graph Context",
-            "description": "Enable graph context for search results",
-            "default": false,
-            "example": true
-          },
-          "additional_context": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Additional Context",
-            "description": "Additional context provided by the user to guide retrieval"
-          },
-          "search_mode": {
-            "$ref": "#/components/schemas/SearchMode",
-            "description": "What to search: 'sources' for documents or 'memories' for user memories",
-            "default": "sources"
-          },
-          "metadata_filters": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata Filters",
-            "description": "Optional key-value pairs to filter search results by tenant metadata fields. Keys must match fields defined in tenant_metadata_schema during tenant creation. Supports exact match filtering on indexed metadata fields. Example: {'category': 'engineering', 'priority': 'high'}",
-            "examples": [
-              {
-                "category": "engineering",
-                "department": "R&D"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "tenant_id",
-          "query"
-        ],
-        "title": "HybridSearchRequest"
-      },
       "Infra": {
         "properties": {
           "scheduler_status": {
@@ -4387,6 +4386,124 @@
         ],
         "title": "RawEmbeddingVector",
         "description": "Embedding payload containing the chunk identifier and vector."
+      },
+      "RecallSearchRequest": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Unique identifier for the tenant/organization",
+            "example": "tenant_1234"
+          },
+          "sub_tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Tenant Id",
+            "description": "Optional sub-tenant identifier used to organize data within a tenant. If omitted, the default sub-tenant created during tenant setup will be used.",
+            "example": "sub_tenant_4567"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Search terms to find relevant content",
+            "example": "Which mode does user prefer"
+          },
+          "max_results": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Results",
+            "description": "Maximum number of results to return"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RetrieveMode",
+            "description": "Retrieval mode to use ('fast' or 'thinking')",
+            "default": "fast"
+          },
+          "alpha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Alpha",
+            "description": "Search ranking algorithm parameter (0.0-1.0 or 'auto')",
+            "default": 0.8
+          },
+          "recency_bias": {
+            "type": "number",
+            "title": "Recency Bias",
+            "description": "Preference for newer content (0.0 = no bias, 1.0 =             strong recency preference)",
+            "default": 0,
+            "example": 1.0
+          },
+          "personalise_recall": {
+            "type": "boolean",
+            "title": "Personalise Recall",
+            "description": "Enable personalized search results based on user preferences",
+            "default": false,
+            "example": true
+          },
+          "graph_context": {
+            "type": "boolean",
+            "title": "Graph Context",
+            "description": "Enable graph context for search results",
+            "default": false,
+            "example": true
+          },
+          "additional_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Context",
+            "description": "Additional context provided by the user to guide retrieval"
+          },
+          "metadata_filters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Filters",
+            "description": "Optional key-value pairs to filter search results by tenant metadata fields. Keys must match fields defined in tenant_metadata_schema during tenant creation. Supports exact match filtering on indexed metadata fields. Example: {'category': 'engineering', 'priority': 'high'}",
+            "examples": [
+              {
+                "category": "engineering",
+                "department": "R&D"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "query"
+        ],
+        "title": "RecallSearchRequest",
+        "description": "Request body for full-context recall (sources) and recall preferences (memories)."
       },
       "RelationEvidence": {
         "properties": {

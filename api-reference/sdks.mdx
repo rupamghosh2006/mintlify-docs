@@ -329,8 +329,17 @@ Store user preferences, conversation history, and personalized context that evol
 <Tabs>
   <Tab title="TypeScript">
     ```ts
-    // Search across memories/knowledge base
-    const results = await client.recall.fullRecall({
+    // Hybrid search over indexed sources (documents)
+    const results = await client.recall.fullContextRecall({
+      query: "Which mode does user prefer",
+      tenantId: "tenant_1234",
+      subTenantId: "sub_tenant_4567",
+      alpha: 0.8,
+      recencyBias: 0
+    });
+
+    // Hybrid search over user memories
+    const prefs = await client.recall.recallPreferences({
       query: "Which mode does user prefer",
       tenantId: "tenant_1234",
       subTenantId: "sub_tenant_4567",
@@ -347,8 +356,17 @@ Store user preferences, conversation history, and personalized context that evol
   </Tab>
   <Tab title="Python (Sync)">
     ```python
-    # Semantic Recall
-    results = client.recall.full_recall(
+    # Hybrid search over indexed sources (documents)
+    results = client.recall.full_context_recall(
+        query="Which mode does user prefer",
+        tenant_id="tenant_1234",
+        sub_tenant_id="sub_tenant_4567",
+        alpha=0.8,
+        recency_bias=0
+    )
+
+    # Hybrid search over user memories
+    prefs = client.recall.recall_preferences(
         query="Which mode does user prefer",
         tenant_id="tenant_1234",
         sub_tenant_id="sub_tenant_4567",
@@ -365,16 +383,25 @@ Store user preferences, conversation history, and personalized context that evol
   </Tab>
   <Tab title="Python (Async)">
     ```python
-    # Semantic Recall
-    async def search_data():
-        results = await async_client.recall.full_recall(
+    # Hybrid search over indexed sources (documents)
+    async def search_sources():
+        return await async_client.recall.full_context_recall(
             query="Which mode does user prefer",
             tenant_id="tenant_1234",
             sub_tenant_id="sub_tenant_4567",
             alpha=0.8,
             recency_bias=0
         )
-        return results
+
+    # Hybrid search over user memories
+    async def search_preferences():
+        return await async_client.recall.recall_preferences(
+            query="Which mode does user prefer",
+            tenant_id="tenant_1234",
+            sub_tenant_id="sub_tenant_4567",
+            alpha=0.8,
+            recency_bias=0
+        )
 
     # Get ingested data (memories + knowledge base)
     async def list_data():

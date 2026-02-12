@@ -79,8 +79,7 @@
           {
             "group": "Recall",
             "pages": [
-              "api-reference/endpoint/smart",
-              "api-reference/endpoint/keyword"
+              "api-reference/endpoint/full-context-recall","api-reference/endpoint/recall-preferences","api-reference/endpoint/keyword"
             ]
           },
           {

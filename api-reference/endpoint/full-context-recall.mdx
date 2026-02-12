@@ -1,8 +1,12 @@
 ---
-openapi: "POST /recall/full_recall"
-title: "Full Recall"
-description: "Fetch personalized context that your agent needs to perform an action from its store"
+openapi: "POST /recall/full_context_recall"
+title: "Full-context Recall"
+description: "Hybrid search over indexed sources (documents) only. Use this when you need context from your knowledge base or uploaded documents."
 ---
+
+### When to use it
+
+Use **full-context recall** when you want to search over **indexed knowledge** (documents, knowledge base, uploaded files). Same request body as [recall preferences](/api-reference/endpoint/recall-preferences) (memories); the endpoint you call determines the search target.
 
 ### Examples
 
@@ -10,7 +14,7 @@ description: "Fetch personalized context that your agent needs to perform an act
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/recall/full_recall' \
+    'https://api.usecortex.ai/recall/full_context_recall' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -19,33 +23,30 @@ description: "Fetch personalized context that your agent needs to perform an act
     "query": "string",
     "mode": "fast",
     "max_results": 10,
-    "search_mode": "sources",
-    "additional_context": "string",
+    "additional_context": "string"
     }'
     ```
   </Tab>
   <Tab title="TypeScript">
     ```ts
-    const results = await client.recall.fullRecall({
+    const results = await client.recall.fullContextRecall({
       query: "Which mode does user prefer",
       tenantId: "tenant_1234",
       subTenantId: "sub_tenant_4567",
       alpha: 0.8,
-      recencyBias: 0,
-      searchMode: "sources"
+      recencyBias: 0
     });
     ```
   </Tab>
   <Tab title="Python (Sync)">
     ```python
     # Async usage is similar, just use async_client and await
-    results = client.recall.full_recall(
+    results = client.recall.full_context_recall(
         query="Which mode does user prefer",
         tenant_id="tenant_1234",
         sub_tenant_id="sub_tenant_4567",
         alpha=0.8,
-        recency_bias=0,
-        search_mode="sources"
+        recency_bias=0
     )
     ```
   </Tab>
@@ -54,10 +55,6 @@ description: "Fetch personalized context that your agent needs to perform an act
 <Info>
   **Default Sub-Tenant Behavior**: If you don't specify a `sub_tenant_id`, the search will be performed within the default sub-tenant created when your tenant was set up. This searches across organization-wide documents.
 </Info>
-
-## How does recall happen?
-
-When an agent queries Cortex, recall executes as a multi-stage, context-aware pipeline rather than a single vector lookup. The system first scopes the candidate set using deterministic signals (tenant, user, agent, task, and metadata constraints), then traverses the memory graph to surface relevant entities, relationships, and prior outcomes. On this scoped set, Cortex runs hybrid retrieval (semantic, lexical, and structured) and ranks results using a composite scoring function over recency, relevance, frequency, behavioral feedback, and semantic similarity. Instead of optimizing for “what is most similar?”, Cortex optimizes for “what context will maximize task success for this agent right now”, continuously adapting rankings as the system learns from usage.
 
 ## Optional Parameters
 

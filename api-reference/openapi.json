@@ -2820,7 +2820,8 @@
         "type": "string",
         "enum": [
           "or",
-          "and"
+          "and",
+          "phrase"
         ],
         "title": "BM25OperatorType"
       },
@@ -2926,8 +2927,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "description": "Maximum number of results to return",
             "default": 100,
@@ -3020,8 +3021,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "description": "Maximum number of results to return",
             "default": 10,
@@ -3560,7 +3561,7 @@
           },
           "operator": {
             "$ref": "#/components/schemas/BM25OperatorType",
-            "description": "How to combine search terms (OR or AND)",
+            "description": "How to combine search terms: 'or' (any term matches), 'and' (all terms must match), 'phrase' (exact phrase must appear)",
             "default": "or",
             "example": "and"
           },
@@ -4116,8 +4117,8 @@
           },
           "max_chunks": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Max Chunks",
             "description": "Maximum number of context chunks to retrieve",
             "default": 10,
@@ -4130,8 +4131,8 @@
           },
           "alpha": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Alpha",
             "description": "Hybrid search alpha (0.0 = sparse/keyword, 1.0 = dense/semantic)",
             "default": 0.8,
@@ -4180,8 +4181,8 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 2,
-            "minimum": 0,
+            "maximum": 2.0,
+            "minimum": 0.0,
             "title": "Temperature",
             "description": "LLM temperature for answer generation (lower = more focused)",
             "default": 0.3,
@@ -4189,8 +4190,8 @@
           },
           "max_tokens": {
             "type": "integer",
-            "maximum": 16000,
-            "minimum": 100,
+            "maximum": 16000.0,
+            "minimum": 100.0,
             "title": "Max Tokens",
             "description": "Maximum tokens for the generated answer",
             "default": 4096,
@@ -4330,14 +4331,14 @@
             "type": "number",
             "title": "Score",
             "description": "Similarity score",
-            "default": 0,
+            "default": 0.0,
             "example": 1.0
           },
           "distance": {
             "type": "number",
             "title": "Distance",
             "description": "Vector distance",
-            "default": 0,
+            "default": 0.0,
             "example": 1.0
           },
           "metadata": {
@@ -4428,7 +4429,7 @@
           },
           "mode": {
             "$ref": "#/components/schemas/RetrieveMode",
-            "description": "Retrieval mode: 'fast' (personalised recall off) or 'thinking' (personalised recall on). Personalised recall is derived from mode only; it is not configurable via the request.",
+            "description": "Retrieval mode to use ('fast' or 'thinking')",
             "default": "fast"
           },
           "alpha": {
@@ -4448,7 +4449,7 @@
             "type": "number",
             "title": "Recency Bias",
             "description": "Preference for newer content (0.0 = no bias, 1.0 =             strong recency preference)",
-            "default": 0,
+            "default": 0.0,
             "example": 1.0
           },
           "graph_context": {
@@ -4520,8 +4521,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence",
             "description": "Confidence score",
             "default": 0.8,
@@ -4631,8 +4632,7 @@
           "fast",
           "thinking"
         ],
-        "title": "RetrieveMode",
-        "description": "Retrieval mode. 'fast': personalised recall off (equivalent to personalise_recall: false). 'thinking': personalised recall on (equivalent to personalise_recall: true). Personalised recall is not configurable via the request."
+        "title": "RetrieveMode"
       },
       "ScoredPathResponse": {
         "properties": {
@@ -4671,6 +4671,22 @@
             ],
             "title": "Group Id",
             "description": "Path group identifier (e.g., 'p_0') for chunk mapping"
+          },
+          "source_chunk_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Chunk Ids",
+            "description": "Input chunk IDs whose graph traversal produced this path"
           }
         },
         "type": "object",
@@ -4823,8 +4839,8 @@
           },
           "expiry_seconds": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Expiry Seconds",
             "description": "Expiry time in seconds for presigned URL (60-604800, default: 3600)",
             "default": 3600,

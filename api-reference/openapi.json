@@ -4610,6 +4610,14 @@
             "title": "Chunks",
             "example": []
           },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceInfo"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "Deduplicated source documents corresponding to the returned chunks"
+          },
           "graph_context": {
             "$ref": "#/components/schemas/GraphContext"
           },
@@ -4993,6 +5001,68 @@
           "relations"
         ],
         "title": "SourceGraphRelationsResponse"
+      },
+      "SourceInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the source",
+            "example": "CortexDoc1234"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Short human-readable title for the source",
+            "default": "",
+            "example": "<title>"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Category of the source (e.g., document, email, ticket)",
+            "default": "",
+            "example": "<type>"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Long-form description providing additional context",
+            "default": "",
+            "example": "<description>"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Canonical URL or reference link associated with the source",
+            "default": "",
+            "example": "<url>"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "description": "Creation or last-updated timestamp in ISO-8601 format",
+            "default": "",
+            "example": "<timestamp>"
+          },
+          "tenant_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tenant Metadata",
+            "description": "Custom metadata associated with your tenant"
+          },
+          "document_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Document Metadata",
+            "description": "Metadata extracted from the source document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "SourceInfo"
       },
       "SourceListResponse": {
         "properties": {

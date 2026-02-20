@@ -398,12 +398,128 @@
         ]
       }
     },
-    "/tenants/infra/status": {
+    "/tenants/sub_tenant_ids": {
       "get": {
         "tags": [
           "tenants"
         ],
-        "summary": "Get Infra Status",
+        "summary": "List sub-tenant IDs",
+        "operationId": "get_sub_tenant_ids_tenants_sub_tenant_ids_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the tenant/organization",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Unique identifier for the tenant/organization"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubTenantIdsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-fern-sdk-group-name": "tenant",
+        "x-fern-sdk-method-name": "get_sub_tenant_ids",
+        "x-fern-sdk-audience": [
+          "public"
+        ]
+      }
+    },
+    "/tenants/infra/status": {
+      "get": {
+        "tags": [
+          "tenants",
+          "Monitor & infra status"
+        ],
+        "summary": "Check tenant infra status",
         "operationId": "get_infra_status_tenants_infra_status_get",
         "security": [
           {
@@ -505,15 +621,136 @@
               }
             }
           }
-        }
+        },
+        "x-fern-sdk-group-name": "tenant",
+        "x-fern-sdk-method-name": "get_infra_status",
+        "x-fern-sdk-audience": [
+          "public"
+        ]
+      }
+    },
+    "/tenants/delete": {
+      "delete": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "Delete tenant",
+        "operationId": "delete_tenant_tenants_delete_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Unique identifier for the tenant/organization",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Unique identifier for the tenant/organization"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-fern-sdk-group-name": "tenant",
+        "x-fern-sdk-method-name": "delete_tenant",
+        "x-fern-sdk-audience": [
+          "public"
+        ]
       }
     },
     "/tenants/monitor": {
       "get": {
         "tags": [
-          "tenants"
+          "tenants",
+          "Monitor & infra status"
         ],
-        "summary": "Get Tenant Stats",
+        "summary": "Monitor tenant",
         "operationId": "get_tenant_stats_tenants_monitor_get",
         "security": [
           {
@@ -2871,6 +3108,555 @@
         }
       }
     },
+    "/dashboard/tenants/delete": {
+      "delete": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Dashboard Delete Tenant",
+        "operationId": "dashboard_delete_tenant_dashboard_tenants_delete_delete",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Tenant ID to delete",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Tenant ID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDeleteAcceptedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/resources/tenant-deletion-status": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Tenant Deletion Status",
+        "operationId": "get_tenant_deletion_status_dashboard_resources_tenant_deletion_status_get",
+        "parameters": [
+          {
+            "name": "tracking_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "ID to track status of deletion job",
+              "title": "Tracking Id",
+              "example": "<str>"
+            },
+            "description": "ID to track status of deletion job"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/resources/list/knowledge": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "List Knowledge",
+        "operationId": "list_knowledge_dashboard_resources_list_knowledge_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Tenant ID",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Tenant ID"
+          },
+          {
+            "name": "sub_tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Sub-tenant ID",
+              "title": "Sub Tenant Id",
+              "example": "sub_tenant_4567"
+            },
+            "description": "Sub-tenant ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSourcesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/resources/list/memories": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "List Memories",
+        "operationId": "list_memories_dashboard_resources_list_memories_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Tenant ID",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Tenant ID"
+          },
+          {
+            "name": "sub_tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Sub-tenant ID",
+              "title": "Sub Tenant Id",
+              "example": "sub_tenant_4567"
+            },
+            "description": "Sub-tenant ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListUserMemoriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/resources/list/sub_tenants": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "List Sub Tenants",
+        "operationId": "list_sub_tenants_dashboard_resources_list_sub_tenants_get",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Tenant ID to list sub-tenants for",
+              "title": "Tenant Id",
+              "example": "tenant_1234"
+            },
+            "description": "Tenant ID to list sub-tenants for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSubTenantsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity - Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cortex__models__response__commons__ActualErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dashboard/sources": {
       "get": {
         "tags": [
@@ -3654,8 +4440,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Limit",
             "description": "Maximum number of results to return",
             "default": 100,
@@ -3748,8 +4534,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "description": "Maximum number of results to return",
             "default": 10,
@@ -3765,7 +4551,7 @@
               }
             ],
             "title": "Filter Expr",
-            "description": "Optional Milvus filter expression for additional filtering"
+            "description": "Optional filter expression for additional filtering"
           },
           "output_fields": {
             "anyOf": [
@@ -3934,12 +4720,12 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "Property name (used as field name in Milvus)",
+            "description": "Property name (used as field name in the collection)",
             "example": "<name>"
           },
           "data_type": {
             "$ref": "#/components/schemas/MilvusDataType",
-            "description": "Milvus data type. Use VARCHAR for text fields that need embeddings.",
+            "description": "Data type. Use VARCHAR for text fields that need embeddings.",
             "default": "VARCHAR"
           },
           "max_length": {
@@ -3990,7 +4776,7 @@
           "name"
         ],
         "title": "CustomPropertyDefinition",
-        "description": "Definition for custom/dynamic properties on a collection.\n\nUse this to define tenant metadata fields that can enhance search capabilities:\n- enable_dense_embedding: Creates a dense vector field for semantic similarity search\n- enable_sparse_embedding: Creates a sparse vector field for BM25 keyword search\n\nExample:\n    CustomPropertyDefinition(\n        name=\"product_description\",\n        data_type=MilvusDataType.VARCHAR,\n        max_length=4096,\n        enable_dense_embedding=True,  # Enables semantic search on this field\n        enable_sparse_embedding=True,  # Enables keyword search on this field\n    )"
+        "description": "Definition for custom/dynamic properties on a collection.\n\nUse this to define tenant metadata fields that can enhance search capabilities:\n- enable_dense_embedding: Creates a dense vector field for semantic similarity search\n- enable_sparse_embedding: Creates a sparse vector field for BM25 keyword search\n\nExample:\n    CustomPropertyDefinition(\n        name=\"product_description\",\n        data_type=VARCHAR,\n        max_length=4096,\n        enable_dense_embedding=True,  # Enables semantic search on this field\n        enable_sparse_embedding=True,  # Enables keyword search on this field\n    )"
       },
       "DashboardApisResponse": {
         "properties": {
@@ -4050,6 +4836,40 @@
           "count"
         ],
         "title": "DashboardSourcesResponse"
+      },
+      "DashboardSubTenantsResponse": {
+        "properties": {
+          "sub_tenant_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sub Tenant Ids",
+            "description": "Unique sub-tenant IDs that have indexed data in the tenant's collections",
+            "example": [
+              "sub_tenant_1234",
+              "sub_tenant_4567"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of sub-tenants",
+            "example": 1
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Response message",
+            "default": "Successfully retrieved sub-tenants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "title": "DashboardSubTenantsResponse",
+        "description": "Response for listing sub-tenants (unique sub_tenant_id values for a tenant)."
       },
       "DashboardTenantsResponse": {
         "properties": {
@@ -4783,7 +5603,7 @@
           "SPARSE_FLOAT_VECTOR"
         ],
         "title": "MilvusDataType",
-        "description": "Milvus data types mapped from Weaviate schema."
+        "description": "Data types for collection fields."
       },
       "PathTriplet": {
         "properties": {
@@ -4884,8 +5704,8 @@
           },
           "max_chunks": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Chunks",
             "description": "Maximum number of context chunks to retrieve",
             "default": 10,
@@ -4898,8 +5718,8 @@
           },
           "alpha": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Alpha",
             "description": "Hybrid search alpha (0.0 = sparse/keyword, 1.0 = dense/semantic)",
             "default": 0.8,
@@ -4948,8 +5768,8 @@
           },
           "temperature": {
             "type": "number",
-            "maximum": 2.0,
-            "minimum": 0.0,
+            "maximum": 2,
+            "minimum": 0,
             "title": "Temperature",
             "description": "LLM temperature for answer generation (lower = more focused)",
             "default": 0.3,
@@ -4957,8 +5777,8 @@
           },
           "max_tokens": {
             "type": "integer",
-            "maximum": 16000.0,
-            "minimum": 100.0,
+            "maximum": 16000,
+            "minimum": 100,
             "title": "Max Tokens",
             "description": "Maximum tokens for the generated answer",
             "default": 4096,
@@ -5098,14 +5918,14 @@
             "type": "number",
             "title": "Score",
             "description": "Similarity score",
-            "default": 0.0,
+            "default": 0,
             "example": 1.0
           },
           "distance": {
             "type": "number",
             "title": "Distance",
             "description": "Vector distance",
-            "default": 0.0,
+            "default": 0,
             "example": 1.0
           },
           "metadata": {
@@ -5216,7 +6036,7 @@
             "type": "number",
             "title": "Recency Bias",
             "description": "Preference for newer content (0.0 = no bias, 1.0 =             strong recency preference)",
-            "default": 0.0,
+            "default": 0,
             "example": 1.0
           },
           "graph_context": {
@@ -5288,8 +6108,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence",
             "description": "Confidence score",
             "default": 0.8,
@@ -5614,8 +6434,8 @@
           },
           "expiry_seconds": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Expiry Seconds",
             "description": "Expiry time in seconds for presigned URL (60-604800, default: 3600)",
             "default": 3600,
@@ -6070,6 +6890,31 @@
         ],
         "title": "SourceUploadResultItem"
       },
+      "SubTenantIdsResponse": {
+        "properties": {
+          "sub_tenant_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sub Tenant Ids",
+            "description": "Unique sub-tenant IDs that have indexed data in the tenant's collections",
+            "example": [
+              "sub_tenant_1234",
+              "sub_tenant_4567"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Summary message",
+            "default": "Successfully retrieved sub-tenant IDs"
+          }
+        },
+        "type": "object",
+        "title": "SubTenantIdsResponse",
+        "description": "Response for listing unique sub-tenant IDs in a tenant."
+      },
       "SupportedLLMProviders": {
         "type": "string",
         "enum": [
@@ -6196,7 +7041,74 @@
           "tenant_id"
         ],
         "title": "TenantCreateRequest",
-        "description": "Request model for creating a tenant with optional metadata schema.\n\nThe tenant_metadata_schema allows you to define custom fields that will be indexed\nin Milvus with configurable search capabilities:\n\nExample:\n    {\n        \"tenant_id\": \"my-tenant\",\n        \"tenant_metadata_schema\": [\n            {\n                \"name\": \"category\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 256,\n                \"enable_match\": true\n            },\n            {\n                \"name\": \"product_description\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 4096,\n                \"enable_dense_embedding\": true,\n                \"enable_sparse_embedding\": true\n            }\n        ]\n    }"
+        "description": "Request model for creating a tenant with optional metadata schema.\n\nThe tenant_metadata_schema allows you to define custom fields that will be indexed with configurable search capabilities:\n\nExample:\n    {\n        \"tenant_id\": \"my-tenant\",\n        \"tenant_metadata_schema\": [\n            {\n                \"name\": \"category\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 256,\n                \"enable_match\": true\n            },\n            {\n                \"name\": \"product_description\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 4096,\n                \"enable_dense_embedding\": true,\n                \"enable_sparse_embedding\": true\n            }\n        ]\n    }"
+      },
+      "TenantDeleteAcceptedResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status of the request",
+            "default": "accepted"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Tenant identifier that is being deleted",
+            "example": "tenant_1234"
+          },
+          "tracking_id": {
+            "type": "string",
+            "title": "Tracking Id",
+            "description": "ID to track status of deletion job",
+            "example": "<tracking_id>"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Response message",
+            "default": "Tenant deletion started in the background. Use GET /dashboard/resources/tenant-deletion-status?tracking_id=... to check progress."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "tracking_id"
+        ],
+        "title": "TenantDeleteAcceptedResponse",
+        "description": "Response when tenant deletion is accepted and cleanup runs in the background (dashboard)."
+      },
+      "TenantDeleteResponse": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Identifier provided by user",
+            "example": "tenant_1234"
+          },
+          "tracking_id": {
+            "type": "string",
+            "title": "Tracking Id",
+            "description": "ID to track status of deletion job",
+            "example": "<tracking_id>"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "deletion_scheduled"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Tenant deregistered. Background cleanup is in progress."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "tracking_id"
+        ],
+        "title": "TenantDeleteResponse"
       },
       "TenantInfo": {
         "properties": {
@@ -6257,6 +7169,63 @@
           "memory_collection"
         ],
         "title": "TenantStatsResponse"
+      },
+      "TenantStatusResponse": {
+        "properties": {
+          "tracking_id": {
+            "type": "string",
+            "title": "Tracking Id",
+            "description": "ID to track status of deletion job",
+            "example": "<tracking_id>"
+          },
+          "vectorstore_context_exists": {
+            "type": "boolean",
+            "title": "Vectorstore Context Exists",
+            "description": "Whether the context vector collection still exists",
+            "example": true
+          },
+          "vectorstore_memory_exists": {
+            "type": "boolean",
+            "title": "Vectorstore Memory Exists",
+            "description": "Whether the memory vector collection still exists",
+            "example": true
+          },
+          "sources_remaining": {
+            "type": "integer",
+            "title": "Sources Remaining",
+            "description": "Number of source documents remaining in MongoDB",
+            "example": 1
+          },
+          "chunks_remaining": {
+            "type": "integer",
+            "title": "Chunks Remaining",
+            "description": "Number of chunk documents remaining in MongoDB",
+            "example": 1
+          },
+          "github_infra_exists": {
+            "type": "boolean",
+            "title": "Github Infra Exists",
+            "description": "Whether the GitHub infra file still exists",
+            "example": true
+          },
+          "fully_cleaned": {
+            "type": "boolean",
+            "title": "Fully Cleaned",
+            "description": "True when all resources have been removed",
+            "example": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "tracking_id",
+          "vectorstore_context_exists",
+          "vectorstore_memory_exists",
+          "sources_remaining",
+          "chunks_remaining",
+          "github_infra_exists",
+          "fully_cleaned"
+        ],
+        "title": "TenantStatusResponse"
       },
       "TripletWithEvidence": {
         "properties": {

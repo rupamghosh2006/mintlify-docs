@@ -3278,6 +3278,70 @@
         ],
         "title": "CollectionStats"
       },
+      "ContentFilter": {
+        "properties": {
+          "tenant_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Metadata",
+            "description": "Key-value pairs matched against source.tenant_metadata. All provided pairs must match (AND logic).",
+            "examples": [
+              {
+                "compliance_tag": "GDPR",
+                "department": "Finance"
+              }
+            ]
+          },
+          "document_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Metadata",
+            "description": "Key-value pairs matched against source.document_metadata. All provided pairs must match (AND logic).",
+            "examples": [
+              {
+                "author": "Alice Smith",
+                "year": 2023
+              }
+            ]
+          },
+          "source_fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Fields",
+            "description": "Key-value pairs matched against top-level source fields that you supply during ingestion. Allowed keys: description, timestamp, title, type, url. All provided pairs must match (AND logic).",
+            "examples": [
+              {
+                "title": "standup notes",
+                "type": "slack"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ContentFilter",
+        "description": "Optional filters for narrowing list results.\n\nAll filter categories use **AND** logic \u2014 every provided key-value pair\nmust match for a document to be included.\n\nExamples\n--------\n```json\n{\n    \"tenant_metadata\": {\"department\": \"Finance\", \"region\": \"US\"},\n    \"document_metadata\": {\"author\": \"Alice Smith\"},\n    \"source_fields\": {\"type\": \"slack\", \"title\": \"standup notes\"}\n}\n```"
+      },
       "ContentModel": {
         "properties": {
           "text": {
@@ -3821,14 +3885,66 @@
                 "items": {
                   "type": "string"
                 },
-                "type": "array"
+                "type": "array",
+                "maxItems": 100
               },
               {
                 "type": "null"
               }
             ],
             "title": "Source Ids",
-            "description": "Optional list of IDs to fetch. If omitted, returns all."
+            "description": "Optional list of IDs to fetch (max 100). If omitted, returns all."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "Page number to retrieve (1-indexed). Defaults to 1.",
+            "default": 1,
+            "example": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size",
+            "description": "Number of items per page (1-100). Defaults to 50.",
+            "default": 50,
+            "example": 1
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentFilter"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional filters. Provide key-value pairs to match against tenant_metadata, document_metadata, and/or source-level fields (title, type, description, url, timestamp)."
+          },
+          "include_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Fields",
+            "description": "Optional list of source fields to include in the response. When provided, only the specified fields (plus id, tenant_id, sub_tenant_id which are always returned) will be populated; all other fields will have their default/empty values. This reduces payload size and improves performance. Allowed values: attachments, content, description, document_metadata, meta, note, relations, tenant_metadata, timestamp, title, type, url. Omit or pass null to return all fields. Only applies to kind=knowledge; ignored for kind=memories.",
+            "examples": [
+              [
+                "title",
+                "type",
+                "url",
+                "timestamp"
+              ]
+            ]
           }
         },
         "type": "object",
@@ -3836,7 +3952,7 @@
           "tenant_id"
         ],
         "title": "ListContentRequest",
-        "description": "Unified request model for listing either sources or user memories.\n\nIf `source_ids` is provided and non-empty, only those IDs are returned.\nOtherwise, all items for the tenant/sub-tenant scope are returned."
+        "description": "Unified request model for listing either sources or user memories.\n\nSupports **pagination** (page / page_size) and optional **filters**\non tenant_metadata and document_metadata.\n\nIf `source_ids` is provided and non-empty, only those IDs are returned\n(pagination and filters still apply)."
       },
       "ListUserMemoriesResponse": {
         "properties": {
@@ -3853,7 +3969,7 @@
             },
             "type": "array",
             "title": "User Memories",
-            "description": "Array of all user memories associated with your tenant",
+            "description": "Array of user memories for the current page",
             "example": [
               {
                 "memory_id": "memory_1234",
@@ -3864,9 +3980,23 @@
                 "memory_content": "I prefer dark mode"
               }
             ]
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of user memories matching the query",
+            "default": 0,
+            "example": 1
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata for navigating through results."
           }
         },
         "type": "object",
+        "required": [
+          "pagination"
+        ],
         "title": "ListUserMemoriesResponse",
         "description": "Response model for listing all user memories."
       },
@@ -4083,6 +4213,57 @@
         ],
         "title": "MilvusDataType",
         "description": "Milvus data types mapped from Weaviate schema."
+      },
+      "PaginationMeta": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-indexed).",
+            "example": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items returned per page.",
+            "example": 1
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query.",
+            "example": 1
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages available.",
+            "example": 1
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next",
+            "description": "Whether a next page exists.",
+            "example": true
+          },
+          "has_previous": {
+            "type": "boolean",
+            "title": "Has Previous",
+            "description": "Whether a previous page exists.",
+            "example": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total",
+          "total_pages",
+          "has_next",
+          "has_previous"
+        ],
+        "title": "PaginationMeta",
+        "description": "Pagination metadata returned with every paginated response."
       },
       "PathTriplet": {
         "properties": {
@@ -5178,11 +5359,16 @@
             "title": "Total",
             "description": "Total number of sources matching the query.",
             "example": 1
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta",
+            "description": "Pagination metadata for navigating through results."
           }
         },
         "type": "object",
         "required": [
-          "total"
+          "total",
+          "pagination"
         ],
         "title": "SourceListResponse"
       },

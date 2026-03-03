@@ -3936,7 +3936,7 @@
               }
             ],
             "title": "Include Fields",
-            "description": "Optional list of source fields to include in the response. When provided, only the specified fields (plus id, tenant_id, sub_tenant_id which are always returned) will be populated; all other fields will have their default/empty values. This reduces payload size and improves performance. Allowed values: attachments, content, description, document_metadata, meta, note, relations, tenant_metadata, timestamp, title, type, url. Omit or pass null to return all fields. Only applies to kind=knowledge; ignored for kind=memories.",
+            "description": "Optional list of source fields to include in the response. When provided, only the specified fields (plus id, tenant_id, sub_tenant_id which are always returned) will be populated; all other fields will have their default/empty values. This reduces payload size and improves performance. Allowed values: attachments, content, description, document_metadata, note, relations, tenant_metadata, timestamp, title, type, url. Omit or pass null to return all fields. Only applies to kind=knowledge; ignored for kind=memories.",
             "examples": [
               [
                 "title",

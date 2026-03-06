@@ -331,9 +331,9 @@ Each item in the `memories` array can have the following fields:
 ## Processing Status
 
 ```bash
-# Example: check status via ingestion verify_processing (when using id from ingestion flows)
+# Check status via verify_processing
 curl -X POST \
-  'https://api.usecortex.ai/ingestion/verify_processing?id=<id>&tenant_id=<tenant_id>' \
+  'https://api.usecortex.ai/ingestion/verify_processing?file_ids=<file_id>&tenant_id=<tenant_id>' \
   -H 'Authorization: Bearer <token>'
 ```
 

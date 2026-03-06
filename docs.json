@@ -83,6 +83,12 @@
             ]
           },
           {
+            "group": "Ingestion",
+            "pages": [
+              "api-reference/endpoint/verify-processing"
+            ]
+          },
+          {
             "group": "Manage Memories",
             "pages": [
               "api-reference/endpoint/list",

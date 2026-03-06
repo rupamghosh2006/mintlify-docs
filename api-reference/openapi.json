@@ -145,8 +145,8 @@
         "tags": [
           "ingestion"
         ],
-        "summary": "Verifying Processing",
-        "operationId": "verifying_processing_ingestion_verify_processing_post",
+        "summary": "Verify Processing",
+        "operationId": "verify_processing_ingestion_verify_processing_post",
         "security": [
           {
             "HTTPBearer": []
@@ -156,14 +156,37 @@
           {
             "name": "file_id",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "description": "The file ID to check processing status for",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Single file ID (deprecated - use file_ids instead).",
               "title": "File Id",
               "example": "<str>"
             },
-            "description": "The file ID to check processing status for"
+            "description": "Single file ID (deprecated - use file_ids instead)."
+          },
+          {
+            "name": "file_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "One or more file IDs to check processing status for.",
+              "default": [],
+              "title": "File Ids",
+              "example": "<str>"
+            },
+            "description": "One or more file IDs to check processing status for."
           },
           {
             "name": "tenant_id",
@@ -204,7 +227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProcessingStatus"
+                  "$ref": "#/components/schemas/BatchProcessingStatus"
                 }
               }
             }
@@ -2954,6 +2977,24 @@
         ],
         "title": "BM25OperatorType"
       },
+      "BatchProcessingStatus": {
+        "properties": {
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/ProcessingStatus"
+            },
+            "type": "array",
+            "title": "Statuses",
+            "description": "List of processing statuses, one per requested file ID.",
+            "example": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "statuses"
+        ],
+        "title": "BatchProcessingStatus"
+      },
       "Body_add_memory_memories_add_memory_post": {
         "properties": {
           "memories": {
@@ -4317,6 +4358,7 @@
           "success": {
             "type": "boolean",
             "title": "Success",
+            "description": "Whether the file was processed successfully.",
             "default": true,
             "example": true
           },
@@ -4498,7 +4540,7 @@
             },
             "type": "object",
             "title": "Timing",
-            "description": "Timing information (retrieval_ms, answer_generation_ms, total_ms)"
+            "description": "Timing information (total_ms)"
           }
         },
         "type": "object",
@@ -4718,6 +4760,13 @@
             "title": "Graph Context",
             "description": "Enable graph context for search results",
             "default": false,
+            "example": true
+          },
+          "search_forceful_relations": {
+            "type": "boolean",
+            "title": "Search Forceful Relations",
+            "description": "Whether to search for forceful relations in thinking mode to augment context",
+            "default": true,
             "example": true
           },
           "additional_context": {

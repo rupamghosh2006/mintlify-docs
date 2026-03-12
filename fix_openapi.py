@@ -22,13 +22,13 @@ defaults = {
     "query": "Which mode does user prefer",
     "user_query": "Which mode does user prefer",
     "max_count": 5,
-    "web_url": "https://www.usecortex.ai/",
-    "id": "CortexDoc1234",
-    "id": "CortexDoc1234",
+    "web_url": "https://hydradb.com/",
+    "id": "HydraDoc1234",
+    "id": "HydraDoc1234",
     "user_name": "John Doe",
     # "message": "<string>",÷
     "embeddings": [[0.123413, 0.655367, 0.987654, 0.123456, 0.789012], [0.123413, 0.655367, 0.987654, 0.123456, 0.789012]],
-    "question": "What is Cortex AI",
+    "question": "What is HydraDB",
     "session_id": "chat_session_1234",
     "tenant_metadata_schema": [
         {
@@ -55,8 +55,8 @@ defaults = {
     # "tenant_metadata": "{}",
     # "document_metadata": "{}",
     "sub_tenant_ids": ["sub_tenant_1234", "sub_tenant_4567"],
-    "ids": ["CortexDoc1234", "CortexDoc4567"],
-    "chunk_ids": ["CortexEmbeddings123_0", "CortexEmbeddings123_1"],
+    "ids": ["HydraDoc1234", "HydraDoc4567"],
+    "chunk_ids": ["HydraEmbeddings123_0", "HydraEmbeddings123_1"],
     "user_memories": [
         {
             "memory_id": "memory_1234",
@@ -89,11 +89,11 @@ defaults = {
     ],
     "uploaded":  [
         {
-            "id": "CortexDoc1234",
+            "id": "HydraDoc1234",
             "filename": "document1.pdf"
         },
         {
-            "id": "CortexDoc4567",
+            "id": "HydraDoc4567",
             "filename": "document2.docx"
         }
     ]
@@ -102,8 +102,8 @@ defaults = {
 full_text_query = "John Smith Jake"
 
 update_embeddings_emb = {
-    "CortexEmbeddings123_0": [0.123413, 0.655367, 0.987654, 0.123456, 0.789012],
-    "CortexEmbeddings123_1": [0.123413, 0.655367, 0.987654, 0.123456, 0.789012]
+    "HydraEmbeddings123_0": [0.123413, 0.655367, 0.987654, 0.123456, 0.789012],
+    "HydraEmbeddings123_1": [0.123413, 0.655367, 0.987654, 0.123456, 0.789012]
 }
 
 example_exclusion_by_schema_name = {
@@ -203,7 +203,7 @@ if "components" in openapi and "schemas" in openapi["components"]:
 print("Default values added to components.schemas.")
 
 
-property_tag_to_hide = "x-cortex-docs-hide"
+property_tag_to_hide = "x-hydradb-docs-hide"
 
 
 def recursive_filter(data):

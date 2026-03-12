@@ -10,7 +10,7 @@ openapi: "POST /embeddings/search_raw_embeddings"
   <Tab title="API Request">
     ```bash expandable
     curl -X 'POST' \
-    'https://api.usecortex.ai/embeddings/search_raw_embeddings' \
+    'https://api.hydradb.com/embeddings/search_raw_embeddings' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -78,7 +78,7 @@ Embeddings are high-dimensional vector representations of text that capture sema
 
 - **Standard Dimensions**: Most embeddings use 384, 512, 768, or 1536 dimensions
 - **Quality vs Speed**: Higher dimensions = better quality, slower search
-- **Compatibility**: Ensure your embedding model matches Cortex's expected format
+- **Compatibility**: Ensure your embedding model matches HydraDB's expected format
 
 ## Search Parameters
 
@@ -184,11 +184,11 @@ Use when building recommendation systems that need many similar items.
 ```json
 {
   "chunk_ids": [
-    "CortexEmbeddings123_0",    
-    "CortexEmbeddings456_0",
-    "CortexEmbeddings456_1",
-    "CortexEmbeddings123_2",   
-    "CortexEmbeddings123_8"
+    "HydraEmbeddings123_0",    
+    "HydraEmbeddings456_0",
+    "HydraEmbeddings456_1",
+    "HydraEmbeddings123_2",   
+    "HydraEmbeddings123_8"
   ],
   "scores": [
     0.95,

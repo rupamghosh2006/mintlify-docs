@@ -10,7 +10,7 @@ openapi: "POST /embeddings/insert_raw_embeddings"
   <Tab title="API Request">
     ```bash expandable
     curl -X 'POST' \
-    'https://api.usecortex.ai/embeddings/insert_raw_embeddings' \
+    'https://api.hydradb.com/embeddings/insert_raw_embeddings' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -47,7 +47,7 @@ openapi: "POST /embeddings/insert_raw_embeddings"
         [0.123413, 0.655367, 0.987654, 0.123456, 0.789012],
         [0.123413, 0.655367, 0.987654, 0.123456, 0.789012]
       ],
-      id: "CortexDoc1234"
+      id: "HydraDoc1234"
     });
     ```
   </Tab>
@@ -61,7 +61,7 @@ openapi: "POST /embeddings/insert_raw_embeddings"
             [0.123413, 0.655367, 0.987654, 0.123456, 0.789012],
             [0.123413, 0.655367, 0.987654, 0.123456, 0.789012]
         ],
-        id="CortexDoc1234"
+        id="HydraDoc1234"
     )
     ```
   </Tab>
@@ -89,7 +89,7 @@ Our system automatically handles:
 
 - Each embedding vector receives a unique ID in format `{batch_id}_{index}`
 - These IDs serve as references for retrieval and linking to original content
-- Example: `[0.1, 0.2, 0.3, 0.4, 0.5]` becomes `CortexEmbeddings123_0`
+- Example: `[0.1, 0.2, 0.3, 0.4, 0.5]` becomes `HydraEmbeddings123_0`
 - You can use these chunk IDs to link back to your original text content
 
 ### 4. **Direct Indexing**
@@ -122,7 +122,7 @@ Our system automatically handles:
 - **Content**: Embeddings array cannot be empty
 - **Processing**: Generates unique chunk IDs in format `{batch_id}_{index} for each row`.
   - Consider them as references of that particular embeddings vector. You will get back these `chunk_ids`, when you query something.
-  - In the example on your right, the reference to `[0.1, 0.2, 0.3, 0.4, 0.5]` is `CortexEmbeddings123_0`
+  - In the example on your right, the reference to `[0.1, 0.2, 0.3, 0.4, 0.5]` is `HydraEmbeddings123_0`
   - You can use these chunk IDs to link the original text which is being embedded
 - **Dimensional consistency per tenant**: All embedding vectors within a tenant must have identical dimensions. Different dimensional vectors require separate tenants
 

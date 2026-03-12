@@ -10,7 +10,7 @@ openapi: "POST /ingestion/upload_knowledge"
   <Tab title="API Request">
     ```bash
     # File Upload Example
-    curl -X POST https://api.usecortex.ai/ingestion/upload_knowledge \
+    curl -X POST https://api.hydradb.com/ingestion/upload_knowledge \
     -F "tenant_id=tenant_123" \
     -F "files=@a.pdf" \
     -F "files=@b.pdf" \
@@ -19,18 +19,18 @@ openapi: "POST /ingestion/upload_knowledge"
       "id": "doc_a",
       "metadata": { "dept": "sales" },
       "additional_metadata": { "author": "Alice" },
-      "relations": {"cortex_source_ids": ["source_id_1", "source_id_2"]}
+      "relations": {"hydradb_source_ids": ["source_id_1", "source_id_2"]}
     },
     {
       "id": "doc_b",
       "metadata": { "dept": "marketing" },
       "additional_metadata": { "author": "Bob" },
-      "relations": {"cortex_source_ids": []}
+      "relations": {"hydradb_source_ids": []}
     }
     ]'
 
     # App Knowledge Upload Example
-    curl -X POST https://api.usecortex.ai/ingestion/upload_knowledge \
+    curl -X POST https://api.hydradb.com/ingestion/upload_knowledge \
     -H 'Content-Type: application/json' \
     -d '{
       "app_knowledge": [
@@ -53,7 +53,7 @@ openapi: "POST /ingestion/upload_knowledge"
             "author": "Alice",
             "priority": "high"
           },
-          "relations": {"cortex_source_ids": ["source_id_1", "source_id_2"]}
+          "relations": {"hydradb_source_ids": ["source_id_1", "source_id_2"]}
         }
       ]
     }'
@@ -75,13 +75,13 @@ openapi: "POST /ingestion/upload_knowledge"
           id: "doc_a",
           metadata: { dept: "sales" },
           additional_metadata: { author: "Alice" },
-          relations: {"cortex_source_ids": ["source_id_1", "source_id_2"]}
+          relations: {"hydradb_source_ids": ["source_id_1", "source_id_2"]}
         },
         {
           id: "doc_b",
           metadata: { dept: "marketing" },
           additional_metadata: { author: "Bob" },
-          relations: {"cortex_source_ids": ["source_id_3", "source_id_4"]}
+          relations: {"hydradb_source_ids": ["source_id_3", "source_id_4"]}
         }
       ]
     });
@@ -106,7 +106,7 @@ openapi: "POST /ingestion/upload_knowledge"
             author: "Alice",
             priority: "high"
           },
-          relations: {"cortex_source_ids": ["source_id_1", "source_id_2"]}
+          relations: {"hydradb_source_ids": ["source_id_1", "source_id_2"]}
         }
       ]
     });
@@ -129,13 +129,13 @@ openapi: "POST /ingestion/upload_knowledge"
                     "id": "doc_a",
                     "metadata": {"dept": "sales"},
                     "additional_metadata": {"author": "Alice"},
-                    "relations": {"cortex_source_ids": ["source_id_1", "source_id_2"]}
+                    "relations": {"hydradb_source_ids": ["source_id_1", "source_id_2"]}
                 },
                 {
                     "id": "doc_b",
                     "metadata": {"dept": "marketing"},
                     "additional_metadata": {"author": "Bob"},
-                    "relations": {"cortex_source_ids": ["source_id_3", "source_id_4"]}
+                    "relations": {"hydradb_source_ids": ["source_id_3", "source_id_4"]}
                 }
             ]
         )
@@ -163,7 +163,7 @@ openapi: "POST /ingestion/upload_knowledge"
                     "author": "Alice",
                     "priority": "high"
                 },
-                "relations": {"cortex_source_ids": []}
+                "relations": {"hydradb_source_ids": []}
             }
         ]
     )
@@ -192,7 +192,7 @@ The `file_metadata` parameter accepts a JSON array where each object corresponds
     "id": "string",
     "metadata": {},
     "additional_metadata": {},
-    "relations": {"cortex_source_ids": []}
+    "relations": {"hydradb_source_ids": []}
   }
 ]
 ```
@@ -236,12 +236,12 @@ The `file_metadata` parameter accepts a JSON array where each object corresponds
 
 #### `relations` (object, optional)
 
-- **Description**: Object containing `cortex_source_ids` array that specifies source IDs the current source has relations with. When provided, the system will create relationships between the current source and the specified source IDs.
+- **Description**: Object containing `hydradb_source_ids` array that specifies source IDs the current source has relations with. When provided, the system will create relationships between the current source and the specified source IDs.
 - **Use Case**: Create explicit relationships between documents for knowledge graph connections.
-- **Default**: {`{"cortex_source_ids": []}`} (empty array - no relations)
+- **Default**: {`{"hydradb_source_ids": []}`} (empty array - no relations)
 - **Example**:
-  - `{"cortex_source_ids": ["source_id_1", "source_id_2"]}`: Create relations to sources with those IDs
-  - `{"cortex_source_ids": []}`: No relations
+  - `{"hydradb_source_ids": ["source_id_1", "source_id_2"]}`: Create relations to sources with those IDs
+  - `{"hydradb_source_ids": []}`: No relations
 
 <Info>
   **Metadata Ordering**: The order of objects in the `file_metadata` array should match the order of files in the `files` parameter. The first metadata object applies to the first file, the second to the second file, and so on.
@@ -267,7 +267,7 @@ The `app_knowledge` parameter accepts an array of `AppKnowledgeModel` objects. E
     "content": {},
     "metadata": {},
     "additional_metadata": {},
-    "relations": {"cortex_source_ids": []}
+    "relations": {"hydradb_source_ids": []}
   }
 ]
 ```
@@ -354,14 +354,14 @@ The `app_knowledge` parameter accepts an array of `AppKnowledgeModel` objects. E
   }
   ```
 
-#### `relations` (object, optional, default: {`{"cortex_source_ids": []}`})
+#### `relations` (object, optional, default: {`{"hydradb_source_ids": []}`})
 
-- **Description**: Object containing `cortex_source_ids` array that specifies source IDs the current source has relations with. When provided, the system will create relationships between the current source and the specified source IDs.
+- **Description**: Object containing `hydradb_source_ids` array that specifies source IDs the current source has relations with. When provided, the system will create relationships between the current source and the specified source IDs.
 - **Use Case**: Create explicit relationships between documents for knowledge graph connections.
-- **Default**: `{"cortex_source_ids": []}` (empty array - no relations)
+- **Default**: `{"hydradb_source_ids": []}` (empty array - no relations)
 - **Example**:
-  - `{"cortex_source_ids": ["source_id_1", "source_id_2"]}`: Create relations to sources with those IDs
-  - `{"cortex_source_ids": []}`: No relations
+  - `{"hydradb_source_ids": ["source_id_1", "source_id_2"]}`: Create relations to sources with those IDs
+  - `{"hydradb_source_ids": []}`: No relations
 
 <Info>
   **Content Model**: The `content` field in AppKnowledgeModel supports multiple formats including text, HTML (base64), CSV (base64), markdown, file attachments, and structured layouts. Choose the format that best represents your knowledge source content.
@@ -391,7 +391,7 @@ The `app_knowledge` parameter accepts an array of `AppKnowledgeModel` objects. E
 
 ## Document Processing Pipeline
 
-When you upload content to Cortex, it is securely accepted and queued for processing, then automatically extracted, parsed, and cleaned to normalize structure and text. The content is intelligently chunked into semantically meaningful units with preserved metadata, enriched with embeddings for semantic understanding, indexed for hybrid retrieval (metadata, keyword, and vector search), and linked via cross-references to build relational context. Throughout the pipeline, quality checks validate extraction and embedding fidelity, ensuring the content is fully indexed, connected into the context graph, and ready for accurate, low-latency recall by your agents.
+When you upload content to HydraDB, it is securely accepted and queued for processing, then automatically extracted, parsed, and cleaned to normalize structure and text. The content is intelligently chunked into semantically meaningful units with preserved metadata, enriched with embeddings for semantic understanding, indexed for hybrid retrieval (metadata, keyword, and vector search), and linked via cross-references to build relational context. Throughout the pipeline, quality checks validate extraction and embedding fidelity, ensuring the content is fully indexed, connected into the context graph, and ready for accurate, low-latency recall by your agents.
 
 <Note>
   **Processing Time**: Most documents are fully processed and searchable within 1-5 minutes. Larger documents (100+ pages) may take up to 15 minutes. You can check processing status using the document ID returned in the response.

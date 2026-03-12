@@ -1,13 +1,13 @@
 ---
 title: "Build an AI LinkedIn: People search in Natural Language"
-description: "Learn how to build an intelligent recruiting platform that understands natural language queries like 'find me someone who has 5+ years of experience in machine learning and has worked at Apple before' using Cortex's AI search capabilities."
+description: "Learn how to build an intelligent recruiting platform that understands natural language queries like 'find me someone who has 5+ years of experience in machine learning and has worked at Apple before' using HydraDB's AI search capabilities."
 ---
 
 > **Status**: This guide is in progress.
 
-This guide demonstrates how to build a revolutionary AI-powered hiring platform that transforms how recruiters and hiring managers discover candidates. Instead of traditional keyword searches, your platform will understand natural language queries and provide intelligent candidate matching using Cortex's advanced AI capabilities.
+This guide demonstrates how to build a revolutionary AI-powered hiring platform that transforms how recruiters and hiring managers discover candidates. Instead of traditional keyword searches, your platform will understand natural language queries and provide intelligent candidate matching using HydraDB's advanced AI capabilities.
 
-Note: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own AI linkedin-like application with Cortex APIs. Follow the actual API documentation to adapt these examples to your specific use case, technology stack, and requirements.
+Note: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own AI linkedin-like application with HydraDB APIs. Follow the actual API documentation to adapt these examples to your specific use case, technology stack, and requirements.
 
 ## The Problem with Traditional Hiring Platforms
 
@@ -20,7 +20,7 @@ Traditional hiring platforms force recruiters to think like databases:
 
 ## The AI-Powered Solution
 
-With Cortex, recruiters can search naturally:
+With HydraDB, recruiters can search naturally:
 
 - **“Find me someone who has 5+ years of experience in machine learning and has worked at Apple before”**
 - **“I need a senior frontend developer who has experience scaling React applications at a startup”**
@@ -33,7 +33,7 @@ With Cortex, recruiters can search naturally:
 graph TD
     A["Recruiter Interface<br/>• Natural Language Search<br/>• AI Chat Assistant<br/>• Candidate Profiles"] 
     B["AI Search Engine<br/>• Query Understanding<br/>• Candidate Matching<br/>• Ranking & Scoring"]
-    C["Cortex APIs<br/>• QnA Engine<br/>• AI Memories<br/>• Metadata Search"]
+    C["HydraDB APIs<br/>• QnA Engine<br/>• AI Memories<br/>• Metadata Search"]
     
     D["Candidate Data Sources<br/>• LinkedIn profiles<br/>• Resumes/CVs<br/>• GitHub profiles<br/>• Portfolio sites"]
     E["Structured Metadata<br/>• Experience years<br/>• Skills & technologies<br/>• Company history<br/>• Education & certifications"]
@@ -58,10 +58,10 @@ The key to powerful AI search is structuring candidate data correctly. Here's ho
 
 ```javascript
 const candidateProfile = {
-  // Required fields for Cortex
+  // Required fields for HydraDB
   id: 'candidate_123456',
   title: 'Senior Machine Learning Engineer - John Smith',
-  type: 'candidate_profile', // Required by Cortex
+  type: 'candidate_profile', // Required by HydraDB
   timestamp: '2024-01-15T10:30:00Z', // Profile last updated
   
   // Main content for AI search
@@ -319,7 +319,7 @@ const queryPatterns = {
 ```
 
 
-### Implementing Cortex Search for Hiring
+### Implementing HydraDB Search for Hiring
 
 
 ```javascript
@@ -327,7 +327,7 @@ class AIRecruitingSearch {
   constructor(apiKey, tenantId) {
     this.apiKey = apiKey;
     this.tenantId = tenantId;
-    this.baseUrl = 'https://api.usecortex.ai';
+    this.baseUrl = 'https://api.hydradb.com';
   }
 
   async findCandidates(query, recruiterContext = {}) {
@@ -505,7 +505,7 @@ const recruiterMemoryProfile = {
 ```javascript
 class PersonalizedRecruitingSearch extends AIRecruitingSearch {
   async searchWithPersonalization(query, recruiterId, jobContext = {}) {
-    // AI memories are automatically managed by Cortex when we provide user_name
+    // AI memories are automatically managed by HydraDB when we provide user_name
     const personalizedContext = {
       sessionId: await this.getRecruiterSessionId(recruiterId),
       recruiterId: recruiterId, // Enables automatic AI memory management
@@ -519,7 +519,7 @@ class PersonalizedRecruitingSearch extends AIRecruitingSearch {
   }
 
   async addPersonalizedInsights(results, recruiterId) {
-    // Get recruiter's AI memory context (managed automatically by Cortex)
+    // Get recruiter's AI memory context (managed automatically by HydraDB)
     const recruiterProfile = await this.getRecruiterProfile(recruiterId);
     
     const personalizedResults = {
@@ -633,7 +633,7 @@ AI Memory Insights:
 
 ### Complex Query Understanding
 
-Cortex excels at understanding complex, multi-faceted queries:
+HydraDB excels at understanding complex, multi-faceted queries:
 
 #### Multi-Criteria Searches
 
@@ -1054,7 +1054,7 @@ class AIInterviewPrep {
 
 ```javascript
 const recommendedCandidateFields = {
-  // Core identification (Required by Cortex)
+  // Core identification (Required by HydraDB)
   id: "unique_candidate_identifier",
   title: "Descriptive candidate title with name and role",
   type: "candidate_profile", // Required
@@ -1225,7 +1225,7 @@ const hiringMetrics = {
 - **Search accuracy**: 35% of results relevant
 - **Offer acceptance**: 45%
 
-#### After AI Search (Cortex-Powered)
+#### After AI Search (HydraDB-Powered)
 
 - **Time per hire**: 3-4 weeks (-50%)
 - **Recruiter efficiency**: 12 relevant candidates per day (+300%)
@@ -1234,7 +1234,7 @@ const hiringMetrics = {
 
 ## Conclusion
 
-Building an AI-powered hiring platform with Cortex transforms recruiting from a manual, keyword-based process into an intelligent, conversational experience. By leveraging natural language search, rich metadata, and AI memories, recruiters can:
+Building an AI-powered hiring platform with HydraDB transforms recruiting from a manual, keyword-based process into an intelligent, conversational experience. By leveraging natural language search, rich metadata, and AI memories, recruiters can:
 
 - **Find better candidates faster**: AI understands intent beyond keywords
 - **Improve matching accuracy**: Semantic search finds relevant candidates traditional systems miss

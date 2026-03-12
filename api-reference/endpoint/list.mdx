@@ -14,7 +14,7 @@ All responses are **paginated**. Control the page with `page` and `page_size` (m
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -57,7 +57,7 @@ All responses are **paginated**. Control the page with `page` and `page_size` (m
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -79,7 +79,7 @@ Use the optional `filters` object to narrow results by `tenant_metadata`, `docum
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -107,7 +107,7 @@ Pass `include_fields` to return only the specified fields per source (plus `id`,
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -129,7 +129,7 @@ Pass `source_ids` (max 100) to retrieve a specific set of sources. Pagination an
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -149,7 +149,7 @@ Filters and `include_fields` are independent — filtering operates on the full 
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/list/data' \
+    'https://api.hydradb.com/list/data' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{

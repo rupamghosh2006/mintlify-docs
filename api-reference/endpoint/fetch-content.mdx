@@ -10,7 +10,7 @@ openapi: "POST /fetch/content"
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/fetch/content' \
+    'https://api.hydradb.com/fetch/content' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -26,7 +26,7 @@ openapi: "POST /fetch/content"
   <Tab title="TypeScript">
     ```ts
     const content = await client.fetch.content({
-      id: "CortexDoc1234",
+      id: "HydraDoc1234",
       file_type: "pdf",
       tenant_id: "tenant_1234",
       return_content: true,
@@ -38,7 +38,7 @@ openapi: "POST /fetch/content"
     ```python
     # Async usage is similar, just use async_client and await
     content = client.fetch.content(
-        id="CortexDoc1234",
+        id="HydraDoc1234",
         file_type="pdf",
         tenant_id="tenant_1234",
         return_content=True,

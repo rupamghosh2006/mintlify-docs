@@ -1,6 +1,6 @@
 ---
 title: "User Memory"
-description: "Add memories to Cortex that can be used by your agents for learning about your users. This API allows you to ingest memories in various formats including text, markdown, and user-assistant pairs."
+description: "Add memories to HydraDB that can be used by your agents for learning about your users. This API allows you to ingest memories in various formats including text, markdown, and user-assistant pairs."
 openapi: "POST /memories/add_memory"
 ---
 
@@ -11,7 +11,7 @@ openapi: "POST /memories/add_memory"
     ```bash expandable
     # Simple text memory (no inference)
     curl --request POST \
-      --url https://api.usecortex.ai/memories/add_memory \
+      --url https://api.hydradb.com/memories/add_memory \
       --header 'Authorization: Bearer <token>' \
       --header 'Content-Type: application/json' \
       --data '{
@@ -28,7 +28,7 @@ openapi: "POST /memories/add_memory"
     
     # Text with inference enabled
     curl --request POST \
-      --url https://api.usecortex.ai/memories/add_memory \
+      --url https://api.hydradb.com/memories/add_memory \
       --header 'Authorization: Bearer <token>' \
       --header 'Content-Type: application/json' \
       --data '{
@@ -45,7 +45,7 @@ openapi: "POST /memories/add_memory"
     
     # Markdown content
     curl --request POST \
-      --url https://api.usecortex.ai/memories/add_memory \
+      --url https://api.hydradb.com/memories/add_memory \
       --header 'Authorization: Bearer <token>' \
       --header 'Content-Type: application/json' \
       --data '{
@@ -62,7 +62,7 @@ openapi: "POST /memories/add_memory"
     
     # User-assistant conversation pairs
     curl --request POST \
-      --url https://api.usecortex.ai/memories/add_memory \
+      --url https://api.hydradb.com/memories/add_memory \
       --header 'Authorization: Bearer <token>' \
       --header 'Content-Type: application/json' \
       --data '{
@@ -81,7 +81,7 @@ openapi: "POST /memories/add_memory"
     
     # Batch upload - multiple items with mixed settings
     curl --request POST \
-      --url https://api.usecortex.ai/memories/add_memory \
+      --url https://api.hydradb.com/memories/add_memory \
       --header 'Authorization: Bearer <token>' \
       --header 'Content-Type: application/json' \
       --data '{
@@ -160,9 +160,9 @@ openapi: "POST /memories/add_memory"
   </Tab>
   <Tab title="Python (Sync)">
     ```python expandable
-    from cortex import CortexClient
+    from hydradb import HydraDBClient
     
-    client = CortexClient(api_key="your_api_key")
+    client = HydraDBClient(api_key="your_api_key")
     
     # Simple text memory
     result = client.user_memory.add(
@@ -252,7 +252,7 @@ The API supports three types of content input:
 
 ### `infer` (boolean)
 
-Controls whether Cortex extracts insights, likes, dislikes, preferences, and outcomes from the content. If it nothing is specified, default behaviour is `true`
+Controls whether HydraDB extracts insights, likes, dislikes, preferences, and outcomes from the content. If it nothing is specified, default behaviour is `true`
 
 | Value   | Behavior                                                              |
 | ------- | --------------------------------------------------------------------- |
@@ -285,7 +285,7 @@ Overwriting permanently removes and replaces existing memory for that identifier
 
 ### `id` (optional)
 
-Provide your own unique identifier, or let Cortex auto-generate one.
+Provide your own unique identifier, or let HydraDB auto-generate one.
 
 ### `expiry_time` (optional)
 
@@ -333,7 +333,7 @@ Each item in the `memories` array can have the following fields:
 ```bash
 # Check status via verify_processing
 curl -X POST \
-  'https://api.usecortex.ai/ingestion/verify_processing?file_ids=<file_id>&tenant_id=<tenant_id>' \
+  'https://api.hydradb.com/ingestion/verify_processing?file_ids=<file_id>&tenant_id=<tenant_id>' \
   -H 'Authorization: Bearer <token>'
 ```
 

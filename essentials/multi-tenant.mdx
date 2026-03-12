@@ -3,14 +3,14 @@ title: "Multi-Tenant Support"
 description: "Create completely isolated workspaces called tenants for secure, scalable B2B platforms that serve many organizations without cross-contamination of data."
 ---
 
-Cortex provides a robust multi-tenant architecture with hierarchical tenant support, enabling you to build secure, scalable B2B platforms. Understanding the difference between `tenant_id` and `sub_tenant_id` is crucial for implementing proper data isolation and access control.
+HydraDB provides a robust multi-tenant architecture with hierarchical tenant support, enabling you to build secure, scalable B2B platforms. Understanding the difference between `tenant_id` and `sub_tenant_id` is crucial for implementing proper data isolation and access control.
 
 ## Understanding Tenant Hierarchy
 
 ### Tenant ID (`tenant_id`) - Your Organization
 The **tenant_id** is like your company's main identifier. It represents the primary organizational unit - typically your main enterprise client or organization. This is the top-level identifier that provides the broadest scope of data isolation.
 
-**Think of it as**: The company name or organization ID that completely separates your data from all other organizations using Cortex.
+**Think of it as**: The company name or organization ID that completely separates your data from all other organizations using HydraDB.
 
 ### Sub-Tenant ID (`sub_tenant_id`) - Your Department/Team
 The **sub_tenant_id** represents a subdivision within a tenant - such as departments, teams, or individual customers within an enterprise. This enables hierarchical data organization and more granular access control.
@@ -18,7 +18,7 @@ The **sub_tenant_id** represents a subdivision within a tenant - such as departm
 **Think of it as**: The department or team name within your company (like "Engineering", "Sales", or "HR").
 
 ### Default Sub-Tenant Behavior
-**Important**: When you create a tenant, Cortex automatically creates a **DEFAULT sub-tenant** that acts as a global space for that tenant. 
+**Important**: When you create a tenant, HydraDB automatically creates a **DEFAULT sub-tenant** that acts as a global space for that tenant. 
 
 - If you don't specify a `sub_tenant_id` when using any API, your data will be stored in this default sub-tenant
 - This means if you upload documents with just a `tenant_id` and leave `sub_tenant_id` empty, they'll go to the default sub-tenant
@@ -26,11 +26,11 @@ The **sub_tenant_id** represents a subdivision within a tenant - such as departm
 
 ## Creating Additional Sub-Tenants
 
-**No Explicit API Required**: Cortex doesn't require a separate API call to create sub-tenants. Sub-tenants are created automatically when you first use a new `sub_tenant_id` that doesn't exist yet.
+**No Explicit API Required**: HydraDB doesn't require a separate API call to create sub-tenants. Sub-tenants are created automatically when you first use a new `sub_tenant_id` that doesn't exist yet.
 
 ### How Sub-Tenant Creation Works
 
-1. **Automatic Creation**: When you upload a document, text, or any content with a `sub_tenant_id` that doesn't exist, Cortex automatically creates that sub-tenant
+1. **Automatic Creation**: When you upload a document, text, or any content with a `sub_tenant_id` that doesn't exist, HydraDB automatically creates that sub-tenant
 2. **First Upload Triggers Creation**: The first API call with a new `sub_tenant_id` will create the sub-tenant and then process your content
 3. **Immediate Availability**: Once created, the sub-tenant is immediately available for all subsequent operations
 
@@ -48,7 +48,7 @@ POST /upload/upload_document?tenant_id=acme_corp&sub_tenant_id=engineering_team_
 ```
 
 
-If `engineering_team_alpha` doesn't exist as a sub-tenant under `acme_corp`, Cortex will:
+If `engineering_team_alpha` doesn't exist as a sub-tenant under `acme_corp`, HydraDB will:
 1. ✅ Create the new sub-tenant `engineering_team_alpha`
 2. ✅ Upload and process the document
 3. ✅ Make the sub-tenant available for future operations
@@ -136,7 +136,7 @@ sub_tenant_id: "temp"                 // Not descriptive
 ## Multi-Tenant Architecture
 
 **What it is:**  
-Cortex's multi-tenant system creates completely isolated workspaces at both the tenant and sub-tenant levels. All documents, search results, embeddings, and AI memories are isolated per tenant/sub-tenant combination, ensuring zero cross-contamination of data.
+HydraDB's multi-tenant system creates completely isolated workspaces at both the tenant and sub-tenant levels. All documents, search results, embeddings, and AI memories are isolated per tenant/sub-tenant combination, ensuring zero cross-contamination of data.
 
 **Key Benefits:**
 - **Complete Data Isolation**: Zero cross-contamination between tenants and sub-tenants

@@ -3,7 +3,7 @@ title: "Core Concepts"
 description: "The mental model for building AI that remembers"
 ---
 
-Cortex gives your AI three types of memory — the same way humans remember. Once you understand this model, everything else clicks.
+HydraDB gives your AI three types of memory — the same way humans remember. Once you understand this model, everything else clicks.
 
 ## The Three Types of Memory
 
@@ -49,13 +49,13 @@ User Memory captures everything that makes a user unique: their preferences, com
 
 ```typescript
 // Store a user memory
-await cortex.userMemory.store({
+await hydradb.userMemory.store({
   userId: "sarah_123",
   memory: "Prefers concise responses with bullet points. Dislikes jargon."
 });
 
 // Memories also extract automatically from conversations
-await cortex.userMemory.extractFromConversation({
+await hydradb.userMemory.extractFromConversation({
   userId: "sarah_123",
   messages: conversationHistory
 });
@@ -76,13 +76,13 @@ Knowledge Memory is your AI's factual foundation — company policies, product d
 
 ```typescript
 // Ingest a document
-await cortex.knowledgeMemory.ingest({
+await hydradb.knowledgeMemory.ingest({
   file: policyDocument,
   filename: "refund-policy.pdf"
 });
 
 // Connect an app
-await cortex.knowledgeMemory.connectSource({
+await hydradb.knowledgeMemory.connectSource({
   source: "notion",
   workspaceId: "acme-corp"
 });
@@ -106,13 +106,13 @@ Hive Memory is collective intelligence — learnings, corrections, and instituti
 
 ```typescript
 // Store a hive memory
-await cortex.hiveMemory.store({
+await hydradb.hiveMemory.store({
   memory: "When users ask about cancellation, always offer a 30-day extension first",
   category: "support_playbook"
 });
 
 // All agents can now recall this
-const playbook = await cortex.hiveMemory.recall({
+const playbook = await hydradb.hiveMemory.recall({
   query: "handling cancellation requests"
 });
 ```
@@ -150,13 +150,13 @@ Memory Space: "globex-inc"
 
 ```typescript
 // Acme Corp's data is completely isolated
-await cortex.knowledgeMemory.ingest({
+await hydradb.knowledgeMemory.ingest({
   memorySpaceId: "acme-corp",
   file: acmePolicy
 });
 
 // Globex can never see Acme's data
-await cortex.knowledgeMemory.ingest({
+await hydradb.knowledgeMemory.ingest({
   memorySpaceId: "globex-inc",
   file: globexPolicy
 });
@@ -166,7 +166,7 @@ await cortex.knowledgeMemory.ingest({
 
 ```typescript
 // All users share knowledge, but have personal memories
-await cortex.userMemory.store({
+await hydradb.userMemory.store({
   memorySpaceId: "my-app",
   userId: "user_123",  // Personal to this user
   memory: "Prefers dark mode and metric units"
@@ -179,10 +179,10 @@ await cortex.userMemory.store({
 
 **How your agents retrieve the right context.**
 
-Recall is how you pull relevant memories at query time. Cortex searches across all memory types and returns what's most relevant.
+Recall is how you pull relevant memories at query time. HydraDB searches across all memory types and returns what's most relevant.
 
 ```typescript
-const context = await cortex.memory.recall({
+const context = await hydradb.memory.recall({
   memorySpaceId: "acme-corp",
   userId: "sarah_123",
   query: "What's our refund policy?",
@@ -213,7 +213,7 @@ Tag any memory with key-value metadata for precise filtering at recall time.
 
 ```typescript
 // Store with metadata
-await cortex.knowledgeMemory.ingest({
+await hydradb.knowledgeMemory.ingest({
   file: hrPolicy,
   metadata: {
     department: "hr",
@@ -223,7 +223,7 @@ await cortex.knowledgeMemory.ingest({
 });
 
 // Filter at recall time
-const results = await cortex.memory.recall({
+const results = await hydradb.memory.recall({
   query: "vacation policy",
   filter: {
     department: "hr",

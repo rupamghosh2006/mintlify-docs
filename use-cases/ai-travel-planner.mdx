@@ -1,13 +1,13 @@
 ---
 title: "Building an AI Travel Planner"
-description: "Learn how to build an intelligent travel planning platform that understands natural language queries and provides personalized recommendations using Cortex's AI search and memory capabilities."
+description: "Learn how to build an intelligent travel planning platform that understands natural language queries and provides personalized recommendations using HydraDB's AI search and memory capabilities."
 ---
 
 > **Status**: This guide is in progress.
 
-This guide demonstrates how to build a revolutionary AI-powered travel planning platform that transforms how travelers discover, plan, and book their trips. Instead of traditional keyword searches and manual browsing, your platform will understand natural language queries and provide intelligent, personalized travel recommendations using Cortex's advanced AI capabilities.
+This guide demonstrates how to build a revolutionary AI-powered travel planning platform that transforms how travelers discover, plan, and book their trips. Instead of traditional keyword searches and manual browsing, your platform will understand natural language queries and provide intelligent, personalized travel recommendations using HydraDB's advanced AI capabilities.
 
-> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own travel planning application with Cortex APIs. Follow the [actual API documentation](https://docs.usecortex.ai/api-reference/introduction) to adapt these examples to your specific use case, technology stack, and requirements.
+> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own travel planning application with HydraDB APIs. Follow the [actual API documentation](https://docs.hydradb.com/api-reference/introduction) to adapt these examples to your specific use case, technology stack, and requirements.
 
 ## The Problem with Traditional Travel Planning
 
@@ -21,7 +21,7 @@ Traditional travel platforms force users to think like search engines:
 
 ## The AI-Powered Solution
 
-With Cortex, travelers can plan naturally and get personalized recommendations:
+With HydraDB, travelers can plan naturally and get personalized recommendations:
 
 - **“Plan a 5-day romantic trip to Italy for my anniversary in September with a budget of \$3000”**
 - **“Find me a family-friendly resort in Bali with a kids club and water sports activities”**
@@ -35,7 +35,7 @@ With Cortex, travelers can plan naturally and get personalized recommendations:
 graph TD
     A["Travel Planning Interface<br/>• Natural Language Search<br/>• AI Chat Assistant<br/>• Personalized Recommendations"] 
     B["AI Travel Engine<br/>• Query Understanding<br/>• Preference Matching<br/>• Itinerary Generation"]
-    C["Cortex APIs<br/>• QnA Engine<br/>• AI Memories<br/>• Multi-Step Reasoning"]
+    C["HydraDB APIs<br/>• QnA Engine<br/>• AI Memories<br/>• Multi-Step Reasoning"]
     
     D["Travel Data Sources<br/>• Hotel databases<br/>• Flight APIs<br/>• Restaurant reviews<br/>• Activity listings<br/>• Travel guides"]
     E["Structured Travel Data<br/>• Pricing information<br/>• Availability calendars<br/>• Location metadata<br/>• Amenity details"]
@@ -53,7 +53,7 @@ graph TD
 
 ### 1.1 Hotel and Accommodation Data
 
-Start by uploading comprehensive hotel and accommodation data using Cortex's batch upload capabilities:
+Start by uploading comprehensive hotel and accommodation data using HydraDB's batch upload capabilities:
 
 
 ```javascript
@@ -82,7 +82,7 @@ const uploadHotelData = async (hotels) => {
     }
   }));
 
-  await cortex.uploadBatch(hotelSources);
+  await hydradb.uploadBatch(hotelSources);
 };
 ```
 
@@ -118,7 +118,7 @@ const uploadFlightData = async (flights) => {
     }
   }));
 
-  await cortex.uploadBatch(flightSources);
+  await hydradb.uploadBatch(flightSources);
 };
 ```
 
@@ -154,7 +154,7 @@ const uploadRestaurantData = async (restaurants) => {
     }
   }));
 
-  await cortex.uploadBatch(restaurantSources);
+  await hydradb.uploadBatch(restaurantSources);
 };
 ```
 
@@ -190,7 +190,7 @@ const uploadActivityData = async (activities) => {
     }
   }));
 
-  await cortex.uploadBatch(activitySources);
+  await hydradb.uploadBatch(activitySources);
 };
 ```
 
@@ -204,13 +204,13 @@ Create a travel query handler that understands complex travel requests:
 
 ```javascript
 class TravelAssistant {
-  constructor(cortex) {
-    this.cortex = cortex;
+  constructor(hydradb) {
+    this.hydradb = hydradb;
   }
 
   async planTrip(query, userProfile) {
-    // Use Cortex's multi-step reasoning for complex travel planning
-    const response = await this.cortex.qna({
+    // Use HydraDB's multi-step reasoning for complex travel planning
+    const response = await this.hydradb.qna({
       question: query,
       session_id: userProfile.sessionId,
       tenant_id: userProfile.tenantId,
@@ -245,13 +245,13 @@ Implement AI memories to remember user preferences and past travel patterns:
 
 ```javascript
 class PersonalizationEngine {
-  constructor(cortex) {
-    this.cortex = cortex;
+  constructor(hydradb) {
+    this.hydradb = hydradb;
   }
 
   async generateUserMemory(userInteraction) {
     // Generate memories based on user's travel preferences and booking patterns
-    await this.cortex.generateUserMemory({
+    await this.hydradb.generateUserMemory({
       tenant_id: userInteraction.tenantId,
       sub_tenant_id: userInteraction.userId,
       user_message: `User searched for: ${userInteraction.query}. 
@@ -263,7 +263,7 @@ class PersonalizationEngine {
 
   async getPersonalizedRecommendations(userId, destination, userName) {
     // Retrieve user memories to provide personalized recommendations
-    const memories = await this.cortex.retrieveUserMemory({
+    const memories = await this.hydradb.retrieveUserMemory({
       query: `travel preferences for ${destination}`,
       user_name: userName,
       max_count: 10
@@ -288,7 +288,7 @@ const searchTravelExperiences = async (query, filters = {}) => {
                        ${filters.budget ? `budget ${filters.budget}` : ''}
                        ${filters.travelStyle ? `${filters.travelStyle} travel` : ''}`;
 
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: searchQuery,
     search_modes: ['semantic'],
     metadata: {
@@ -341,7 +341,7 @@ const handleTravelQuery = async (query, context) => {
 
 ```javascript
 const planFamilyVacation = async (query, userProfile) => {
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: query,
     session_id: userProfile.sessionId,
     tenant_id: userProfile.tenantId,
@@ -376,7 +376,7 @@ const planFamilyVacation = async (query, userProfile) => {
 
 ```javascript
 const planBusinessTravel = async (query, userProfile) => {
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: query,
     session_id: userProfile.sessionId,
     tenant_id: userProfile.tenantId,
@@ -401,7 +401,7 @@ const planBusinessTravel = async (query, userProfile) => {
 
 ```javascript
 const planAdventureTravel = async (query, userProfile) => {
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: query,
     session_id: userProfile.sessionId,
     tenant_id: userProfile.tenantId,
@@ -430,7 +430,7 @@ const planAdventureTravel = async (query, userProfile) => {
 const getWeatherBasedRecommendations = async (destination, travelDate) => {
   const weatherQuery = `What activities and attractions are best in ${destination} during ${travelDate} considering weather conditions?`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: weatherQuery,
     metadata: {
       destination: destination,
@@ -451,7 +451,7 @@ const getWeatherBasedRecommendations = async (destination, travelDate) => {
 const getCulturalEventRecommendations = async (destination, travelDate) => {
   const eventQuery = `What cultural events, festivals, or seasonal experiences are happening in ${destination} during ${travelDate}?`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: eventQuery,
     metadata: {
       destination: destination,
@@ -475,7 +475,7 @@ const analyzeBookingPatterns = async (userId, bookingData) => {
   const analysisQuery = `User ${userId} has booked: ${bookingData.map(b => b.description).join(', ')}. What patterns can we identify about their travel preferences?`;
   
   // Generate memory for future personalization
-  await cortex.generateUserMemory({
+  await hydradb.generateUserMemory({
     tenant_id: userId,
     sub_tenant_id: userId,
     user_message: analysisQuery,
@@ -492,7 +492,7 @@ const analyzeBookingPatterns = async (userId, bookingData) => {
 const refineSearch = async (originalQuery, userFeedback, sessionId) => {
   const refinedQuery = `${originalQuery}. User feedback: ${userFeedback}. Please adjust recommendations accordingly.`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: refinedQuery,
     session_id: sessionId,
     multi_step_reasoning: true
@@ -512,7 +512,7 @@ const refineSearch = async (originalQuery, userFeedback, sessionId) => {
 const handleMultiLanguageQuery = async (query, language, destination) => {
   const localizedQuery = `${query} (query in ${language} for ${destination})`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: localizedQuery,
     metadata: {
       language: language,
@@ -532,8 +532,8 @@ const handleMultiLanguageQuery = async (query, language, destination) => {
 const monitorPriceChanges = async (travelPlan) => {
   const priceQuery = `Monitor price changes for: ${travelPlan.description}. Alert if prices drop by 10% or more.`;
   
-  // Set up monitoring using Cortex memories
-  await cortex.addUserMemory({
+  // Set up monitoring using HydraDB memories
+  await hydradb.addUserMemory({
     tenant_id: travelPlan.userId,
     sub_tenant_id: travelPlan.userId,
     user_memory: priceQuery
@@ -588,7 +588,7 @@ const monitorPriceChanges = async (travelPlan) => {
 const checkAvailability = async (hotelId, checkIn, checkOut) => {
   const availabilityQuery = `Check availability for ${hotelId} from ${checkIn} to ${checkOut}`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: availabilityQuery,
     metadata: {
       hotel_id: hotelId,
@@ -610,7 +610,7 @@ const checkAvailability = async (hotelId, checkIn, checkOut) => {
 const getDynamicPricing = async (searchResults, userProfile) => {
   const pricingQuery = `Get current pricing for these travel options considering user's booking history and preferences`;
   
-  const response = await cortex.qna({
+  const response = await hydradb.qna({
     question: pricingQuery,
     metadata: {
       user_tier: userProfile.loyaltyTier,
@@ -626,7 +626,7 @@ const getDynamicPricing = async (searchResults, userProfile) => {
 
 ## Conclusion
 
-Building an AI travel planner with Cortex transforms the travel planning experience from a tedious research process into an intelligent, conversational journey. By leveraging Cortex's AI memories, multi-step reasoning, and semantic search capabilities, you can create a platform that truly understands traveler intent and provides personalized recommendations.
+Building an AI travel planner with HydraDB transforms the travel planning experience from a tedious research process into an intelligent, conversational journey. By leveraging HydraDB's AI memories, multi-step reasoning, and semantic search capabilities, you can create a platform that truly understands traveler intent and provides personalized recommendations.
 
 Key benefits of this approach:
 

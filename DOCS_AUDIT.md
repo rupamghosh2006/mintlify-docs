@@ -15,7 +15,7 @@ All of the following were applied:
 - **api-reference/endpoint/add-memories.mdx**: Verify Processing section updated with inline note and example curl kept for ingestion flows.
 - **essentials/context-graph.mdx**: Links updated to add-knowledge-memories, smart, keyword.
 - **api-reference/endpoint/add-knowledge-memories.mdx**: Removed broken file-formats link; clarified supported formats in copy; fixed Warning wording.
-- **continuity-assurance.mdx**: support@useCortex.com → founders@usecortex.ai.
+- **continuity-assurance.mdx**: support@useCortex.com → founders@hydradb.com.
 - **quickstart.mdx**: Step 0 (create tenant) added; paths updated to `/tenants/create`, `/ingestion/upload-document`, `/ingestion/verify-processing`; Optional Extensions use `/delete/delete-sources`, `/list/list-sources` and link to Smart/Keyword recall.
 
 ---
@@ -81,7 +81,7 @@ Quickstart documents endpoints that don’t match the current API reference or O
 | `concepts.mdx` | "Core Concepts" | Yes (Get Started) |
 | `core-concepts.mdx` | "Core Concepts" | No |
 
-So two pages share the same title and `core-concepts.mdx` is an orphan. It also uses SDK-style examples (e.g. `cortex.userMemory.store`) that may not match the current REST-first API.
+So two pages share the same title and `core-concepts.mdx` is an orphan. It also uses SDK-style examples (e.g. `hydradb.userMemory.store`) that may not match the current REST-first API.
 
 **Recommendation:** Either merge content into one “Core Concepts” page and remove the other, or rename and add `core-concepts` to nav with a distinct title (e.g. “Memory model (detailed)”).
 
@@ -108,11 +108,11 @@ So two pages share the same title and `core-concepts.mdx` is an orphan. It also 
 
 ### 6. Inconsistent contact / support emails
 
-- Index: `founders@usecortex.ai`
-- Nav: `founders@usecortex.ai` (Support)
+- Index: `founders@hydradb.com`
+- Nav: `founders@hydradb.com` (Support)
 - continuity-assurance: `support@useCortex.com` (different domain and casing)
 
-**Recommendation:** Standardize on one support/contact address and domain (e.g. `usecortex.ai`) across all docs and nav.
+**Recommendation:** Standardize on one support/contact address and domain (e.g. `hydradb.com`) across all docs and nav.
 
 ---
 

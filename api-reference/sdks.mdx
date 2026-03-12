@@ -1,6 +1,6 @@
 ---
 title: "SDKs - Node and Python"
-description: "Official TypeScript/Node.js and Python SDKs for the Cortex AI platform. Build powerful, context-aware AI applications."
+description: "Official TypeScript/Node.js and Python SDKs for the HydraDB platform. Build powerful, context-aware AI applications."
 ---
 
 ## Installation
@@ -8,12 +8,12 @@ description: "Official TypeScript/Node.js and Python SDKs for the Cortex AI plat
 <Tabs>
   <Tab title="TypeScript / Node.js">
     ```bash
-    npm i @usecortex_ai/node
+    npm i @hydradb/node
     ```
   </Tab>
   <Tab title="Python">
     ```bash
-    pip install usecortex-ai
+    pip install hydradb
     ```
   </Tab>
 </Tabs>
@@ -23,38 +23,38 @@ description: "Official TypeScript/Node.js and Python SDKs for the Cortex AI plat
 <Tabs>
   <Tab title="TypeScript">
     ```ts
-    import { CortexAIClient } from "@usecortex_ai/node";
+    import { HydraDBClient } from "@hydradb/node";
     
-    const client = new CortexAIClient({
-      token: process.env.CORTEX_API_KEY,
+    const client = new HydraDBClient({
+      token: process.env.HYDRADB_API_KEY,
     });
     ```
   </Tab>
   <Tab title="Python">
     ```python
     import os
-    from usecortex_ai import CortexAI, AsyncCortexAI
+    from hydradb import HydraDB, AsyncHydraDB
     
-    api_key = os.environ["CORTEX_API_KEY"]
+    api_key = os.environ["HYDRADB_API_KEY"]
     
     # Sync client
-    client = CortexAI(token=api_key)
+    client = HydraDB(token=api_key)
     
     # Async client (for async/await usage)
-    async_client = AsyncCortexAI(token=api_key)
+    async_client = AsyncHydraDB(token=api_key)
     ```
   </Tab>
 </Tabs>
 
 <Info>
-  **Python**: We provide both synchronous and asynchronous clients. Use `AsyncCortexAI` for async/await patterns and `CortexAI` for traditional synchronous operations.
+  **Python**: We provide both synchronous and asynchronous clients. Use `AsyncHydraDB` for async/await patterns and `HydraDB` for traditional synchronous operations.
 </Info>
 
 ## SDK Method Structure & Type Safety
 
 Our SDKs follow a predictable pattern that mirrors the API structure while providing full type safety.
 
-> **Method Mapping** : `client.<group>.<function_name>` mirrors  `api.usecortex.ai/<group>/<function_name>` 
+> **Method Mapping** : `client.<group>.<function_name>` mirrors  `api.hydradb.com/<group>/<function_name>` 
 
 The SDKs provide exact type parity with the API specification:
 
@@ -76,7 +76,7 @@ When calling the REST API directly (e.g. with curl), use snake_case. In TypeScri
 
 ### Create a Tenant
 
-You can consider a `tenant` as a single database that can have internal isolated collections called `sub-tenants`. [Know more about the concept of tenant here](https://docs.usecortex.ai/essentials/multi-tenant)
+You can consider a `tenant` as a single database that can have internal isolated collections called `sub-tenants`. [Know more about the concept of tenant here](https://docs.hydradb.com/essentials/multi-tenant)
 
 <Tabs>
   <Tab title="TypeScript">
@@ -105,7 +105,7 @@ You can consider a `tenant` as a single database that can have internal isolated
 
 ### Ingest Your Data
 
-When you index your data, you make it ready for retrieval from Cortex using natural language.
+When you index your data, you make it ready for retrieval from HydraDB using natural language.
 
 #### Knowledge Base
 
@@ -195,7 +195,7 @@ Upload documents, PDFs, and other content to your knowledge base for semantic se
   </Tab>
 </Tabs>
 
-> **For a more detailed explanation** of document upload, including supported file formats, processing pipeline, metadata handling, and advanced configuration options, refer to the [Ingest Knowledge](https://docs.usecortex.ai/api-reference/endpoint/add-knowledge-memories).
+> **For a more detailed explanation** of document upload, including supported file formats, processing pipeline, metadata handling, and advanced configuration options, refer to the [Ingest Knowledge](https://docs.hydradb.com/api-reference/endpoint/add-knowledge-memories).
 
 
 #### User Memories

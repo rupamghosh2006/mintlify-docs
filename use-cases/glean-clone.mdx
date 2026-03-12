@@ -1,13 +1,13 @@
 ---
-title: "Building Your Own Glean with Cortex"
-description: "Learn how to build a comprehensive workplace search and AI assistant platform using Cortex APIs. This guide covers data ingestion, search capabilities, and AI-powered Q&A across multiple data sources."
+title: "Building Your Own Glean with HydraDB"
+description: "Learn how to build a comprehensive workplace search and AI assistant platform using HydraDB APIs. This guide covers data ingestion, search capabilities, and AI-powered Q&A across multiple data sources."
 ---
 
 > **Status**: This guide is in progress.
 
-This guide will walk you through building an extremely powerful workplace search and AI assistant platform that rivals Glean using Cortex APIs. You'll learn how to create a unified search experience across multiple data sources with AI-powered Q&A capabilities.
+This guide will walk you through building an extremely powerful workplace search and AI assistant platform that rivals Glean using HydraDB APIs. You'll learn how to create a unified search experience across multiple data sources with AI-powered Q&A capabilities.
 
-> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own Glean-like application with Cortex APIs. You'll need to adapt these examples to your specific use case, technology stack, and requirements.
+> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own Glean-like application with HydraDB APIs. You'll need to adapt these examples to your specific use case, technology stack, and requirements.
 
 ## Overview
 
@@ -26,11 +26,11 @@ A Glean-like application typically includes these core features:
 graph TD
     A["Frontend UI<br/>• Search UI<br/>• Chat Interface<br/>• Results View"] 
     B["Backend API<br/>• Data Sync<br/>• Auth/ACL<br/>• App Connectors"]
-    C["Cortex APIs<br/>• QnA Engine<br/>• Document Index<br/>• Memory Store"]
+    C["HydraDB APIs<br/>• QnA Engine<br/>• Document Index<br/>• Memory Store"]
     
     D["Data Sources<br/>• Google apps<br/>• Slack<br/>• Notion<br/>• Jira"]
     E["App Connectors for Fetching Data<br/><br/>• Composio<br/>• Vanilla APIs<br/>• Webhooks<br/>• Scheduled Jobs"]
-    F["Retrieval Layer<br/>• Cortex Memory<br/>• User Sessions<br/>• Metadata Store"]
+    F["Retrieval Layer<br/>• HydraDB Memory<br/>• User Sessions<br/>• Metadata Store"]
     
     A <--> B
     B <--> C
@@ -160,7 +160,7 @@ Create a unified data format for all sources:
 
 
 ```javascript
-// Unified data structure for Cortex app upload
+// Unified data structure for HydraDB app upload
 const normalizedData = {
   id: 'unique_id',
   title: 'Document/Message Title',
@@ -174,7 +174,7 @@ const normalizedData = {
   collections: ['engineering', 'product', 'sales'], // Optional: for organization
   url: 'https://app.com/item/123', // Optional: source URL
   description: 'Optional description of the source', // Optional
-  cortex_metadata: {}, // Optional: custom metadata for Cortex processing
+  hydradb_metadata: {}, // Optional: custom metadata for HydraDB processing
   meta: {
     author: 'user@company.com',
     id: 'original_id',
@@ -185,19 +185,19 @@ const normalizedData = {
 ```
 
 
-### 1.3 Batch Upload to Cortex
+### 1.3 Batch Upload to HydraDB
 
-Use Cortex's batch upload capabilities for efficient data ingestion:
+Use HydraDB's batch upload capabilities for efficient data ingestion:
 
 > **Best Practice**: Always verify processing after upload using the `/upload/verify_processing` endpoint to ensure your data is properly indexed.
 
 
 ```javascript
-class CortexDataIngestion {
+class HydraDBDataIngestion {
   constructor(apiKey, tenantId) {
     this.apiKey = apiKey;
     this.tenantId = tenantId;
-    this.baseUrl = 'https://api.usecortex.ai'; // Cortex API base URL
+    this.baseUrl = 'https://api.hydradb.com'; // HydraDB API base URL
   }
 
   async uploadBatch(sources, subTenantId = null) {
@@ -284,7 +284,7 @@ class CortexDataIngestion {
 
 Create a search interface that queries across all data sources:
 
-> **Note**: Cortex supports filtering by `source_title` and `source_type` using the `metadata` parameter. Use these for targeted searches across specific data sources.
+> **Note**: HydraDB supports filtering by `source_title` and `source_type` using the `metadata` parameter. Use these for targeted searches across specific data sources.
 
 
 ```javascript
@@ -292,7 +292,7 @@ class GleanSearch {
   constructor(apiKey, tenantId) {
     this.apiKey = apiKey;
     this.tenantId = tenantId;
-    this.baseUrl = 'https://api.usecortex.ai'; // Cortex API base URL
+    this.baseUrl = 'https://api.hydradb.com'; // HydraDB API base URL
   }
 
   async search(query, options = {}) {
@@ -381,7 +381,7 @@ class AdvancedSearch extends GleanSearch {
   async searchWithFilters(query, filters = {}) {
     const { sourceTypes, sourceTitles, dateRange, authors, tags } = filters;
     
-    // Build metadata filter (Cortex only supports source_title and source_type)
+    // Build metadata filter (HydraDB only supports source_title and source_type)
     const metadata = {};
     if (sourceTypes) metadata.source_type = sourceTypes;
     if (sourceTitles) metadata.source_title = sourceTitles;
@@ -414,11 +414,11 @@ class AdvancedSearch extends GleanSearch {
 
 ### 2.3 AI Memories and User Preferences
 
-One of the most powerful features of building a Glean-like application with Cortex is leveraging **AI Memories** to create truly personalized experiences. Cortex automatically manages AI memories when you provide a `user_name` and maintain consistent `session_id` values. This allows your application to remember user preferences, past interactions, and behavioral patterns, making every search and interaction more relevant and efficient.
+One of the most powerful features of building a Glean-like application with HydraDB is leveraging **AI Memories** to create truly personalized experiences. HydraDB automatically manages AI memories when you provide a `user_name` and maintain consistent `session_id` values. This allows your application to remember user preferences, past interactions, and behavioral patterns, making every search and interaction more relevant and efficient.
 
 #### Understanding AI Memories
 
-Cortex's AI memories are dynamic, user-specific profiles that evolve over time. They capture not just what users say, but their intentions, preferences, and unique behaviors. Cortex automatically manages these memories when you provide a `user_name` and maintain consistent `session_id` values. This enables your Glean clone to:
+HydraDB's AI memories are dynamic, user-specific profiles that evolve over time. They capture not just what users say, but their intentions, preferences, and unique behaviors. HydraDB automatically manages these memories when you provide a `user_name` and maintain consistent `session_id` values. This enables your Glean clone to:
 
 - **Remember User Preferences**: Format preferences, source preferences, search patterns
 - **Understand Intent**: Learn what types of information users typically seek
@@ -442,7 +442,7 @@ class PersonalizedSearch extends AdvancedSearch {
     // Build personalized search options
     const personalizedOptions = {
       ...options,
-      userName: userId, // Cortex can automatically manage user memories
+      userName: userId, // HydraDB can automatically manage user memories
       userInstructions: this.buildPersonalizedInstructions(userProfile, query)
     };
 
@@ -474,8 +474,8 @@ class PersonalizedSearch extends AdvancedSearch {
 
   async getUserProfile(userId) {
     // Retrieve user's AI memory profile from your backend
-    // Note: Cortex automatically manages user memories via userName and sessionId
-    // This is for additional customization beyond what Cortex provides
+    // Note: HydraDB automatically manages user memories via userName and sessionId
+    // This is for additional customization beyond what HydraDB provides
     let profile = this.userProfiles.get(userId);
     
     if (!profile) {
@@ -846,7 +846,7 @@ const MemoryEnhancedSearch = ({ userId }) => {
 3. **Improved User Experience**: Every interaction feels more personal and relevant
 4. **Reduced Cognitive Load**: Users don't need to repeat their preferences or search patterns
 5. **Adaptive Learning**: The system continuously improves based on user interactions
-6. **Automatic Management**: Cortex handles memory updates automatically - no manual implementation required
+6. **Automatic Management**: HydraDB handles memory updates automatically - no manual implementation required
 
 #### Best Practices for AI Memories
 
@@ -854,7 +854,7 @@ const MemoryEnhancedSearch = ({ userId }) => {
 - **Transparency**: Show users what preferences are being used and allow them to modify them
 - **Graceful Degradation**: Ensure the system works well even without user history
 - **Consistent Session IDs**: Use persistent session IDs for users to maintain conversation context
-- **User Names**: Provide consistent user names to enable Cortex's automatic memory management
+- **User Names**: Provide consistent user names to enable HydraDB's automatic memory management
 - **Performance**: Cache user profiles to avoid repeated API calls
 
 
@@ -1192,14 +1192,14 @@ class DataPrivacyManager {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
       
-      // Delete old data from Cortex
+      // Delete old data from HydraDB
       await this.deleteOldData(tenantId, cutoffDate);
     }
   }
 
   async deleteOldData(tenantId, cutoffDate) {
-    // Use Cortex's delete-memory endpoint for data deletion
-    const response = await fetch('https://api.usecortex.ai/memory/delete', {
+    // Use HydraDB's delete-memory endpoint for data deletion
+    const response = await fetch('https://api.hydradb.com/memory/delete', {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
@@ -1402,7 +1402,7 @@ class SearchAnalytics {
 
 ### 1. Data Ingestion Best Practices
 
-- **Batch Processing**: Use Cortex's batch upload endpoints for efficiency
+- **Batch Processing**: Use HydraDB's batch upload endpoints for efficiency
 - **Batch Limits**: Limit to 20 app sources per request with 1-second intervals between batches
 - **Incremental Sync**: Only sync new/changed data to minimize API calls
 - **Error Handling**: Implement retry logic with exponential backoff
@@ -1415,7 +1415,7 @@ class SearchAnalytics {
 - **Result Ranking**: Use `search_alpha` and `recency_bias` for fine-tuning
 - **Metadata Filtering**: Use `source_title` and `source_type` for targeted searches
 - **Multi-Step Reasoning**: Enable for complex queries that require multiple steps
-- **Auto Agent Routing**: Let Cortex choose the best AI agent for each query
+- **Auto Agent Routing**: Let HydraDB choose the best AI agent for each query
 - **Caching**: Cache frequent queries and results
 - **Streaming**: Use streaming for real-time search results
 
@@ -1455,8 +1455,8 @@ class SearchAnalytics {
 
 ## Conclusion
 
-Building a Glean-like application with Cortex APIs provides you with a powerful, scalable foundation for workplace search and AI assistance. By following this guide and implementing the best practices outlined, you can create a comprehensive solution that rivals commercial offerings while maintaining full control over your data and user experience.
+Building a Glean-like application with HydraDB APIs provides you with a powerful, scalable foundation for workplace search and AI assistance. By following this guide and implementing the best practices outlined, you can create a comprehensive solution that rivals commercial offerings while maintaining full control over your data and user experience.
 
-The key to success is starting with a solid architecture, implementing proper data synchronization, and gradually adding advanced features like multi-step reasoning, conversation memory, and personalized responses. Cortex's APIs provide the AI capabilities you need, while your application handles the data ingestion, user interface, and business logic.
+The key to success is starting with a solid architecture, implementing proper data synchronization, and gradually adding advanced features like multi-step reasoning, conversation memory, and personalized responses. HydraDB's APIs provide the AI capabilities you need, while your application handles the data ingestion, user interface, and business logic.
 
 Remember to monitor performance, gather user feedback, and continuously iterate on your implementation to create the best possible user experience.

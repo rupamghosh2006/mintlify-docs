@@ -10,7 +10,7 @@ openapi: "POST /embeddings/filter_raw_embeddings"
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/embeddings/filter_raw_embeddings' \
+    'https://api.hydradb.com/embeddings/filter_raw_embeddings' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -66,7 +66,7 @@ Retrieve embedding vectors for specific chunk IDs that you previously obtained f
 ```json
 {
   "embeddings": {
-    "CortexEmbeddings123_0": [
+    "HydraEmbeddings123_0": [
       21.0,
       22.0,
       23.0,
@@ -74,7 +74,7 @@ Retrieve embedding vectors for specific chunk IDs that you previously obtained f
       25.0,
       26.0
     ],
-    "CortexEmbeddings123_1": [
+    "HydraEmbeddings123_1": [
       20.100000381469727,
       20.200000762939453,
       20.299999237060547,
@@ -82,7 +82,7 @@ Retrieve embedding vectors for specific chunk IDs that you previously obtained f
       20.5,
       20.600000381469727
     ],
-    "CortexEmbeddings456_0": [
+    "HydraEmbeddings456_0": [
       1.5,
       2.5,
       8.5,
@@ -92,7 +92,7 @@ Retrieve embedding vectors for specific chunk IDs that you previously obtained f
     ]
   },
   "not_found_chunk_ids": [
-    "CortexEmbeddings789_2"
+    "HydraEmbeddings789_2"
   ]
 }
 ```

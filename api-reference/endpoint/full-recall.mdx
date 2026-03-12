@@ -14,7 +14,7 @@ Use **full recall** when you want to search over **indexed knowledge** (document
   <Tab title="API Request">
     ```bash
     curl -X 'POST' \
-    'https://api.usecortex.ai/recall/full_recall' \
+    'https://api.hydradb.com/recall/full_recall' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -81,7 +81,7 @@ Controls the balance between semantic and keyword search:
   - Best for: Most general use cases
   - Provides optimal balance of precision and recall
 - **`"auto"`** - Intelligent auto-selection
-  - Cortex analyzes your query and chooses the optimal alpha
+  - HydraDB analyzes your query and chooses the optimal alpha
   - Best for: When you're unsure which approach to use
 
 ### Recency Bias

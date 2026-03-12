@@ -16,7 +16,7 @@ If you pass `tenant_id` as a query parameter, that ID will be used. If not provi
   <Tab title="API Request">
     ```bash expandable
     curl -X 'POST' \
-    'https://api.usecortex.ai/tenants/create' \
+    'https://api.hydradb.com/tenants/create' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Bearer <token>' \
@@ -56,16 +56,16 @@ If you pass `tenant_id` as a query parameter, that ID will be used. If not provi
 </Tabs>
 
 <Note>
-  **Important**: When a tenant is created, Cortex automatically creates a **DEFAULT sub-tenant** that acts as a global space for that tenant. Any documents ingested or API calls made with the `tenant_id` but without specifying a `sub_tenant_id` will automatically reference this default sub-tenant.
+  **Important**: When a tenant is created, HydraDB automatically creates a **DEFAULT sub-tenant** that acts as a global space for that tenant. Any documents ingested or API calls made with the `tenant_id` but without specifying a `sub_tenant_id` will automatically reference this default sub-tenant.
 </Note>
 
 ## Creating Additional Sub-Tenants
 
-**No Separate API Required**: Cortex doesn't require a separate API call to create additional sub-tenants. Sub-tenants are created automatically when you first use a new `sub_tenant_id` that doesn't exist yet.
+**No Separate API Required**: HydraDB doesn't require a separate API call to create additional sub-tenants. Sub-tenants are created automatically when you first use a new `sub_tenant_id` that doesn't exist yet.
 
 ### How Sub-Tenant Creation Works
 
-1. **Automatic Creation**: When you upload content with a `sub_tenant_id` that doesn't exist, Cortex automatically creates that sub-tenant
+1. **Automatic Creation**: When you upload content with a `sub_tenant_id` that doesn't exist, HydraDB automatically creates that sub-tenant
 2. **First Upload Triggers Creation**: The first API call with a new `sub_tenant_id` will create the sub-tenant and then process your content
 3. **Immediate Availability**: Once created, the sub-tenant is immediately available for all subsequent operations
 
@@ -126,7 +126,7 @@ The following keywords are **reserved** and cannot be used as keys in `tenant_me
 - `layout`
 - `description`
 
-These keywords are used internally by Cortex for document processing and search functionality. Using any of these reserved keywords as tenant metadata keys will result in an error during tenant creation.
+These keywords are used internally by HydraDB for document processing and search functionality. Using any of these reserved keywords as tenant metadata keys will result in an error during tenant creation.
 
 ## Metadata Schema Structure
 
@@ -139,7 +139,7 @@ Each schema object in the `tenant_metadata_schema` array should specify:
 
 ## Supported Metadata Types
 
-Cortex supports a comprehensive range of data types for metadata fields:
+HydraDB supports a comprehensive range of data types for metadata fields:
 
 ### Primitive Types
 

@@ -1,15 +1,15 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Cortex SDK API",
-    "description": "REST APIs for Cortex AI retrieval engine",
+    "title": "HydraDB API",
+    "description": "REST APIs for the HydraDB retrieval engine",
     "version": "0.0.1"
   },
   "servers": [
     {
-      "url": "https://api.usecortex.ai",
+      "url": "https://api.hydradb.com",
       "description": "Production",
-      "x-fern-server-name": "cortex-prod"
+      "x-fern-server-name": "hydradb-prod"
     }
   ],
   "paths": {
@@ -1414,8 +1414,8 @@
               "description": "Optional list of chunk IDs to delete (mutually exclusive with source_id)",
               "title": "Chunk Ids",
               "example": [
-                "CortexEmbeddings123_0",
-                "CortexEmbeddings123_1"
+                "HydraEmbeddings123_0",
+                "HydraEmbeddings123_1"
               ]
             },
             "description": "Optional list of chunk IDs to delete (mutually exclusive with source_id)"
@@ -2924,7 +2924,7 @@
             "title": "Id",
             "description": "Unique identifier for the attachment.",
             "default": "",
-            "example": "CortexDoc1234"
+            "example": "HydraDoc1234"
           },
           "url": {
             "type": "string",
@@ -3076,8 +3076,8 @@
             "title": "Chunk Ids",
             "description": "Optional list of chunk IDs to filter by (mutually exclusive with source_id)",
             "example": [
-              "CortexEmbeddings123_0",
-              "CortexEmbeddings123_1"
+              "HydraEmbeddings123_0",
+              "HydraEmbeddings123_1"
             ]
           },
           "output_fields": {
@@ -3276,7 +3276,7 @@
               }
             ],
             "title": "File Metadata",
-            "description": "JSON array of file metadata objects; length must match files when provided. Each object may include: file_id (optional), metadata, additional_metadata, and relations (forceful relations to other cortex source IDs)."
+            "description": "JSON array of file metadata objects; length must match files when provided. Each object may include: file_id (optional), metadata, additional_metadata, and relations (forceful relations to other HydraDB source IDs)."
           },
           "app_sources": {
             "anyOf": [
@@ -3645,7 +3645,7 @@
       },
       "ForcefulRelationsPayload": {
         "properties": {
-          "cortex_source_ids": {
+          "hydradb_source_ids": {
             "anyOf": [
               {
                 "items": {
@@ -3657,8 +3657,8 @@
                 "type": "null"
               }
             ],
-            "title": "Cortex Source Ids",
-            "description": "Cortex source IDs to forcefully relate to the uploaded source."
+            "title": "HydraDB Source Ids",
+            "description": "HydraDB source IDs to forcefully relate to the uploaded source."
           },
           "properties": {
             "anyOf": [
@@ -3855,8 +3855,8 @@
             "title": "Ids",
             "description": "Inserted entity IDs",
             "example": [
-              "CortexDoc1234",
-              "CortexDoc4567"
+              "HydraDoc1234",
+              "HydraDoc4567"
             ]
           },
           "success": {
@@ -4177,7 +4177,7 @@
                 "type": "null"
               }
             ],
-            "description": "Forcefully connect 2 sources based on cortex source ids or common properties."
+            "description": "Forcefully connect 2 sources based on HydraDB source IDs or common properties."
           }
         },
         "type": "object",
@@ -4402,7 +4402,7 @@
             "minLength": 1,
             "title": "Question",
             "description": "The question to answer based on indexed sources",
-            "example": "What is Cortex AI"
+            "example": "What is HydraDB"
           },
           "max_chunks": {
             "type": "integer",
@@ -5051,8 +5051,8 @@
             "title": "Ids",
             "description": "List of source IDs to delete.",
             "example": [
-              "CortexDoc1234",
-              "CortexDoc4567"
+              "HydraDoc1234",
+              "HydraDoc4567"
             ]
           }
         },
@@ -5103,7 +5103,7 @@
             "type": "string",
             "title": "Id",
             "description": "ID of the source.",
-            "example": "CortexDoc1234"
+            "example": "HydraDoc1234"
           },
           "deleted": {
             "type": "boolean",
@@ -5327,7 +5327,7 @@
             "type": "string",
             "title": "Id",
             "description": "Unique identifier for the source",
-            "example": "CortexDoc1234"
+            "example": "HydraDoc1234"
           },
           "title": {
             "type": "string",
@@ -5427,7 +5427,7 @@
             "type": "string",
             "title": "Id",
             "description": "Stable, unique identifier for the source. If omitted, one may be generated upstream.",
-            "example": "CortexDoc1234"
+            "example": "HydraDoc1234"
           },
           "tenant_id": {
             "type": "string",
@@ -5522,7 +5522,7 @@
                 "type": "null"
               }
             ],
-            "description": "Forcefully connect 2 sources based on cortex source ids or common properties."
+            "description": "Forcefully connect 2 sources based on HydraDB source IDs or common properties."
           }
         },
         "type": "object",
@@ -5900,7 +5900,7 @@
             "title": "Memory Id",
             "description": "Unique identifier for the user memory",
             "examples": [
-              "CortexUserMemory1234..."
+              "HydraUserMemory1234..."
             ],
             "example": "memory_1234"
           },

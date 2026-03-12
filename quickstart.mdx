@@ -3,9 +3,9 @@ title: "Quickstart"
 description: "Start building amazing LLM experiences in under 5 minutes"
 ---
 
-> Base URL: `https://api.usecortex.ai`
+> Base URL: `https://api.hydradb.com`
 >
-> Sign up on the platform for setting up your workspace or contact us to get your API key at [founders@usecortex.ai](mailto:founders@usecortex.ai) for a personalized onboarding
+> Sign up on the platform for setting up your workspace or contact us to get your API key at [founders@hydradb.com](mailto:founders@hydradb.com) for a personalized onboarding
 
 All endpoints require an API key sent as a Bearer token in the `Authorization` header.
 
@@ -19,7 +19,7 @@ Authorization: Bearer <your_api_key>
 
 - Node.js / Python (or any backend language)
 - Basic knowledge of HTTP requests
-- An API key from [Cortex](https://usecortex.ai/) (`Authorization: Bearer <your_api_key>`)
+- An API key from [HydraDB](https://hydradb.com/) (`Authorization: Bearer <your_api_key>`)
 - A user conversation with an LLM assistant (or use our sample content)
 
 ### Step 1: Create a tenant
@@ -31,7 +31,7 @@ POST /tenants/create
 ```
 
 ```mdx
-curl -X POST 'https://api.usecortex.ai/tenants/create' \
+curl -X POST 'https://api.hydradb.com/tenants/create' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "your_tenant_id"}'
@@ -51,7 +51,7 @@ POST /ingestion/upload_knowledge
 - `tenant_id`: your unique tenant ID
 
 ```mdx
-curl -X POST 'https://api.usecortex.ai/ingestion/upload_knowledge' \
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer <your_api_key>" \
   -F "file=@/path/to/your/document.pdf" \
   -F "tenant_id=your_tenant_id"
@@ -84,7 +84,7 @@ POST /ingestion/verify_processing?file_ids=YOUR_FILE_ID&tenant_id=your_tenant_id
 **Example (cURL):**
 
 ```mdx
-curl -X POST 'https://api.usecortex.ai/search/qna' \
+curl -X POST 'https://api.hydradb.com/search/qna' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,7 +105,7 @@ POST /recall/full_recall
 ```
 
 ```mdx
-curl -X POST 'https://api.usecortex.ai/recall/full_recall' \
+curl -X POST 'https://api.hydradb.com/recall/full_recall' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{

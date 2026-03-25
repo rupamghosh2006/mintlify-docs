@@ -40,6 +40,14 @@
             ]
           },
           {
+            "group": "Plugins",
+            "pages": [
+              "plugins/claude-code",
+              "plugins/open-claw"
+            ]
+
+          },
+          {
             "group": "Use Cases",
             "pages": [
               "use-cases/glean-clone",

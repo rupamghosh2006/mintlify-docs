@@ -34,8 +34,6 @@ Run these commands in Claude Code:
 
 These variables must be set permanently so they persist across terminal sessions.
 
-**Note**: `subTenantId` must be provided explicitly. If you want HydraDB to use its default sub-tenant, set it to an empty string ("") instead of omitting it.
-
 #### macOS/Linux (bash)
 
 
@@ -65,6 +63,12 @@ source ~/.zshrc
 [System.Environment]::SetEnvironmentVariable("HYDRADB_TENANT_ID", "your-tenant-id", "User")
 [System.Environment]::SetEnvironmentVariable("HYDRADB_SUB_TENANT_ID", "", "User")
 ```
+
+**Note**: `subTenantId` must be provided explicitly. If you want HydraDB to use its default sub-tenant, set it to an empty string ("") instead of omitting it. Sub-tenants in Hydra DB are logical separators (somewhat similar to tables in SQL DB and collections in NoSQL). Hence, you can't search across sub-tenants.
+
+Our suggestion:
+1. If you want to have project/workspace level subtenant, then configure the plugin with that `HYDRADB_SUB_TENANT_ID` for that workspace. 
+2. If you want global shared memory across sessions, then configure a global `HYDRADB_SUB_TENANT_ID`
 
 You can verify the variables are set with:
 
@@ -110,6 +114,8 @@ Once configured, the plugin works automatically in the background. It syncs work
 | `turn` | Saves each user/assistant exchange as an isolated memory |
 | `both` | Does both: isolated turns AND a rolling session transcript |
 | `off` | No automatic saves; you can still save manually with `/hydradb:save-session` |
+
+Note: By default, the HydraDB is configured to sync every conversation pair (user & assistant) that doesn't have `ignoreMarker (hydra-ignore)`. If you want to avoid it, you can keep the captureMode as `off` and use `/hydradb:save-session` or `/hydradb:remember <text>` commands
 
 ### `searchMode`: controls what is recalled at prompt time
 

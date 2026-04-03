@@ -22,8 +22,8 @@ install: ## Install dependencies
 dev: ## Start Mintlify dev server (http://localhost:3000)
 	$(PKG_RUN) mintlify dev
 
-build: ## Build the documentation site
-	$(PKG_RUN) mintlify build
+build: ## Validate the documentation build
+	$(PKG_RUN) mintlify validate
 
 clean: ## Remove node_modules and Mintlify cache
 	rm -rf node_modules/ .mintlify/

@@ -30,7 +30,7 @@ make dev         # starts local dev server at http://localhost:3000
 | `make bootstrap` | Zero-to-running setup (install deps, print next steps) |
 | `make install` | Install dependencies with pnpm |
 | `make dev` | Start Mintlify dev server (http://localhost:3000) |
-| `make build` | Build the documentation site |
+| `make build` | Validate the documentation build |
 | `make clean` | Remove `node_modules/` and `.mintlify/` cache |
 
 ## Content Structure

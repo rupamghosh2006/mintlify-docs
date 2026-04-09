@@ -1,15 +1,15 @@
 ---
-title: "Build Your Own Perplexity for Internal Knowledge"
-description: "Ingest Slack, Gmail, Confluence, GitHub, and Linear into one HydraDB tenant. Ask any question in natural language and get a cited, synthesized answer drawing from across all your company's knowledge — including 'what led to the decision to sunset Project X?' with full decision provenance."
+title: "Perplexity for Internal Knowledge"
+description: "Ingest Slack, Gmail, Confluence, GitHub, and Linear into one HydraDB tenant. Ask any question in natural language and get a cited, synthesized answer drawing from across all your company's knowledge - including 'what led to the decision to sunset Project X?' with full decision provenance."
 ---
 
 > **Cookbook 08** · Advanced · Knowledge · Developer Tools
 
-This guide walks you through building a **company-wide internal search engine** powered by HydraDB. Unlike per-tool search (Slack search for messages, Confluence search for docs), this agent queries everything simultaneously — Slack threads, email, wikis, code issues, and project management — and synthesizes a single cited answer from across all sources.
+This guide walks you through building a **company-wide internal search engine** powered by HydraDB. Unlike per-tool search (Slack search for messages, Confluence search for docs), this agent queries everything simultaneously - Slack threads, email, wikis, code issues, and project management - and synthesizes a single cited answer from across all sources.
 
 > **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email team@hydradb.com.
 
-> **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns — simple Q&A, decision provenance, and cross-source synthesis — all through `POST /recall/full_recall`.
+> **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns - simple Q&A, decision provenance, and cross-source synthesis - all through `POST /recall/full_recall`.
 
 ---
 
@@ -17,9 +17,9 @@ This guide walks you through building a **company-wide internal search engine** 
 
 Every company has knowledge scattered across a dozen tools. The answer to "why did we move from microservices to a monorepo?" is split between a Confluence RFC, a Slack thread in #architecture, a GitHub PR discussion, and an email thread between two VPs. No single tool contains the full answer. Keyword search returns one fragment. The person who knows is usually in a meeting.
 
-This cookbook builds a company-wide search engine that works like Perplexity — but over your internal knowledge. Ask any question, get a cited answer that synthesizes across Slack, email, docs, code, and project management. The answer includes provenance: *where* each piece came from and *when* it was recorded.
+This cookbook builds a company-wide search engine that works like Perplexity - but over your internal knowledge. Ask any question, get a cited answer that synthesizes across Slack, email, docs, code, and project management. The answer includes provenance: *where* each piece came from and *when* it was recorded.
 
-The critical capability that makes this possible is HydraDB's context graph. It automatically links entities across tools — "Project X" in a Slack message is connected to "Project X" in a Confluence page, the GitHub repo named `project-x`, and the Linear project tracking it. A query about Project X surfaces all of these together, ranked by relevance and recency, in a single call.
+The critical capability that makes this possible is HydraDB's context graph. It automatically links entities across tools - "Project X" in a Slack message is connected to "Project X" in a Confluence page, the GitHub repo named `project-x`, and the Linear project tracking it. A query about Project X surfaces all of these together, ranked by relevance and recency, in a single call.
 
 ---
 
@@ -41,9 +41,9 @@ graph LR
 
 ---
 
-## Step 1 — Create Tenant
+## Step 1 - Create Tenant
 
-One tenant for all company knowledge. Use `sub_tenant_id` to isolate by source type — `"slack"`, `"email"`, `"docs"`, `"github"`. All created automatically on first write, no setup required.
+One tenant for all company knowledge. Use `sub_tenant_id` to isolate by source type - `"slack"`, `"email"`, `"docs"`, `"github"`. All created automatically on first write, no setup required.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/tenants/create' \
@@ -69,9 +69,9 @@ requests.post(f"{BASE_URL}/tenants/create", headers=HEADERS, json={"tenant_id": 
 
 ---
 
-## Step 2 — Ingest Company Knowledge
+## Step 2 - Ingest Company Knowledge
 
-All connectors use the same endpoint: `POST /ingestion/upload_knowledge`. This endpoint uses **multipart form-data** — not JSON. `tenant_id` and `sub_tenant_id` are form fields alongside the file.
+All connectors use the same endpoint: `POST /ingestion/upload_knowledge`. This endpoint uses **multipart form-data** - not JSON. `tenant_id` and `sub_tenant_id` are form fields alongside the file.
 
 > **Important**: Do not set `Content-Type: application/json`. Pass only `Authorization` in headers and let your HTTP client set the multipart boundary automatically.
 
@@ -96,7 +96,7 @@ The upload response for all connectors looks like this:
 }
 ```
 
-Save `results[0].source_id` — you need it to verify indexing.
+Save `results[0].source_id` - you need it to verify indexing.
 
 ### 2.1 Slack Channels
 
@@ -117,7 +117,7 @@ slack     = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
 def ingest_slack_channel(channel_id: str, channel_name: str, days_back: int = 365):
     """
     Ingest messages + threaded replies from a Slack channel.
-    Each thread becomes one document — the full discussion as a single context unit.
+    Each thread becomes one document - the full discussion as a single context unit.
     """
     oldest  = str(datetime.now(timezone.utc).timestamp() - days_back * 86400)
     batch   = []
@@ -186,7 +186,7 @@ def _upload_batch(batch: list, sub_tenant: str) -> list:
 
 ### 2.2 Gmail / Email Threads
 
-Email threads contain decisions that never make it to Confluence. Filter to RFC, decision, and proposal threads — these carry the highest signal density.
+Email threads contain decisions that never make it to Confluence. Filter to RFC, decision, and proposal threads - these carry the highest signal density.
 
 ```python
 # connectors/gmail.py
@@ -333,7 +333,7 @@ def ingest_confluence_space(space_key: str):
 
 ### 2.4 GitHub Issues & PRs
 
-GitHub issues contain the full discussion trail around engineering decisions — requirements, objections, alternative approaches, and the final resolution. Include all comments so HydraDB can build graph links between issue discussions and Slack threads that mention the same features.
+GitHub issues contain the full discussion trail around engineering decisions - requirements, objections, alternative approaches, and the final resolution. Include all comments so HydraDB can build graph links between issue discussions and Slack threads that mention the same features.
 
 ```python
 # connectors/github.py
@@ -395,9 +395,9 @@ def ingest_github_issues(repo_name: str, state: str = "all", limit: int = 500):
 
 ---
 
-## Step 3 — Verify Indexing
+## Step 3 - Verify Indexing
 
-After uploading, poll `POST /ingestion/verify_processing` until `indexing_status` is `completed` before running any queries. HydraDB indexes asynchronously — typically 10–30 seconds per file.
+After uploading, poll `POST /ingestion/verify_processing` until `indexing_status` is `completed` before running any queries. HydraDB indexes asynchronously - typically 10–30 seconds per file.
 
 > **Note**: `verify_processing` uses **POST** with `file_ids` and `tenant_id` as **URL query parameters**. Pass an empty JSON body `{}`.
 
@@ -452,14 +452,14 @@ def wait_until_indexed(source_id: str, max_tries: int = 20, interval: int = 3) -
 
         print(f"Indexing... {status or 'queued'} (attempt {i+1}/{max_tries})")
 
-    print(f"Timeout — {source_id} may still complete in background.")
+    print(f"Timeout - {source_id} may still complete in background.")
 ```
 
 ---
 
-## Step 4 — Store User Memory Profiles
+## Step 4 - Store User Memory Profiles
 
-Each user gets a persistent memory profile. HydraDB uses it to personalize search results — an engineer gets more technical answers with PR citations, a product manager gets decision context and timelines, a new hire gets more background on why things are built the way they are.
+Each user gets a persistent memory profile. HydraDB uses it to personalize search results - an engineer gets more technical answers with PR citations, a product manager gets decision context and timelines, a new hire gets more background on why things are built the way they are.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/memories/add_memory' \
@@ -509,9 +509,9 @@ HEADERS   = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/
 def store_user_profile(user_id: str, profile_text: str) -> str:
     """
     Store a user profile for personalized search.
-    user_id:      their Slack/email handle — must be consistent across sessions.
+    user_id:      their Slack/email handle - must be consistent across sessions.
     profile_text: free-text description of their role, expertise, and preferences.
-    infer: true   — HydraDB extracts expertise signals and builds graph links.
+    infer: true   - HydraDB extracts expertise signals and builds graph links.
     Returns:      source_id of the stored memory.
     """
     resp = requests.post(
@@ -560,13 +560,13 @@ store_user_profile(
 
 ---
 
-## Step 5 — Search Interface
+## Step 5 - Search Interface
 
-Three query patterns cover every internal search use case. All use `POST /recall/full_recall` with different parameters. The routing logic is lightweight — keyword detection on the question, not ML classification.
+Three query patterns cover every internal search use case. All use `POST /recall/full_recall` with different parameters. The routing logic is lightweight - keyword detection on the question, not ML classification.
 
 > **Important**: The cookbook originally shows `/search/qna` with a `question` field for Q&A queries. This endpoint returns 404. The correct endpoint is `POST /recall/full_recall` with a `query` field. Use this for all three query patterns below.
 
-### 5.1 Simple Q&A — "What is X?" / "How does X work?"
+### 5.1 Simple Q&A - "What is X?" / "How does X work?"
 
 Use balanced `recency_bias: 0.5` for factual questions where both old and recent context matter equally. Restrict to a `sub_tenant_id` if the user is clearly asking about a specific tool.
 
@@ -615,7 +615,7 @@ def print_results(result: dict) -> None:
     for chunk in chunks:
         fname = chunk.get("document_metadata", {}) or {}
         score = chunk.get("relevancy_score", 0)
-        print(f"  [{fname.get('filename', 'memory')} — {score:.2f}]")
+        print(f"  [{fname.get('filename', 'memory')} - {score:.2f}]")
         print(f"  {chunk['chunk_content'][:200]}...")
         print()
 
@@ -628,9 +628,9 @@ result = search(
 print_results(result)
 ```
 
-### 5.2 Decision Provenance — "Why did we decide X?" / "What led to Y?"
+### 5.2 Decision Provenance - "Why did we decide X?" / "What led to Y?"
 
-For provenance questions, use `graph_context: true` and read `graph_context.chunk_relations` from the response — these are the multi-hop entity chains that trace a decision back through Slack, email, Confluence, and GitHub. Pass the chunks and relation chains to an LLM to synthesize a fully cited answer.
+For provenance questions, use `graph_context: true` and read `graph_context.chunk_relations` from the response - these are the multi-hop entity chains that trace a decision back through Slack, email, Confluence, and GitHub. Pass the chunks and relation chains to an LLM to synthesize a fully cited answer.
 
 ```python
 # search/provenance.py
@@ -712,7 +712,7 @@ def explain_decision(question: str, user_id: str) -> str:
                 "content": (
                     "You are a company historian. Answer the question using ONLY the provided sources. "
                     "Cite each source inline (e.g. [Slack #arch, 2024-03-10]). "
-                    "Show the decision trail — who said what, when, and how the decision evolved. "
+                    "Show the decision trail - who said what, when, and how the decision evolved. "
                     "Adapt depth and detail to the user profile. "
                     "If sources conflict, note the conflict. If evidence is thin, say so."
                 ),
@@ -743,7 +743,7 @@ print(answer)
 #    3. [email-thread-abc123.txt] Leadership confirmed the timeline in Q4..."
 ```
 
-### 5.3 Cross-Source Synthesis — Complex multi-part questions
+### 5.3 Cross-Source Synthesis - Complex multi-part questions
 
 For questions that span multiple topics or time periods, use `mode: "thinking"` with a lower `recency_bias` to surface both old and recent context. HydraDB decomposes the question into sub-queries automatically and ranks results across all sub-tenants.
 
@@ -774,9 +774,9 @@ def smart_search(question: str, user_id: str) -> dict:
 
 ---
 
-## Step 6 — Recall User Preferences
+## Step 6 - Recall User Preferences
 
-To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as `full_recall` — an array of `chunks`.
+To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as `full_recall` - an array of `chunks`.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
@@ -807,11 +807,11 @@ curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
 }
 ```
 
-> **Reading the response**: `recall_preferences` returns the same structure as `full_recall`. Read the profile from `chunks[0]["chunk_content"]`. `document_metadata` will be `null` for memory entries — this is expected.
+> **Reading the response**: `recall_preferences` returns the same structure as `full_recall`. Read the profile from `chunks[0]["chunk_content"]`. `document_metadata` will be `null` for memory entries - this is expected.
 
 ---
 
-## Step 7 — Interfaces
+## Step 7 - Interfaces
 
 ### Web API (Flask)
 
@@ -880,9 +880,9 @@ def handle_search_mention(event, client):
 
 ---
 
-## Step 8 — Incremental Sync
+## Step 8 - Incremental Sync
 
-Run a nightly sync to keep all sources current. HydraDB's upload is idempotent — re-uploading unchanged content with the same filename overwrites cleanly.
+Run a nightly sync to keep all sources current. HydraDB's upload is idempotent - re-uploading unchanged content with the same filename overwrites cleanly.
 
 ```python
 # sync/nightly.py
@@ -902,7 +902,7 @@ def run_sync(
     lookback_days:     int  = 1,
 ):
     """
-    Incremental sync — run nightly.
+    Incremental sync - run nightly.
     Slack/email: only content from last N days.
     Confluence:  full re-ingest (idempotent).
     GitHub:      recent issues only (use webhooks for real-time).
@@ -995,7 +995,7 @@ Body: {}
 }
 ```
 
-### Full Recall — All Sources
+### Full Recall - All Sources
 ```json
 {
   "tenant_id":     "company-knowledge",
@@ -1008,7 +1008,7 @@ Body: {}
 }
 ```
 
-### Full Recall — Scoped to One Source Type
+### Full Recall - Scoped to One Source Type
 ```json
 {
   "tenant_id":     "company-knowledge",
@@ -1033,10 +1033,10 @@ Tested across a 2-year company knowledge base: 12 Slack channels, 3 Gmail accoun
 | Decision provenance ("why did we X?") | 18% | 29% | 82% | **+183%** |
 | Cross-source synthesis | 8% | 34% | 79% | **+132%** |
 | New hire onboarding questions | 31% | 48% | 88% | **+83%** |
-| Time saved per complex question | 45 min (manual) | ~8 min | <30 sec | **−94%** |
-| P95 query latency | N/A (manual) | 220ms | <200ms | **Sub-second** |
+| Time saved per complex question | 45 min (manual) | ~8 min | &lt;30 sec | **−94%** |
+| P95 query latency | N/A (manual) | 220ms | &lt;200ms | **Sub-second** |
 
-> The 183% improvement on decision provenance reflects HydraDB's context graph. Naive RAG treats a Slack thread, a Confluence page, and a GitHub issue as three isolated vectors. HydraDB understands they are three pieces of the same decision trail — entity-linked across sources — and surfaces all three together with the relationship chain that connects them.
+> The 183% improvement on decision provenance reflects HydraDB's context graph. Naive RAG treats a Slack thread, a Confluence page, and a GitHub issue as three isolated vectors. HydraDB understands they are three pieces of the same decision trail - entity-linked across sources - and surfaces all three together with the relationship chain that connects them.
 
 > **Benchmark methodology**: Figures are based on internal HydraDB testing. See [research.hydradb.com/hydradb.pdf](https://research.hydradb.com/hydradb.pdf) for the full methodology. Results will vary by corpus size, content quality, and query distribution.
 
@@ -1059,14 +1059,14 @@ internal_search/
 ├── memory/
 │   └── profiles.py               # store and retrieve user profiles
 ├── search/
-│   ├── qa.py                     # search() — factual and general queries
-│   ├── provenance.py             # explain_decision() — why/what led to questions
-│   └── synthesis.py              # smart_search() — routing + cross-source queries
+│   ├── qa.py                     # search() - factual and general queries
+│   ├── provenance.py             # explain_decision() - why/what led to questions
+│   └── synthesis.py              # smart_search() - routing + cross-source queries
 ├── interfaces/
 │   ├── web_api.py                # Flask REST API
 │   └── slack_search.py          # Slack bot (app_mention handler)
 └── sync/
-    └── nightly.py                # incremental sync — run via cron 0 2 * * *
+    └── nightly.py                # incremental sync - run via cron 0 2 * * *
 ```
 
 ## Requirements
@@ -1089,10 +1089,10 @@ atlassian-python-api
 ## Next Steps
 
 1. Run `setup.py` to create your tenant.
-2. Start with one source — ingest a single Slack channel or Confluence space and verify indexing.
+2. Start with one source - ingest a single Slack channel or Confluence space and verify indexing.
 3. Store profiles for 2–3 users via `memory/profiles.py`.
 4. Run `python search/qa.py` with a real question to confirm results.
 5. Wire `search/synthesis.py` into `interfaces/slack_search.py` and deploy the Slack bot.
 6. Schedule `sync/nightly.py` via cron once the initial ingest is complete.
 
-The search quality improves as more sources are indexed — each new Slack channel, Confluence space, or GitHub repo adds more nodes to the context graph that HydraDB builds automatically. There is no retraining step.
+The search quality improves as more sources are indexed - each new Slack channel, Confluence space, or GitHub repo adds more nodes to the context graph that HydraDB builds automatically. There is no retraining step.

@@ -1,5 +1,5 @@
 ---
-title: "Building an AI Travel Planner"
+title: "AI Travel Planner"
 description: "Learn how to build an intelligent travel planning platform that understands natural language queries and provides personalized recommendations using HydraDB's AI search and memory capabilities."
 ---
 
@@ -53,27 +53,31 @@ graph TD
 
 ### 1.1 Hotel and Accommodation Data
 
-Start by uploading comprehensive hotel and accommodation data using HydraDB's batch upload capabilities:
+Start by uploading comprehensive hotel and accommodation data using HydraDB's knowledge upload API:
 
 
 ```javascript
-const uploadHotelData = async (hotels) => {
+import { HydraDBClient } from "@hydra_db/node";
+
+const client = new HydraDBClient({ token: process.env.HYDRADB_API_KEY });
+
+const uploadHotelData = async (hotels, tenantId, subTenantId) => {
   const hotelSources = hotels.map(hotel => ({
     id: `hotel_${hotel.id}`,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
     title: hotel.name,
-    type: "accommodation",
+    source: "accommodation",
     description: hotel.description,
     timestamp: new Date().toISOString(),
     content: {
-      text: `${hotel.name} - ${hotel.description}. Located in ${hotel.city}, ${hotel.country}. 
-             Amenities: ${hotel.amenities.join(', ')}. 
-             Average rating: ${hotel.rating}/5 from ${hotel.reviewCount} reviews. 
-             Price range: ${hotel.priceRange}. 
+      text: `${hotel.name} - ${hotel.description}. Located in ${hotel.city}, ${hotel.country}.
+             Amenities: ${hotel.amenities.join(', ')}.
+             Average rating: ${hotel.rating}/5 from ${hotel.reviewCount} reviews.
+             Price range: ${hotel.priceRange}.
              Room types: ${hotel.roomTypes.join(', ')}.`,
-      markdown: generateHotelMarkdown(hotel)
     },
-    collections: ["accommodation", hotel.city.toLowerCase(), hotel.country.toLowerCase()],
-    meta: {
+    additional_metadata: {
       location: hotel.coordinates,
       priceRange: hotel.priceRange,
       rating: hotel.rating,
@@ -82,7 +86,7 @@ const uploadHotelData = async (hotels) => {
     }
   }));
 
-  await hydradb.uploadBatch(hotelSources);
+  await client.upload.knowledge({ app_knowledge: hotelSources });
 };
 ```
 
@@ -93,22 +97,23 @@ Upload flight schedules, routes, and transportation options:
 
 
 ```javascript
-const uploadFlightData = async (flights) => {
+const uploadFlightData = async (flights, tenantId, subTenantId) => {
   const flightSources = flights.map(flight => ({
     id: `flight_${flight.id}`,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
     title: `${flight.airline} ${flight.flightNumber}`,
-    type: "transportation",
+    source: "transportation",
     description: `Flight from ${flight.origin} to ${flight.destination}`,
     timestamp: new Date().toISOString(),
     content: {
-      text: `${flight.airline} flight ${flight.flightNumber} from ${flight.origin} to ${flight.destination}. 
-             Duration: ${flight.duration}. 
-             Aircraft: ${flight.aircraft}. 
-             Departure: ${flight.departureTime}. 
+      text: `${flight.airline} flight ${flight.flightNumber} from ${flight.origin} to ${flight.destination}.
+             Duration: ${flight.duration}.
+             Aircraft: ${flight.aircraft}.
+             Departure: ${flight.departureTime}.
              Arrival: ${flight.arrivalTime}.`,
     },
-    collections: ["transportation", "flights", flight.origin, flight.destination],
-    meta: {
+    additional_metadata: {
       origin: flight.origin,
       destination: flight.destination,
       airline: flight.airline,
@@ -118,7 +123,7 @@ const uploadFlightData = async (flights) => {
     }
   }));
 
-  await hydradb.uploadBatch(flightSources);
+  await client.upload.knowledge({ app_knowledge: flightSources });
 };
 ```
 
@@ -129,23 +134,24 @@ Upload restaurant information with cuisine types and reviews:
 
 
 ```javascript
-const uploadRestaurantData = async (restaurants) => {
+const uploadRestaurantData = async (restaurants, tenantId, subTenantId) => {
   const restaurantSources = restaurants.map(restaurant => ({
     id: `restaurant_${restaurant.id}`,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
     title: restaurant.name,
-    type: "dining",
+    source: "dining",
     description: restaurant.description,
     timestamp: new Date().toISOString(),
     content: {
-      text: `${restaurant.name} - ${restaurant.description}. 
-             Cuisine: ${restaurant.cuisine}. 
-             Location: ${restaurant.address}. 
-             Price range: ${restaurant.priceRange}. 
-             Rating: ${restaurant.rating}/5. 
+      text: `${restaurant.name} - ${restaurant.description}.
+             Cuisine: ${restaurant.cuisine}.
+             Location: ${restaurant.address}.
+             Price range: ${restaurant.priceRange}.
+             Rating: ${restaurant.rating}/5.
              Specialties: ${restaurant.specialties.join(', ')}.`,
     },
-    collections: ["dining", restaurant.cuisine.toLowerCase(), restaurant.city.toLowerCase()],
-    meta: {
+    additional_metadata: {
       cuisine: restaurant.cuisine,
       priceRange: restaurant.priceRange,
       rating: restaurant.rating,
@@ -154,7 +160,7 @@ const uploadRestaurantData = async (restaurants) => {
     }
   }));
 
-  await hydradb.uploadBatch(restaurantSources);
+  await client.upload.knowledge({ app_knowledge: restaurantSources });
 };
 ```
 
@@ -165,23 +171,24 @@ Upload tourist attractions, activities, and experiences:
 
 
 ```javascript
-const uploadActivityData = async (activities) => {
+const uploadActivityData = async (activities, tenantId, subTenantId) => {
   const activitySources = activities.map(activity => ({
     id: `activity_${activity.id}`,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
     title: activity.name,
-    type: "activity",
+    source: "activity",
     description: activity.description,
     timestamp: new Date().toISOString(),
     content: {
-      text: `${activity.name} - ${activity.description}. 
-             Category: ${activity.category}. 
-             Duration: ${activity.duration}. 
-             Difficulty: ${activity.difficulty}. 
-             Best time to visit: ${activity.bestSeason}. 
+      text: `${activity.name} - ${activity.description}.
+             Category: ${activity.category}.
+             Duration: ${activity.duration}.
+             Difficulty: ${activity.difficulty}.
+             Best time to visit: ${activity.bestSeason}.
              Price: ${activity.price}.`,
     },
-    collections: ["activities", activity.category.toLowerCase(), activity.city.toLowerCase()],
-    meta: {
+    additional_metadata: {
       category: activity.category,
       duration: activity.duration,
       difficulty: activity.difficulty,
@@ -190,7 +197,7 @@ const uploadActivityData = async (activities) => {
     }
   }));
 
-  await hydradb.uploadBatch(activitySources);
+  await client.upload.knowledge({ app_knowledge: activitySources });
 };
 ```
 
@@ -204,23 +211,19 @@ Create a travel query handler that understands complex travel requests:
 
 ```javascript
 class TravelAssistant {
-  constructor(hydradb) {
-    this.hydradb = hydradb;
+  constructor(client) {
+    this.client = client;
   }
 
   async planTrip(query, userProfile) {
-    // Use HydraDB's multi-step reasoning for complex travel planning
-    const response = await this.hydradb.qna({
-      question: query,
-      session_id: userProfile.sessionId,
+    // Use HydraDB's thinking mode for complex travel planning
+    const response = await this.client.recall.fullRecall({
+      query: query,
       tenant_id: userProfile.tenantId,
-      user_name: userProfile.name,
-      multi_step_reasoning: true,
-      search_modes: ['semantic', 'hybrid'],
-      metadata: {
-        user_preferences: userProfile.preferences,
-        travel_history: userProfile.travelHistory
-      }
+      sub_tenant_id: userProfile.subTenantId,
+      mode: "thinking",
+      alpha: "auto",
+      max_results: 20
     });
 
     return this.processResponse(response);
@@ -229,9 +232,9 @@ class TravelAssistant {
   async processResponse(response) {
     // Generate structured itinerary from AI response
     return {
-      itinerary: this.extractItinerary(response.answer),
-      recommendations: this.extractRecommendations(response.sources),
-      reasoningSteps: response.reasoning_steps
+      chunks: response.chunks,
+      graphRelations: response.graph_context.chunk_relations,
+      queryPaths: response.graph_context.query_paths
     };
   }
 }
@@ -245,28 +248,32 @@ Implement AI memories to remember user preferences and past travel patterns:
 
 ```javascript
 class PersonalizationEngine {
-  constructor(hydradb) {
-    this.hydradb = hydradb;
+  constructor(client) {
+    this.client = client;
   }
 
   async generateUserMemory(userInteraction) {
     // Generate memories based on user's travel preferences and booking patterns
-    await this.hydradb.generateUserMemory({
+    await this.client.userMemory.add({
       tenant_id: userInteraction.tenantId,
       sub_tenant_id: userInteraction.userId,
-      user_message: `User searched for: ${userInteraction.query}. 
-                   They showed interest in: ${userInteraction.clickedItems.join(', ')}. 
+      memories: [{
+        text: `User searched for: ${userInteraction.query}.
+                   They showed interest in: ${userInteraction.clickedItems.join(', ')}.
                    They booked: ${userInteraction.bookedItems.join(', ')}.`,
-      user_name: userInteraction.userName
+        infer: true,
+        user_name: userInteraction.userName
+      }]
     });
   }
 
-  async getPersonalizedRecommendations(userId, destination, userName) {
+  async getPersonalizedRecommendations(tenantId, subTenantId, destination) {
     // Retrieve user memories to provide personalized recommendations
-    const memories = await this.hydradb.retrieveUserMemory({
+    const memories = await this.client.recall.recallPreferences({
+      tenant_id: tenantId,
+      sub_tenant_id: subTenantId,
       query: `travel preferences for ${destination}`,
-      user_name: userName,
-      max_count: 10
+      max_results: 10
     });
 
     return this.generateRecommendations(memories, destination);
@@ -283,20 +290,18 @@ Implement semantic search to understand complex travel desires:
 
 
 ```javascript
-const searchTravelExperiences = async (query, filters = {}) => {
-  const searchQuery = `${query} ${filters.destination ? `in ${filters.destination}` : ''} 
+const searchTravelExperiences = async (query, tenantId, subTenantId, filters = {}) => {
+  const searchQuery = `${query} ${filters.destination ? `in ${filters.destination}` : ''}
                        ${filters.budget ? `budget ${filters.budget}` : ''}
                        ${filters.travelStyle ? `${filters.travelStyle} travel` : ''}`;
 
-  const response = await hydradb.qna({
-    question: searchQuery,
-    search_modes: ['semantic'],
-    metadata: {
-      travel_type: filters.travelType,
-      destination: filters.destination,
-      budget_range: filters.budget
-    },
-    top_n: 20
+  const response = await client.recall.fullRecall({
+    query: searchQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "fast",
+    alpha: 1.0,
+    max_results: 20
   });
 
   return response;
@@ -341,27 +346,21 @@ const handleTravelQuery = async (query, context) => {
 
 ```javascript
 const planFamilyVacation = async (query, userProfile) => {
-  const response = await hydradb.qna({
-    question: query,
-    session_id: userProfile.sessionId,
+  const response = await client.recall.fullRecall({
+    query: query,
     tenant_id: userProfile.tenantId,
-    user_name: userProfile.name,
-    multi_step_reasoning: true,
-    metadata: {
-      travel_type: "family",
-      destination: "Orlando",
-      budget: "$4000",
-      duration: "7 days",
-      kids_ages: [8, 12]
-    }
+    sub_tenant_id: userProfile.subTenantId,
+    mode: "thinking",
+    max_results: 20,
+    additional_context: "Family vacation in Orlando, budget $4000, 7 days, kids aged 8 and 12"
   });
 
   // Process response to generate structured itinerary
   const itinerary = {
-    accommodation: extractHotelRecommendations(response.sources),
-    activities: extractFamilyActivities(response.sources),
-    dining: extractKidFriendlyRestaurants(response.sources),
-    transportation: extractTransportationOptions(response.sources)
+    accommodation: extractHotelRecommendations(response.chunks),
+    activities: extractFamilyActivities(response.chunks),
+    dining: extractKidFriendlyRestaurants(response.chunks),
+    transportation: extractTransportationOptions(response.chunks)
   };
 
   return itinerary;
@@ -376,17 +375,13 @@ const planFamilyVacation = async (query, userProfile) => {
 
 ```javascript
 const planBusinessTravel = async (query, userProfile) => {
-  const response = await hydradb.qna({
-    question: query,
-    session_id: userProfile.sessionId,
+  const response = await client.recall.fullRecall({
+    query: query,
     tenant_id: userProfile.tenantId,
-    user_name: userProfile.name,
-    metadata: {
-      travel_type: "business",
-      destination: "London",
-      amenities_required: ["wifi", "meeting_rooms"],
-      location_preference: "financial_district"
-    }
+    sub_tenant_id: userProfile.subTenantId,
+    mode: "fast",
+    max_results: 10,
+    additional_context: "Business travel to London, needs WiFi and meeting rooms near financial district"
   });
 
   return processBusinessTravelResponse(response);
@@ -401,19 +396,13 @@ const planBusinessTravel = async (query, userProfile) => {
 
 ```javascript
 const planAdventureTravel = async (query, userProfile) => {
-  const response = await hydradb.qna({
-    question: query,
-    session_id: userProfile.sessionId,
+  const response = await client.recall.fullRecall({
+    query: query,
     tenant_id: userProfile.tenantId,
-    user_name: userProfile.name,
-    multi_step_reasoning: true,
-    metadata: {
-      travel_type: "adventure",
-      destination: "Nepal",
-      activity_type: "trekking",
-      skill_level: "intermediate",
-      interests: ["cultural_experiences"]
-    }
+    sub_tenant_id: userProfile.subTenantId,
+    mode: "thinking",
+    max_results: 15,
+    additional_context: "Adventure travel to Nepal, trekking, intermediate level, cultural experiences"
   });
 
   return processAdventureResponse(response);
@@ -427,16 +416,15 @@ const planAdventureTravel = async (query, userProfile) => {
 
 
 ```javascript
-const getWeatherBasedRecommendations = async (destination, travelDate) => {
+const getWeatherBasedRecommendations = async (destination, travelDate, tenantId, subTenantId) => {
   const weatherQuery = `What activities and attractions are best in ${destination} during ${travelDate} considering weather conditions?`;
-  
-  const response = await hydradb.qna({
-    question: weatherQuery,
-    metadata: {
-      destination: destination,
-      travel_date: travelDate,
-      context_type: "weather"
-    }
+
+  const response = await client.recall.fullRecall({
+    query: weatherQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "fast",
+    max_results: 10
   });
 
   return response;
@@ -448,16 +436,15 @@ const getWeatherBasedRecommendations = async (destination, travelDate) => {
 
 
 ```javascript
-const getCulturalEventRecommendations = async (destination, travelDate) => {
+const getCulturalEventRecommendations = async (destination, travelDate, tenantId, subTenantId) => {
   const eventQuery = `What cultural events, festivals, or seasonal experiences are happening in ${destination} during ${travelDate}?`;
-  
-  const response = await hydradb.qna({
-    question: eventQuery,
-    metadata: {
-      destination: destination,
-      travel_date: travelDate,
-      context_type: "cultural_events"
-    }
+
+  const response = await client.recall.fullRecall({
+    query: eventQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "fast",
+    max_results: 10
   });
 
   return response;
@@ -471,15 +458,18 @@ const getCulturalEventRecommendations = async (destination, travelDate) => {
 
 
 ```javascript
-const analyzeBookingPatterns = async (userId, bookingData) => {
-  const analysisQuery = `User ${userId} has booked: ${bookingData.map(b => b.description).join(', ')}. What patterns can we identify about their travel preferences?`;
-  
+const analyzeBookingPatterns = async (tenantId, subTenantId, bookingData) => {
+  const analysisText = `User has booked: ${bookingData.map(b => b.description).join(', ')}. What patterns can we identify about their travel preferences?`;
+
   // Generate memory for future personalization
-  await hydradb.generateUserMemory({
-    tenant_id: userId,
-    sub_tenant_id: userId,
-    user_message: analysisQuery,
-    user_name: bookingData[0].userName
+  await client.userMemory.add({
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    memories: [{
+      text: analysisText,
+      infer: true,
+      user_name: bookingData[0].userName
+    }]
   });
 };
 ```
@@ -489,13 +479,15 @@ const analyzeBookingPatterns = async (userId, bookingData) => {
 
 
 ```javascript
-const refineSearch = async (originalQuery, userFeedback, sessionId) => {
+const refineSearch = async (originalQuery, userFeedback, tenantId, subTenantId) => {
   const refinedQuery = `${originalQuery}. User feedback: ${userFeedback}. Please adjust recommendations accordingly.`;
-  
-  const response = await hydradb.qna({
-    question: refinedQuery,
-    session_id: sessionId,
-    multi_step_reasoning: true
+
+  const response = await client.recall.fullRecall({
+    query: refinedQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "thinking",
+    max_results: 10
   });
 
   return response;
@@ -509,15 +501,15 @@ const refineSearch = async (originalQuery, userFeedback, sessionId) => {
 
 
 ```javascript
-const handleMultiLanguageQuery = async (query, language, destination) => {
+const handleMultiLanguageQuery = async (query, language, destination, tenantId, subTenantId) => {
   const localizedQuery = `${query} (query in ${language} for ${destination})`;
-  
-  const response = await hydradb.qna({
-    question: localizedQuery,
-    metadata: {
-      language: language,
-      destination: destination
-    }
+
+  const response = await client.recall.fullRecall({
+    query: localizedQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "fast",
+    max_results: 10
   });
 
   return response;
@@ -530,13 +522,16 @@ const handleMultiLanguageQuery = async (query, language, destination) => {
 
 ```javascript
 const monitorPriceChanges = async (travelPlan) => {
-  const priceQuery = `Monitor price changes for: ${travelPlan.description}. Alert if prices drop by 10% or more.`;
-  
+  const priceText = `Monitor price changes for: ${travelPlan.description}. Alert if prices drop by 10% or more.`;
+
   // Set up monitoring using HydraDB memories
-  await hydradb.addUserMemory({
-    tenant_id: travelPlan.userId,
+  await client.userMemory.add({
+    tenant_id: travelPlan.tenantId,
     sub_tenant_id: travelPlan.userId,
-    user_memory: priceQuery
+    memories: [{
+      text: priceText,
+      infer: true
+    }]
   });
 };
 ```
@@ -585,17 +580,15 @@ const monitorPriceChanges = async (travelPlan) => {
 
 
 ```javascript
-const checkAvailability = async (hotelId, checkIn, checkOut) => {
+const checkAvailability = async (hotelId, checkIn, checkOut, tenantId, subTenantId) => {
   const availabilityQuery = `Check availability for ${hotelId} from ${checkIn} to ${checkOut}`;
-  
-  const response = await hydradb.qna({
-    question: availabilityQuery,
-    metadata: {
-      hotel_id: hotelId,
-      check_in: checkIn,
-      check_out: checkOut,
-      query_type: "availability"
-    }
+
+  const response = await client.recall.fullRecall({
+    query: availabilityQuery,
+    tenant_id: tenantId,
+    sub_tenant_id: subTenantId,
+    mode: "fast",
+    max_results: 5
   });
 
   return response;
@@ -609,14 +602,13 @@ const checkAvailability = async (hotelId, checkIn, checkOut) => {
 ```javascript
 const getDynamicPricing = async (searchResults, userProfile) => {
   const pricingQuery = `Get current pricing for these travel options considering user's booking history and preferences`;
-  
-  const response = await hydradb.qna({
-    question: pricingQuery,
-    metadata: {
-      user_tier: userProfile.loyaltyTier,
-      booking_history: userProfile.bookingHistory,
-      search_results: searchResults
-    }
+
+  const response = await client.recall.fullRecall({
+    query: pricingQuery,
+    tenant_id: userProfile.tenantId,
+    sub_tenant_id: userProfile.subTenantId,
+    mode: "fast",
+    max_results: 10
   });
 
   return response;

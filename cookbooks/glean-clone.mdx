@@ -1,5 +1,5 @@
 ---
-title: "Building Your Own Glean with HydraDB"
+title: "Build your own Glean with HydraDB"
 description: "Learn how to build a comprehensive workplace search and AI assistant platform using HydraDB APIs. This guide covers data ingestion, search capabilities, and AI-powered Q&A across multiple data sources."
 ---
 
@@ -163,19 +163,20 @@ Create a unified data format for all sources:
 // Unified data structure for HydraDB app upload
 const normalizedData = {
   id: 'unique_id',
+  tenant_id: 'your_tenant_id',
+  sub_tenant_id: 'your_sub_tenant_id',
   title: 'Document/Message Title',
-  type: 'slack_message', // Required: gmail, slack_message, notion_page, document, etc.
-  timestamp: '2024-01-01T00:00:00Z', // Required: ISO timestamp
+  source: 'slack_message', // Source app: gmail, slack_message, notion_page, document, etc.
+  timestamp: '2024-01-01T00:00:00Z', // ISO timestamp
   content: {
     text: 'Main content text',
     html_base64: 'base64_encoded_html',
     markdown: 'markdown_content'
   },
-  collections: ['engineering', 'product', 'sales'], // Optional: for organization
   url: 'https://app.com/item/123', // Optional: source URL
   description: 'Optional description of the source', // Optional
-  hydradb_metadata: {}, // Optional: custom metadata for HydraDB processing
-  meta: {
+  metadata: {}, // Optional: tenant-level metadata
+  additional_metadata: {
     author: 'user@company.com',
     id: 'original_id',
     tags: ['project-a', 'urgent', 'meeting-notes'],
@@ -189,7 +190,7 @@ const normalizedData = {
 
 Use HydraDB's batch upload capabilities for efficient data ingestion:
 
-> **Best Practice**: Always verify processing after upload using the `/upload/verify_processing` endpoint to ensure your data is properly indexed.
+> **Best Practice**: Always verify processing after upload using the `/ingestion/verify_processing` endpoint to ensure your data is properly indexed.
 
 
 ```javascript
@@ -201,19 +202,21 @@ class HydraDBDataIngestion {
   }
 
   async uploadBatch(sources, subTenantId = null) {
-    const url = `${this.baseUrl}/upload/upload_app_sources?tenant_id=${this.tenantId}`;
-    if (subTenantId) {
-      url += `&sub_tenant_id=${subTenantId}`;
-    }
+    // Ensure each source has tenant_id and sub_tenant_id
+    const appKnowledge = sources.map(source => ({
+      ...source,
+      tenant_id: this.tenantId,
+      sub_tenant_id: subTenantId || this.tenantId
+    }));
 
-    const response = await fetch(url, {
+    const response = await fetch(`${this.baseUrl}/ingestion/upload_knowledge`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
         'accept': 'application/json'
       },
-      body: JSON.stringify(sources)
+      body: JSON.stringify({ app_knowledge: appKnowledge })
     });
 
     return response.json();
@@ -236,8 +239,8 @@ class HydraDBDataIngestion {
   }
 
   async verifyProcessing(fileId) {
-    const url = `${this.baseUrl}/ingestion/verify_processing?file_ids=${fileId}`;
-    
+    const url = `${this.baseUrl}/ingestion/verify_processing?file_ids=${fileId}&tenant_id=${this.tenantId}`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -249,21 +252,20 @@ class HydraDBDataIngestion {
     return response.json();
   }
 
-  async uploadDocuments(files, metadata = {}) {
+  async uploadDocuments(files, fileMetadata = []) {
     const formData = new FormData();
-    
+
+    formData.append('tenant_id', this.tenantId);
+
     files.forEach(file => {
       formData.append('files', file);
     });
-    
-    if (Object.keys(metadata).length > 0) {
-      formData.append('tenant_metadata', JSON.stringify(metadata.tenant_metadata));
-      formData.append('document_metadata', JSON.stringify(metadata.document_metadata));
+
+    if (fileMetadata.length > 0) {
+      formData.append('file_metadata', JSON.stringify(fileMetadata));
     }
 
-    const url = `${this.baseUrl}/upload/batch_upload?tenant_id=${this.tenantId}`;
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${this.baseUrl}/ingestion/upload_knowledge`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -297,37 +299,27 @@ class GleanSearch {
 
   async search(query, options = {}) {
     const {
-      sessionId = this.generateSessionId(),
       subTenantId = null,
-      stream = false,
-      topN = 10,
-      searchModes = ['creative'],
+      maxResults = 10,
+      mode = 'fast',
       metadata = null,
-      userName = null,
-      userInstructions = null
+      additionalContext = null
     } = options;
 
     const payload = {
-      question: query,
-      session_id: sessionId,
+      query: query,
       tenant_id: this.tenantId,
-      stream: stream,
-      top_n: topN,
-      search_modes: searchModes,
-      ai_generation: true,
-      highlight_chunks: true,
-      multi_step_reasoning: true,
-      auto_agent_routing: true,
-      search_alpha: 0.5, // Weight for semantic match (0.0 to 1.0)
+      max_results: maxResults,
+      mode: mode,
+      alpha: 0.5, // Balance semantic vs keyword search (0.0 to 1.0)
       recency_bias: 0.3  // Recency preference (0.0 to 1.0)
     };
 
     if (subTenantId) payload.sub_tenant_id = subTenantId;
     if (metadata) payload.metadata = metadata;
-    if (userName) payload.user_name = userName;
-    if (userInstructions) payload.user_instructions = userInstructions;
+    if (additionalContext) payload.additional_context = additionalContext;
 
-    const response = await fetch(`${this.baseUrl}/search/qna`, {
+    const response = await fetch(`${this.baseUrl}/recall/full_recall`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -352,14 +344,6 @@ class GleanSearch {
     });
   }
 
-  async searchByCollection(query, collection) {
-    // This would require custom implementation based on your data structure
-    // You might need to maintain a separate mapping of collections to source IDs
-  }
-
-  generateSessionId() {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
 }
 ```
 
@@ -370,10 +354,10 @@ Implement advanced search capabilities:
 
 > **Advanced Features**:
 >
-> - `multi_step_reasoning`: Automatically decomposes complex queries into steps
-> - `auto_agent_routing`: Routes queries to the best suitable AI agent
-> - `search_alpha`: Controls semantic vs keyword matching (0.0-1.0)
+> - `mode`: Use `"thinking"` for multi-query retrieval with reranking, or `"fast"` for single-query retrieval
+> - `alpha`: Controls semantic vs keyword matching (0.0-1.0, or `"auto"`)
 > - `recency_bias`: Prioritizes recent content (0.0-1.0)
+> - `additional_context`: Provide extra context to guide retrieval
 
 
 ```javascript
@@ -389,23 +373,17 @@ class AdvancedSearch extends GleanSearch {
     return this.search(query, { metadata });
   }
 
-  async searchWithContext(query, contextSources = []) {
-    // Use context_list parameter to focus search on specific sources
+  async searchWithContext(query, additionalContext = '') {
+    // Use additional_context parameter to guide retrieval
     return this.search(query, {
-      context_list: contextSources
+      additionalContext: additionalContext
     });
   }
 
   async conversationalSearch(query, conversationHistory = []) {
-    // Implement conversation memory using session_id
-    const sessionId = this.getOrCreateSessionId();
-    
-    // Store conversation history in your backend
-    await this.storeConversationHistory(sessionId, conversationHistory);
-    
+    // Provide conversation history as additional context
     return this.search(query, {
-      sessionId,
-      userInstructions: `Previous conversation context: ${JSON.stringify(conversationHistory)}`
+      additionalContext: `Previous conversation context: ${JSON.stringify(conversationHistory)}`
     });
   }
 }
@@ -414,11 +392,11 @@ class AdvancedSearch extends GleanSearch {
 
 ### 2.3 AI Memories and User Preferences
 
-One of the most powerful features of building a Glean-like application with HydraDB is leveraging **AI Memories** to create truly personalized experiences. HydraDB automatically manages AI memories when you provide a `user_name` and maintain consistent `session_id` values. This allows your application to remember user preferences, past interactions, and behavioral patterns, making every search and interaction more relevant and efficient.
+One of the most powerful features of building a Glean-like application with HydraDB is leveraging **AI Memories** to create truly personalized experiences. HydraDB automatically manages AI memories using `sub_tenant_id` for user-level isolation. This allows your application to remember user preferences, past interactions, and behavioral patterns, making every search and interaction more relevant and efficient.
 
 #### Understanding AI Memories
 
-HydraDB's AI memories are dynamic, user-specific profiles that evolve over time. They capture not just what users say, but their intentions, preferences, and unique behaviors. HydraDB automatically manages these memories when you provide a `user_name` and maintain consistent `session_id` values. This enables your Glean clone to:
+HydraDB's AI memories are dynamic, user-specific profiles that evolve over time. They capture not just what users say, but their intentions, preferences, and unique behaviors. HydraDB automatically manages these memories using `sub_tenant_id` for user-level isolation. This enables your Glean clone to:
 
 - **Remember User Preferences**: Format preferences, source preferences, search patterns
 - **Understand Intent**: Learn what types of information users typically seek
@@ -438,17 +416,16 @@ class PersonalizedSearch extends AdvancedSearch {
   async searchWithMemory(query, userId, options = {}) {
     // Get user's AI memory profile (optional - for additional customization)
     const userProfile = await this.getUserProfile(userId);
-    
+
     // Build personalized search options
     const personalizedOptions = {
       ...options,
-      userName: userId, // HydraDB can automatically manage user memories
-      userInstructions: this.buildPersonalizedInstructions(userProfile, query)
+      additionalContext: this.buildPersonalizedInstructions(userProfile, query)
     };
 
-    // Add user's preferred search modes and parameters
-    if (userProfile.preferredSearchModes) {
-      personalizedOptions.searchModes = userProfile.preferredSearchModes;
+    // Add user's preferred mode
+    if (userProfile.preferredMode) {
+      personalizedOptions.mode = userProfile.preferredMode;
     }
 
     if (userProfile.preferredSourceTypes) {
@@ -458,13 +435,7 @@ class PersonalizedSearch extends AdvancedSearch {
       };
     }
 
-    // Use session_id to maintain conversation context
-    const sessionId = await this.getUserSessionId(userId);
-    
-    const searchResults = await this.search(query, {
-      ...personalizedOptions,
-      sessionId
-    });
+    const searchResults = await this.search(query, personalizedOptions);
 
     // Update user profile based on this interaction (optional)
     await this.updateUserProfile(userId, query, searchResults);
@@ -481,7 +452,7 @@ class PersonalizedSearch extends AdvancedSearch {
     if (!profile) {
       profile = {
         userId,
-        preferredSearchModes: ['creative'],
+        preferredMode: 'fast',
         preferredSourceTypes: [],
         frequentQueries: [],
         preferredFormats: ['bullet_points'],
@@ -527,7 +498,7 @@ class PersonalizedSearch extends AdvancedSearch {
     profile.searchHistory.push({
       query,
       timestamp: new Date().toISOString(),
-      resultCount: searchResults.sources?.length || 0
+      resultCount: searchResults.chunks?.length || 0
     });
     
     // Keep only last 50 searches
@@ -547,10 +518,10 @@ class PersonalizedSearch extends AdvancedSearch {
     }
     
     // Update favorite sources based on what user clicks/uses
-    if (searchResults.sources) {
-      searchResults.sources.forEach(source => {
-        if (!profile.favoriteSources.includes(source.type)) {
-          profile.favoriteSources.push(source.type);
+    if (searchResults.chunks) {
+      searchResults.chunks.forEach(chunk => {
+        if (chunk.source && !profile.favoriteSources.includes(chunk.source)) {
+          profile.favoriteSources.push(chunk.source);
         }
       });
       profile.favoriteSources = profile.favoriteSources.slice(0, 5);
@@ -570,18 +541,6 @@ class PersonalizedSearch extends AdvancedSearch {
     console.log(`Saving profile for user ${userId}:`, profile);
   }
 
-  async getUserSessionId(userId) {
-    // Maintain persistent session IDs for users to enable conversation memory
-    const sessionKey = `session_${userId}`;
-    let sessionId = localStorage.getItem(sessionKey);
-    
-    if (!sessionId) {
-      sessionId = this.generateSessionId();
-      localStorage.setItem(sessionKey, sessionId);
-    }
-    
-    return sessionId;
-  }
 }
 ```
 
@@ -658,7 +617,7 @@ class PreferenceLearner {
 
   learnSourcePreferences(patterns, selectedResults) {
     selectedResults.forEach(result => {
-      const sourceType = result.type;
+      const sourceType = result.source;
       if (!patterns.sourcePreferences[sourceType]) {
         patterns.sourcePreferences[sourceType] = 0;
       }
@@ -776,8 +735,8 @@ const MemoryEnhancedSearch = ({ userId }) => {
     const profile = await searchClient.getUserProfile(userId);
     
     // Mark this source type as preferred
-    if (!profile.preferredSourceTypes.includes(result.type)) {
-      profile.preferredSourceTypes.push(result.type);
+    if (result.source && !profile.preferredSourceTypes.includes(result.source)) {
+      profile.preferredSourceTypes.push(result.source);
       await searchClient.saveUserProfile(userId, profile);
     }
   };
@@ -853,8 +812,7 @@ const MemoryEnhancedSearch = ({ userId }) => {
 - **Respect Privacy**: Always give users control over their data and preferences
 - **Transparency**: Show users what preferences are being used and allow them to modify them
 - **Graceful Degradation**: Ensure the system works well even without user history
-- **Consistent Session IDs**: Use persistent session IDs for users to maintain conversation context
-- **User Names**: Provide consistent user names to enable HydraDB's automatic memory management
+- **Sub-Tenant Isolation**: Use `sub_tenant_id` to isolate user data for personalized experiences
 - **Performance**: Cache user profiles to avoid repeated API calls
 
 
@@ -931,50 +889,46 @@ const GleanSearchInterface = () => {
 
 ```javascript
 const SearchResults = ({ results }) => {
-  const { answer, sources, chunks } = results;
+  const { chunks, graph_context } = results;
 
   return (
     <div className="search-results">
-      {answer && (
-        <div className="ai-answer">
-          <h3>AI Answer</h3>
-          <div className="answer-content" dangerouslySetInnerHTML={{ __html: answer }} />
+      {chunks && chunks.length > 0 && (
+        <div className="source-results">
+          <h3>Results ({chunks.length})</h3>
+          {chunks.map((chunk, index) => (
+            <ChunkCard key={index} chunk={chunk} />
+          ))}
         </div>
       )}
 
-      {sources && sources.length > 0 && (
-        <div className="source-results">
-          <h3>Sources ({sources.length})</h3>
-          {sources.map((source, index) => (
-            <SourceCard key={index} source={source} chunks={chunks} />
-          ))}
+      {graph_context && graph_context.query_paths && (
+        <div className="graph-context">
+          <h3>Related Knowledge Graph Paths</h3>
+          <pre>{JSON.stringify(graph_context.query_paths, null, 2)}</pre>
         </div>
       )}
     </div>
   );
 };
 
-const SourceCard = ({ source, chunks }) => {
-  const sourceChunks = chunks?.filter(chunk => chunk.id === source.id) || [];
-
+const ChunkCard = ({ chunk }) => {
   return (
     <div className="source-card">
       <div className="source-header">
-        <span className="source-type">{source.type}</span>
-        <span className="source-title">{source.title}</span>
-        <span className="source-date">{formatDate(source.timestamp)}</span>
+        <span className="source-type">{chunk.source}</span>
+        <span className="source-title">{chunk.source_title}</span>
+        <span className="source-date">{formatDate(chunk.timestamp)}</span>
       </div>
-      
-      {sourceChunks.map((chunk, index) => (
-        <div key={index} className="source-chunk">
-          <p>{chunk.text}</p>
-          {chunk.bounding_box && (
-            <div className="chunk-highlight">
-              Page {source.page}, Position: {chunk.bounding_box.x}, {chunk.bounding_box.y}
-            </div>
-          )}
-        </div>
-      ))}
+
+      <div className="source-chunk">
+        <p>{chunk.chunk_content}</p>
+        {chunk.bounding_box && (
+          <div className="chunk-highlight">
+            Position: {chunk.bounding_box.x}, {chunk.bounding_box.y}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -1047,18 +1001,17 @@ class DataSyncManager {
     return {
       id: `${sourceType}_${item.id}`,
       title: item.title || item.subject || item.text?.substring(0, 100),
-      type: sourceType, // Required field
-      timestamp: item.timestamp || item.created_at || new Date().toISOString(), // Required field
+      source: sourceType,
+      timestamp: item.timestamp || item.created_at || new Date().toISOString(),
       content: {
         text: item.text || item.body || item.content,
         html_base64: item.html ? btoa(item.html) : '',
         markdown: item.markdown || ''
       },
-      collections: item.collections || [], // Move from cortex_metadata
       url: item.url,
       description: item.description,
-      cortex_metadata: {}, // Keep empty or for custom data
-      meta: {
+      metadata: {},
+      additional_metadata: {
         id: item.id,
         author: item.author || item.user,
         tags: item.tags || [],
@@ -1082,19 +1035,19 @@ app.post('/webhooks/slack', async (req, res) => {
   if (event.type === 'message') {
     const normalizedData = {
       id: `slack_${event.ts}`,
+      tenant_id: process.env.TENANT_ID,
+      sub_tenant_id: process.env.SUB_TENANT_ID,
       title: `Message in ${event.channel}`,
+      source: 'slack_message',
       content: {
         text: event.text
       },
-      metadata: {
-        source_type: 'slack_message',
+      metadata: {},
+      additional_metadata: {
         id: event.ts,
         author: event.user,
         created_at: new Date(event.ts * 1000).toISOString(),
         channel: event.channel
-      },
-      cortex_metadata: {
-        tenant_id: process.env.TENANT_ID
       }
     };
 
@@ -1197,18 +1150,18 @@ class DataPrivacyManager {
     }
   }
 
-  async deleteOldData(tenantId, cutoffDate) {
+  async deleteOldData(tenantId, memoryId, subTenantId = null) {
     // Use HydraDB's delete-memory endpoint for data deletion
-    const response = await fetch('https://api.hydradb.com/memory/delete', {
+    let url = `https://api.hydradb.com/memories/delete_memory?tenant_id=${tenantId}&memory_id=${memoryId}`;
+    if (subTenantId) {
+      url += `&sub_tenant_id=${subTenantId}`;
+    }
+
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        tenant_id: tenantId,
-        cutoff_date: cutoffDate.toISOString()
-      })
+        'Authorization': `Bearer ${API_KEY}`
+      }
     });
 
     return response.json();
@@ -1362,9 +1315,9 @@ class SearchAnalytics {
     );
 
     // Track source type usage
-    if (results && results.sources) {
-      results.sources.forEach(source => {
-        const sourceType = source.type;
+    if (results && results.chunks) {
+      results.chunks.forEach(chunk => {
+        const sourceType = chunk.source;
         this.metrics.sourceTypeUsage.set(
           sourceType,
           (this.metrics.sourceTypeUsage.get(sourceType) || 0) + 1
@@ -1406,18 +1359,16 @@ class SearchAnalytics {
 - **Batch Limits**: Limit to 20 app sources per request with 1-second intervals between batches
 - **Incremental Sync**: Only sync new/changed data to minimize API calls
 - **Error Handling**: Implement retry logic with exponential backoff
-- **Processing Verification**: Always verify upload processing using `/upload/verify_processing`
+- **Processing Verification**: Always verify upload processing using `/ingestion/verify_processing`
 - **Rate Limiting**: Respect API rate limits and implement queuing
 
 ### 2. Search Optimization
 
 - **Query Preprocessing**: Clean and normalize user queries
-- **Result Ranking**: Use `search_alpha` and `recency_bias` for fine-tuning
+- **Result Ranking**: Use `alpha` and `recency_bias` for fine-tuning
 - **Metadata Filtering**: Use `source_title` and `source_type` for targeted searches
-- **Multi-Step Reasoning**: Enable for complex queries that require multiple steps
-- **Auto Agent Routing**: Let HydraDB choose the best AI agent for each query
+- **Thinking Mode**: Use `mode: "thinking"` for complex queries that benefit from multi-query retrieval with reranking
 - **Caching**: Cache frequent queries and results
-- **Streaming**: Use streaming for real-time search results
 
 ### 3. Security Considerations
 

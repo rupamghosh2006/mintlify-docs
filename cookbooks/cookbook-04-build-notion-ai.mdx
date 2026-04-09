@@ -1,13 +1,13 @@
 ---
-title: "Build Your Own Notion AI"
-description: "Ingest your entire workspace — Notion, Confluence, Slack — into HydraDB and build a conversational interface that understands relationships between documents. Answer 'why did we decide X?' using HydraDB's context graph. Every endpoint in this guide is real and copy-paste ready."
+title: "Internal IT Support Agent"
+description: "Ingest your entire workspace - Notion, Confluence, Slack - into HydraDB and build a conversational interface that understands relationships between documents. Answer 'why did we decide X?' using HydraDB's context graph. Every endpoint in this guide is real and copy-paste ready."
 ---
 
 > **Cookbook 04** · Intermediate · 38 min read · Knowledge Management
 
 Notion's built-in AI keyword-searches. It returns the document you asked about and stops. It can't tell you **why** a decision was made, who influenced it, or whether it's been superseded by something newer.
 
-HydraDB is different. It doesn't just store vectors — it builds a **living context graph**. Every memory is parsed, enriched, and connected to other memories. When your agent calls `POST /recall/full_recall`, it doesn't just get semantically similar chunks. It gets the most useful context for that exact query — weighted by recency, relevance, relationships, and historical usage patterns.
+HydraDB is different. It doesn't just store vectors - it builds a **living context graph**. Every memory is parsed, enriched, and connected to other memories. When your agent calls `POST /recall/full_recall`, it doesn't just get semantically similar chunks. It gets the most useful context for that exact query - weighted by recency, relevance, relationships, and historical usage patterns.
 
 > **All code in this cookbook is real.** Base URL is `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email [hello@hydradb.com](mailto:hello@hydradb.com).
 
@@ -17,9 +17,9 @@ HydraDB is different. It doesn't just store vectors — it builds a **living con
 
 Before writing code, understand the three primitives you'll use throughout this cookbook:
 
-- **Tenant** — your workspace. All data is isolated per tenant. Think of it as your "company" in HydraDB. Create one per application.
-- **Memory** — any unit of context: a Notion page, a Confluence doc, a Slack thread, a user preference. HydraDB automatically chunks, embeds, and connects memories into a context graph.
-- **Recall** — the retrieval call your agent makes before acting. HydraDB's recall runs a multi-stage pipeline: metadata filtering → graph traversal → semantic retrieval → personalized ranking.
+- **Tenant** - your workspace. All data is isolated per tenant. Think of it as your "company" in HydraDB. Create one per application.
+- **Memory** - any unit of context: a Notion page, a Confluence doc, a Slack thread, a user preference. HydraDB automatically chunks, embeds, and connects memories into a context graph.
+- **Recall** - the retrieval call your agent makes before acting. HydraDB's recall runs a multi-stage pipeline: metadata filtering → graph traversal → semantic retrieval → personalized ranking.
 
 **LongMemEvals recall accuracy: 90%**
 
@@ -29,7 +29,7 @@ Before writing code, understand the three primitives you'll use throughout this 
 
 | Feature | Traditional RAG | HydraDB recall |
 |---------|-----------------|----------------|
-| Search method | Vector search — nearest neighbors only | Multi-stage: intent → graph → semantic → rank |
+| Search method | Vector search - nearest neighbors only | Multi-stage: intent → graph → semantic → rank |
 | Scale | Context collapses at 10M+ documents | Petabyte scale, sub-second latency |
 | Personalization | No personalization across users | Personalized per user via `user_name` |
 | Context awareness | No relationship or decision awareness | Context graph links docs, people, decisions |
@@ -37,11 +37,11 @@ Before writing code, understand the three primitives you'll use throughout this 
 
 ---
 
-## Step 01 — Create a Tenant
+## Step 01 - Create a Tenant
 
-Every HydraDB workspace starts with a tenant. Create one for your knowledge base — it provides complete data isolation and multi-tenant support out of the box.
+Every HydraDB workspace starts with a tenant. Create one for your knowledge base - it provides complete data isolation and multi-tenant support out of the box.
 
-**Endpoint:** `POST /tenants/create` — Create your workspace
+**Endpoint:** `POST /tenants/create` - Create your workspace
 
 ### Bash
 
@@ -66,7 +66,7 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-# Create tenant — idempotent, safe to re-run
+# Create tenant - idempotent, safe to re-run
 resp = requests.post(
     f"{BASE_URL}/tenants/create",
     headers=HEADERS,
@@ -76,17 +76,17 @@ resp.raise_for_status()
 print("Tenant:", resp.json())
 ```
 
-> **Sub-tenants for teams:** Use `sub_tenant_id` to isolate data by department. Engineering, Sales, HR each get their own namespace within your tenant — no configuration needed, just pass the ID on upload.
+> **Sub-tenants for teams:** Use `sub_tenant_id` to isolate data by department. Engineering, Sales, HR each get their own namespace within your tenant - no configuration needed, just pass the ID on upload.
 
 ---
 
-## Step 02 — Upload Knowledge Memories
+## Step 02 - Upload Knowledge Memories
 
 HydraDB automatically parses, chunks, embeds, and connects your content into a context graph. You don't manage embeddings or vector indexes. You just upload.
 
 ### Notion Connector
 
-Fetch pages from Notion, format them into HydraDB's app source structure, and batch upload. HydraDB builds the context graph automatically — no edge creation needed.
+Fetch pages from Notion, format them into HydraDB's app source structure, and batch upload. HydraDB builds the context graph automatically - no edge creation needed.
 
 > **Batch limit:** Max **20 sources per request**. Wait **1 second between batches** to respect rate limits.
 
@@ -210,7 +210,7 @@ def ingest_space(space_key: str, sub_tenant_id: str = None) -> list:
 
 After uploading, always verify that HydraDB has fully processed and indexed your content before running recall queries.
 
-**Endpoint:** `POST /ingestion/verify_processing?file_ids=FILE_ID&tenant_id=TENANT` — Check indexing status
+**Endpoint:** `POST /ingestion/verify_processing?file_ids=FILE_ID&tenant_id=TENANT` - Check indexing status
 
 ```python
 def verify_processing(file_id: str, timeout: int = 120, interval: int = 3):
@@ -239,11 +239,11 @@ def verify_all(ids: list):
 
 ---
 
-## Step 03 — Add User Memories
+## Step 03 - Add User Memories
 
-Beyond documents, HydraDB stores **user memories** — preferences, habits, and patterns that personalize recall per user. Set `infer: true` to let HydraDB extract implicit signals from text. Set `infer: false` to store facts verbatim.
+Beyond documents, HydraDB stores **user memories** - preferences, habits, and patterns that personalize recall per user. Set `infer: true` to let HydraDB extract implicit signals from text. Set `infer: false` to store facts verbatim.
 
-**Endpoint:** `POST /memories/add_memory` — Add a user memory
+**Endpoint:** `POST /memories/add_memory` - Add a user memory
 
 ### Bash
 
@@ -306,15 +306,15 @@ add_user_memory(
 )
 ```
 
-After a few interactions, HydraDB builds a behavioral model per user. Alice's recall results will be ranked and formatted differently from Bob's — automatically, without any extra code.
+After a few interactions, HydraDB builds a behavioral model per user. Alice's recall results will be ranked and formatted differently from Bob's - automatically, without any extra code.
 
 ---
 
-## Step 04 — Recall Context
+## Step 04 - Recall Context
 
-This is the call your agent makes before answering any question. `POST /recall/full_recall` runs HydraDB's full multi-stage pipeline and returns ranked, contextually relevant chunks — including graph context showing relationships between entities.
+This is the call your agent makes before answering any question. `POST /recall/full_recall` runs HydraDB's full multi-stage pipeline and returns ranked, contextually relevant chunks - including graph context showing relationships between entities.
 
-**Endpoint:** `POST /recall/full_recall` — Retrieve agent context
+**Endpoint:** `POST /recall/full_recall` - Retrieve agent context
 
 ```python
 def recall_context(
@@ -326,7 +326,7 @@ def recall_context(
     graph_context: bool = True,
 ) -> dict:
     """
-    Full recall — searches knowledge base (documents).
+    Full recall - searches knowledge base (documents).
     To also retrieve user memories, call /recall/recall_preferences separately.
     sub_tenant_id: scope to a specific workspace or user namespace.
     mode: "thinking" enables personalised ranking.
@@ -352,8 +352,8 @@ def recall_context(
     resp.raise_for_status()
     return resp.json()
     # Response shape:
-    # data["chunks"]        — ranked context chunks with relevancy_score
-    # data["graph_context"] — entity paths and chunk_relations
+    # data["chunks"]        - ranked context chunks with relevancy_score
+    # data["graph_context"] - entity paths and chunk_relations
 
 
 # Example
@@ -368,11 +368,11 @@ for chunk in context["chunks"]:
 
 ---
 
-## Step 05 — Q&A Search
+## Step 05 - Q&A Search
 
 For conversational, AI-generated answers, use `/search/qna`. Key parameters: `alpha` (0–1, balance semantic vs lexical), `recency_bias` (0–1, prefer newer content), `user_name` (enables personalized recall).
 
-**Endpoint:** `POST /search/qna` — AI-generated answer with citations
+**Endpoint:** `POST /search/qna` - AI-generated answer with citations
 
 ```python
 def ask_workspace(
@@ -389,7 +389,7 @@ def ask_workspace(
     Ask a question against your knowledge base.
     Returns AI answer + source chunks with citations.
     Pass the same session_id across follow-up questions to maintain
-    conversation context — HydraDB remembers what was asked before.
+    conversation context - HydraDB remembers what was asked before.
     """
     payload = {
         "question":      question,
@@ -427,7 +427,7 @@ result = ask_workspace(
 )
 print(result.get("answer", ""))
 
-# Follow-up — same session, HydraDB remembers context
+# Follow-up - same session, HydraDB remembers context
 result2 = ask_workspace(
     "What were the tradeoffs they considered?",
     user_name="alice",
@@ -442,11 +442,11 @@ notion_result = ask_workspace(
 )
 ```
 
-> **Maintaining conversation context:** Pass the same `session_id` across follow-up questions. HydraDB uses it to maintain conversation memory — the agent remembers what was discussed earlier in the session without you re-sending it.
+> **Maintaining conversation context:** Pass the same `session_id` across follow-up questions. HydraDB uses it to maintain conversation memory - the agent remembers what was discussed earlier in the session without you re-sending it.
 
 ---
 
-## Step 06 — Slack Interface
+## Step 06 - Slack Interface
 
 Expose your knowledge base as a Slack bot. When a user mentions `@wiki`, the bot calls `/search/qna` with their Slack user ID so HydraDB personalizes the response based on their stored memory profile.
 
@@ -507,7 +507,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Tenant management
 
-**POST** `/tenants/create` — Create workspace — idempotent
+**POST** `/tenants/create` - Create workspace - idempotent
 
 ```json
 { "tenant_id": "notion-ai-workspace" }
@@ -515,7 +515,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Upload app sources (Notion, Slack, Confluence…)
 
-**POST** `/ingestion/upload_knowledge` — Max 20/call, 1s between batches
+**POST** `/ingestion/upload_knowledge` - Max 20/call, 1s between batches
 
 ```json
 [{
@@ -534,7 +534,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Upload a single file (PDF / DOCX)
 
-**POST** `/ingestion/upload_knowledge` — Single file with tenant_id as form field
+**POST** `/ingestion/upload_knowledge` - Single file with tenant_id as form field
 
 ```bash
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
@@ -545,11 +545,11 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 
 ### Verify processing
 
-**POST** `/ingestion/verify_processing?file_ids=FILE_ID&tenant_id=YOUR_TENANT` — Poll until status = "completed"
+**POST** `/ingestion/verify_processing?file_ids=FILE_ID&tenant_id=YOUR_TENANT` - Poll until status = "completed"
 
 ### Full recall
 
-**POST** `/recall/full_recall` — Searches knowledge base — returns chunks + graph_context
+**POST** `/recall/full_recall` - Searches knowledge base - returns chunks + graph_context
 
 ```json
 {
@@ -566,7 +566,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 
 ### Q&A search
 
-**POST** `/search/qna` — AI-generated answer — personalized via user_name
+**POST** `/search/qna` - AI-generated answer - personalized via user_name
 
 ```json
 {
@@ -584,7 +584,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 
 ### Add user memory
 
-**POST** `/memories/add_memory` — memories[] array wrapper — consistent SDK format
+**POST** `/memories/add_memory` - memories[] array wrapper - consistent SDK format
 
 ```json
 {
@@ -601,7 +601,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 
 ### Recall user memories
 
-**POST** `/recall/recall_preferences` — user_name key — consistent across all calls
+**POST** `/recall/recall_preferences` - user_name key - consistent across all calls
 
 ```json
 {
@@ -614,7 +614,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 
 ### Delete memory
 
-**DELETE** `/memories/delete_memory` — Remove stale or incorrect data by memory_id
+**DELETE** `/memories/delete_memory` - Remove stale or incorrect data by memory_id
 
 ---
 
@@ -627,6 +627,6 @@ HydraDB leads LongMemEvals with 90% recall accuracy. Compared to a naive RAG pip
 | Factual lookup queries | 81% recall | 90% recall | +11% |
 | "Why did we…" decision queries | 34% recall | 79% recall | +132% |
 | Stale doc surface rate | 41% of results | 7% of results | −83% |
-| P95 query latency | 220ms | <200ms | Sub-second |
+| P95 query latency | 220ms | &lt;200ms | Sub-second |
 
 > **Benchmark methodology.** Figures are based on internal HydraDB testing. For the formal benchmark paper see [research.hydradb.com/hydradb.pdf](https://research.hydradb.com/hydradb.pdf). Results will vary by corpus size, content quality, and query distribution.

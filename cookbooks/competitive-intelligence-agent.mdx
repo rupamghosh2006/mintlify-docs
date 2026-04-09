@@ -1,29 +1,29 @@
 ---
-title: "Build an AI Competitive Intelligence Agent"
+title: "AI Competitive Intelligence Agent"
 description: "Continuously ingest competitor press releases, job postings, customer reviews, and earnings transcripts into HydraDB. Answer 'What is Competitor X doing right now?' and 'How has their messaging shifted over the last 6 months?' with full temporal context. Every API call in this guide is real and verified."
 ---
 
 > **Cookbook 05** · Advanced · Sales & GTM
 
-This guide walks you through building a **competitive intelligence agent with persistent temporal memory** powered by HydraDB. Unlike a static market research doc or a naive RAG pipeline, this agent continuously ingests competitor signals and answers both point-in-time questions ("What has Acme Corp announced about enterprise?") and trend questions ("How has their pricing messaging shifted since Q1?") — with full context across press releases, job postings, customer reviews, and earnings calls unified in one retrieval layer.
+This guide walks you through building a **competitive intelligence agent with persistent temporal memory** powered by HydraDB. Unlike a static market research doc or a naive RAG pipeline, this agent continuously ingests competitor signals and answers both point-in-time questions ("What has Acme Corp announced about enterprise?") and trend questions ("How has their pricing messaging shifted since Q1?") - with full context across press releases, job postings, customer reviews, and earnings calls unified in one retrieval layer.
 
 > **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email team@hydradb.com.
 
-> **Goal**: Build an agent that ingests four signal types from competitor sources, verifies indexing, and answers competitive queries using `POST /recall/full_recall` with `recency_bias` tuned per query type — point-in-time or trend. Full round-trip under 200ms.
+> **Goal**: Build an agent that ingests four signal types from competitor sources, verifies indexing, and answers competitive queries using `POST /recall/full_recall` with `recency_bias` tuned per query type - point-in-time or trend. Full round-trip under 200ms.
 
 ---
 
 ## The Problem with Manual Competitive Research
 
-Most competitive intelligence today is a manual process — a researcher Googles, copies links into a Notion page, and writes a monthly summary. Ask "What did Competitor X say about enterprise last quarter?" and there's no system to answer it.
+Most competitive intelligence today is a manual process - a researcher Googles, copies links into a Notion page, and writes a monthly summary. Ask "What did Competitor X say about enterprise last quarter?" and there's no system to answer it.
 
-Standard RAG pipelines don't solve this either. A vector store treats a press release from 18 months ago identically to one from last week — they produce similar embeddings. Ask "how has their messaging shifted?" and you get a random mix of old and new signals with no temporal ranking. Ask "what are they announcing right now?" and stale results pollute the top of the list.
+Standard RAG pipelines don't solve this either. A vector store treats a press release from 18 months ago identically to one from last week - they produce similar embeddings. Ask "how has their messaging shifted?" and you get a random mix of old and new signals with no temporal ranking. Ask "what are they announcing right now?" and stale results pollute the top of the list.
 
 HydraDB fixes this with three capabilities that standard vector search can't replicate:
 
-1. **Timestamp-aware ranking** — every uploaded source is ranked by recency at query time. Set `recency_bias: 0.8` to surface the latest signals first. Set `recency_bias: 0.3` to pull historical signals for trend comparison.
-2. **Context graph** — HydraDB automatically extracts entities and links them across sources. A job posting mentioning "enterprise security", a press release announcing an enterprise tier, and a G2 review complaining about enterprise onboarding are automatically connected — so a query about enterprise strategy surfaces all three.
-3. **Sub-tenant isolation** — each competitor gets their own `sub_tenant_id` within a shared `competitive-intel` tenant. Query one competitor in isolation or compare across all of them in a single call.
+1. **Timestamp-aware ranking** - every uploaded source is ranked by recency at query time. Set `recency_bias: 0.8` to surface the latest signals first. Set `recency_bias: 0.3` to pull historical signals for trend comparison.
+2. **Context graph** - HydraDB automatically extracts entities and links them across sources. A job posting mentioning "enterprise security", a press release announcing an enterprise tier, and a G2 review complaining about enterprise onboarding are automatically connected - so a query about enterprise strategy surfaces all three.
+3. **Sub-tenant isolation** - each competitor gets their own `sub_tenant_id` within a shared `competitive-intel` tenant. Query one competitor in isolation or compare across all of them in a single call.
 
 ---
 
@@ -45,9 +45,9 @@ graph LR
 
 ---
 
-## Step 1 — Create Tenant
+## Step 1 - Create Tenant
 
-One tenant for all competitive intelligence. Sub-tenants isolate by competitor and are created automatically on the first upload — no setup required.
+One tenant for all competitive intelligence. Sub-tenants isolate by competitor and are created automatically on the first upload - no setup required.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/tenants/create' \
@@ -81,13 +81,13 @@ def sub_tenant(competitor: str) -> str:
 
 ---
 
-## Step 2 — Ingest Competitor Signals
+## Step 2 - Ingest Competitor Signals
 
 All four signal types use `POST /ingestion/upload_knowledge`. This endpoint uses **multipart form-data**, not JSON. `tenant_id` and `sub_tenant_id` are form fields, not body keys.
 
-> **Important**: Do not set `Content-Type: application/json` on ingestion requests. The endpoint expects `multipart/form-data`. Let your HTTP client set the boundary automatically — only pass `Authorization` in headers.
+> **Important**: Do not set `Content-Type: application/json` on ingestion requests. The endpoint expects `multipart/form-data`. Let your HTTP client set the boundary automatically - only pass `Authorization` in headers.
 
-> **Batch limit**: Max 20 sources per request. Wait 1 second between batches. Always call `POST /ingestion/verify_processing` before running recall — queries against unindexed sources return empty results.
+> **Batch limit**: Max 20 sources per request. Wait 1 second between batches. Always call `POST /ingestion/verify_processing` before running recall - queries against unindexed sources return empty results.
 
 The upload response looks like this for all signal types:
 
@@ -108,7 +108,7 @@ The upload response looks like this for all signal types:
 }
 ```
 
-Save the `source_id` from `results[0].source_id` — you need it to verify indexing.
+Save the `source_id` from `results[0].source_id` - you need it to verify indexing.
 
 ### 2.1 Press Releases & Blog Posts
 
@@ -136,7 +136,7 @@ def ingest_press_release(competitor: str, title: str, text: str) -> str:
 
     resp = requests.post(
         f"{BASE_URL}/ingestion/upload_knowledge",
-        headers={"Authorization": f"Bearer {API_KEY}"},   # no Content-Type — let requests set multipart boundary
+        headers={"Authorization": f"Bearer {API_KEY}"},   # no Content-Type - let requests set multipart boundary
         files={"files": (filename, content.encode("utf-8"), "text/plain")},
         data={"tenant_id": TENANT_ID, "sub_tenant_id": competitor},
     )
@@ -148,7 +148,7 @@ def ingest_press_release(competitor: str, title: str, text: str) -> str:
 
 ### 2.2 Job Postings
 
-Job postings are one of the strongest competitive signals — they reveal exactly what a company is building before any press release. A spike in "enterprise security engineer" roles signals an enterprise push. "ML platform engineer" roles signal AI product investment. Include the job title and department in the content so HydraDB's graph links related roles across uploads.
+Job postings are one of the strongest competitive signals - they reveal exactly what a company is building before any press release. A spike in "enterprise security engineer" roles signals an enterprise push. "ML platform engineer" roles signal AI product investment. Include the job title and department in the content so HydraDB's graph links related roles across uploads.
 
 ```python
 # connectors/jobs.py
@@ -163,7 +163,7 @@ def ingest_job_posting(competitor: str, title: str, department: str, description
     """
     Upload a job posting from LinkedIn, Greenhouse, Lever, etc.
     competitor:  e.g. "acme-corp"
-    title:       job title — included in content for graph linking
+    title:       job title - included in content for graph linking
     department:  e.g. "Engineering", "Product", "Sales"
     description: full job description text
     Returns:     source_id for verification
@@ -191,7 +191,7 @@ def ingest_job_posting(competitor: str, title: str, department: str, description
 
 ### 2.3 Customer Reviews (G2 / Capterra / Trustpilot)
 
-Customer reviews are the most honest signal — they surface real objections, real pain points, and what customers actually value. None of this appears in official press releases. Negative reviews (rating ≤ 2) are especially valuable for building sales battlecards.
+Customer reviews are the most honest signal - they surface real objections, real pain points, and what customers actually value. None of this appears in official press releases. Negative reviews (rating ≤ 2) are especially valuable for building sales battlecards.
 
 ```python
 # connectors/reviews.py
@@ -243,7 +243,7 @@ def ingest_review(
 
 ### 2.4 Earnings Call Transcripts
 
-For public competitors, earnings calls contain the most explicit strategic signals — pricing changes, market focus, competitive responses, and financial trajectory. Upload as plain text. HydraDB handles chunking and indexing automatically.
+For public competitors, earnings calls contain the most explicit strategic signals - pricing changes, market focus, competitive responses, and financial trajectory. Upload as plain text. HydraDB handles chunking and indexing automatically.
 
 ```python
 # connectors/earnings.py
@@ -284,11 +284,11 @@ def ingest_earnings_transcript(competitor: str, quarter: str, transcript: str) -
 
 ---
 
-## Step 3 — Verify Indexing
+## Step 3 - Verify Indexing
 
-After uploading, poll `POST /ingestion/verify_processing` until `indexing_status` is `completed`. HydraDB indexes asynchronously — typically 10–30 seconds per file. Do not query until indexing is complete; unindexed sources return empty results.
+After uploading, poll `POST /ingestion/verify_processing` until `indexing_status` is `completed`. HydraDB indexes asynchronously - typically 10–30 seconds per file. Do not query until indexing is complete; unindexed sources return empty results.
 
-> **Note**: `verify_processing` uses **POST** with `file_ids` and `tenant_id` as **URL query parameters** — not in the request body. Pass an empty JSON body `{}`.
+> **Note**: `verify_processing` uses **POST** with `file_ids` and `tenant_id` as **URL query parameters** - not in the request body. Pass an empty JSON body `{}`.
 
 ```bash
 curl -X POST \
@@ -350,12 +350,12 @@ def wait_until_indexed(source_id: str, max_tries: int = 20, interval: int = 3) -
 
         print(f"Indexing... {status or 'queued'} (attempt {i+1}/{max_tries})")
 
-    print(f"Timeout — {source_id} may still complete in background.")
+    print(f"Timeout - {source_id} may still complete in background.")
 ```
 
 ---
 
-## Step 4 — Query: Point-in-Time Questions
+## Step 4 - Query: Point-in-Time Questions
 
 Use `POST /recall/full_recall` to answer "What is Competitor X doing right now?". Set `recency_bias: 0.8` so HydraDB strongly weights the most recent signals. Set `mode: "thinking"` to enable multi-query reranking.
 
@@ -425,7 +425,7 @@ def print_results(result: dict) -> None:
     for chunk in chunks:
         fname = chunk.get("document_metadata", {}).get("filename", "unknown")
         score = chunk.get("relevancy_score", 0)
-        print(f"  [{fname} — {score:.2f}]")
+        print(f"  [{fname} - {score:.2f}]")
         print(f"  {chunk['chunk_content'][:200]}...")
         print()
 
@@ -477,13 +477,13 @@ print_results(result)
 }
 ```
 
-> **Reading graph_context**: The `chunk_relations` array shows entities HydraDB automatically extracted and linked across all your uploaded sources. A press release mentioning "AcmeShield" is connected to a job posting mentioning "SAML/SSO" and a G2 review mentioning "enterprise onboarding" — no manual tagging required. This is what surfaces all three when you ask about "enterprise strategy".
+> **Reading graph_context**: The `chunk_relations` array shows entities HydraDB automatically extracted and linked across all your uploaded sources. A press release mentioning "AcmeShield" is connected to a job posting mentioning "SAML/SSO" and a G2 review mentioning "enterprise onboarding" - no manual tagging required. This is what surfaces all three when you ask about "enterprise strategy".
 
 ---
 
-## Step 5 — Query: Trend & Temporal Questions
+## Step 5 - Query: Trend & Temporal Questions
 
-For trend and comparison questions, reduce `recency_bias` to `0.3` so HydraDB surfaces both old and new signals. This gives it the historical range it needs to answer "how has X changed?" — a question that naive RAG cannot reliably answer at all.
+For trend and comparison questions, reduce `recency_bias` to `0.3` so HydraDB surfaces both old and new signals. This gives it the historical range it needs to answer "how has X changed?" - a question that naive RAG cannot reliably answer at all.
 
 ```python
 # query/trends.py
@@ -519,15 +519,15 @@ print_results(result2)
 ```
 
 > **recency_bias guide**:
-> - `0.8–1.0` — Point-in-time: "What is X doing now?" Strongly weights the latest signals.
-> - `0.3–0.5` — Trend: "How has X changed?" Surfaces old and new for comparison.
-> - `0.0` — No bias: equal weight across all time periods.
+> - `0.8–1.0` - Point-in-time: "What is X doing now?" Strongly weights the latest signals.
+> - `0.3–0.5` - Trend: "How has X changed?" Surfaces old and new for comparison.
+> - `0.0` - No bias: equal weight across all time periods.
 
 > **Multi-competitor comparison**: To compare two competitors in one query, omit `sub_tenant_id` entirely and ask "How does acme-corp's enterprise positioning compare to betacorp's?" HydraDB searches across all sub-tenants within the tenant and surfaces signals from both.
 
 ---
 
-## Step 6 — Weekly Briefing Agent
+## Step 6 - Weekly Briefing Agent
 
 Push a proactive Monday-morning briefing to each analyst's Slack channel. Each analyst profile runs a set of questions through `full_recall` with `recency_bias: 0.85` to surface the freshest signals.
 
@@ -603,7 +603,7 @@ def recall_for_question(question: str, competitor: str, recency_bias: float) -> 
 def generate_briefing(analyst: str) -> str:
     """Generate a weekly briefing for one analyst across all tracked competitors."""
     cfg   = BRIEFING_CONFIG[analyst]
-    lines = [f"*/// Weekly Competitive Intelligence — {analyst}*\n"]
+    lines = [f"*/// Weekly Competitive Intelligence - {analyst}*\n"]
 
     for competitor in COMPETITORS:
         lines.append(f"*── {competitor.upper()} ──*")
@@ -669,7 +669,7 @@ POST /ingestion/verify_processing?tenant_id=competitive-intel&file_ids=YOUR_SOUR
 Body: {}
 ```
 
-### Full Recall — Point-in-Time
+### Full Recall - Point-in-Time
 ```json
 {
   "tenant_id":     "competitive-intel",
@@ -683,7 +683,7 @@ Body: {}
 }
 ```
 
-### Full Recall — Trend
+### Full Recall - Trend
 ```json
 {
   "tenant_id":     "competitive-intel",
@@ -705,13 +705,13 @@ Tested across 3 competitor corpora (150+ sources each: press releases, job posti
 
 | Metric | Manual / Naive RAG | HydraDB CI Agent | Delta |
 |--------|-------------------|------------------|-------|
-| Time to answer "what is X doing now?" | 30–60 min (manual) | <10 seconds | **200x faster** |
+| Time to answer "what is X doing now?" | 30–60 min (manual) | &lt;10 seconds | **200x faster** |
 | Recall accuracy on temporal questions | 28% | 81% | **+189%** |
 | Stale signals surfaced in top results | 39% | 6% | **−85%** |
 | Signal sources covered | Press only (typically) | All 4 unified | **4x coverage** |
-| P95 query latency | N/A (manual) | <200ms | **Sub-second** |
+| P95 query latency | N/A (manual) | &lt;200ms | **Sub-second** |
 
-> The 28% accuracy for temporal questions in naive RAG is a structural limitation — embedding a Q2 press release and a Q4 press release produces similar vectors. They look alike semantically. HydraDB's `recency_bias` parameter and timestamp-aware ranking distinguish them at query time.
+> The 28% accuracy for temporal questions in naive RAG is a structural limitation - embedding a Q2 press release and a Q4 press release produces similar vectors. They look alike semantically. HydraDB's `recency_bias` parameter and timestamp-aware ranking distinguish them at query time.
 
 > **Benchmark methodology**: Figures are based on internal HydraDB testing. See [research.hydradb.com/hydradb.pdf](https://research.hydradb.com/hydradb.pdf) for the full methodology. Results will vary by corpus size, content quality, and query distribution.
 
@@ -732,8 +732,8 @@ competitive_intel_agent/
 ├── ingest/
 │   └── verify.py                 # poll verify_processing until indexed
 ├── query/
-│   ├── recall.py                 # ask_about_competitor() — point-in-time
-│   └── trends.py                 # ask_trend_question() — historical comparison
+│   ├── recall.py                 # ask_about_competitor() - point-in-time
+│   └── trends.py                 # ask_trend_question() - historical comparison
 └── briefing/
     └── weekly.py                 # generate + send weekly Slack briefings
 ```
@@ -751,9 +751,9 @@ slack-sdk          # only if using Slack briefings
 ## Next Steps
 
 1. Run `setup.py` to create your tenant and verify the connection.
-2. Run each connector script with real competitor data — start with one competitor and two signal types.
+2. Run each connector script with real competitor data - start with one competitor and two signal types.
 3. Verify all uploads are indexed before querying.
 4. Run `python query/recall.py` to confirm results look correct.
 5. Schedule `briefing/weekly.py` via cron (`0 8 * * 1`) or a workflow tool like n8n.
 
-The agent improves as you add more signals — each new press release, job posting, or review adds to the context graph that HydraDB builds automatically. There is no retraining step. Run the connector scripts on a schedule and the intelligence layer stays current without any manual curation.
+The agent improves as you add more signals - each new press release, job posting, or review adds to the context graph that HydraDB builds automatically. There is no retraining step. Run the connector scripts on a schedule and the intelligence layer stays current without any manual curation.

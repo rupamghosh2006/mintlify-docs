@@ -1,6 +1,6 @@
 ---
-title: "Build Your Own Cursor for Docs"
-description: "Go from zero to a production AI assistant that answers 'why was this built this way?' — in four phases. Start with one file and a real recall query. End with a FastAPI backend that ingests GitHub, PRs, Slack, and RFCs, then generates GPT-4o answers grounded in your codebase. Every endpoint in this guide is real and copy-paste ready."
+title: "Cursor for Docs"
+description: "Go from zero to a production AI assistant that answers 'why was this built this way?' - in four phases. Start with one file and a real recall query. End with a FastAPI backend that ingests GitHub, PRs, Slack, and RFCs, then generates GPT-4o answers grounded in your codebase. Every endpoint in this guide is real and copy-paste ready."
 ---
 
 > **Cookbook 01** · Production-grade · ~75 min total · Developer Tools · Context Graph
@@ -13,9 +13,9 @@ Go from zero to a production AI assistant that answers "why was this built this 
 
 ---
 
-## Phase 0 — Minimal Working System · 5–10 minutes
+## Phase 0 - Minimal Working System · 5–10 minutes
 
-The only goal is to see a real recall response from a real file you uploaded. No multi-source ingestion, no backend server, no VS Code extension — just the four API calls that prove the pipeline works end-to-end.
+The only goal is to see a real recall response from a real file you uploaded. No multi-source ingestion, no backend server, no VS Code extension - just the four API calls that prove the pipeline works end-to-end.
 
 **Goal:** You will run one recall query and see actual results.
 
@@ -48,7 +48,7 @@ TENANT_ID     = os.environ.get("HYDRADB_TENANT_ID", "engineering-docs")
 BASE_URL      = "https://api.hydradb.com"
 
 HEADERS = {
-    "Authorization": f"Bearer {HYDRA_API_KEY}",  # format is strict — Bearer + space + key
+    "Authorization": f"Bearer {HYDRA_API_KEY}",  # format is strict - Bearer + space + key
     "Content-Type":  "application/json",
 }
 
@@ -62,15 +62,15 @@ RECALL_MIN_SCORE   = 0.5
 RECALL_ALPHA       = 0.75
 ```
 
-> ❌ **Authorization header must be exact.** `Authorization: Bearer hdb_abc123` — capital B, one space, no quotes. Anything else returns 401.
+> ❌ **Authorization header must be exact.** `Authorization: Bearer hdb_abc123` - capital B, one space, no quotes. Anything else returns 401.
 
 ---
 
-### Step 1 — Create a Tenant
+### Step 1 - Create a Tenant
 
-**What:** Registers your top-level namespace. Tenant creation is **asynchronous** — infrastructure provisions in the background. Do not upload files until polling confirms it is ready.
+**What:** Registers your top-level namespace. Tenant creation is **asynchronous** - infrastructure provisions in the background. Do not upload files until polling confirms it is ready.
 
-**Endpoint:** `POST /tenants/create` — Async, poll `/tenants/infra/status` before ingesting
+**Endpoint:** `POST /tenants/create` - Async, poll `/tenants/infra/status` before ingesting
 
 ```python
 import sys, os, time, requests
@@ -99,7 +99,7 @@ def _poll_until_ready(timeout=180, interval=4):
             status = r.json().get("status", "")
             if   status == "ready":  print("✓ Tenant ready."); return
             elif status == "failed": raise RuntimeError(f"Provisioning failed: {r.json()}")
-            print(f"  status={status} — retrying in {interval}s")
+            print(f"  status={status} - retrying in {interval}s")
         time.sleep(interval)
     raise TimeoutError("Tenant not ready within 180s")
 
@@ -115,26 +115,26 @@ python3 phase0/create_tenant.py
 ```
 Accepted: {'tenant_id': 'engineering-docs', 'status': 'accepted', 'message': 'Tenant accepted. Poll /tenants/infra/status for readiness.'}
 Polling for readiness...
-  status=provisioning — retrying in 4s
+  status=provisioning - retrying in 4s
 ✓ Tenant ready.
 ```
 
-**If it fails:** `401` — API key wrong or missing `Bearer ` prefix. Confirm `.env` has `HYDRADB_API_KEY=hdb_abc123` with no surrounding quotes.
+**If it fails:** `401` - API key wrong or missing `Bearer ` prefix. Confirm `.env` has `HYDRADB_API_KEY=hdb_abc123` with no surrounding quotes.
 
 ---
 
-### Step 2 — Upload One File
+### Step 2 - Upload One File
 
-**What:** Uploads a single file using **multipart form-data** to `/ingestion/upload_knowledge` — the recommended beginner path. HydraDB handles chunking, embedding, and graph-node creation automatically. The returned `source_id` is what you use in Step 3 to verify indexing.
+**What:** Uploads a single file using **multipart form-data** to `/ingestion/upload_knowledge` - the recommended beginner path. HydraDB handles chunking, embedding, and graph-node creation automatically. The returned `source_id` is what you use in Step 3 to verify indexing.
 
-> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/ingestion/upload_knowledge`** — the tested beginner path. An advanced JSON body mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
+> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/ingestion/upload_knowledge`** - the tested beginner path. An advanced JSON body mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
 
 First, create a sample document:
 
 ```bash
 mkdir -p phase0/sample_docs
 cat > phase0/sample_docs/auth_middleware.md << 'EOF'
-# Auth Middleware — Internal IP Exception
+# Auth Middleware - Internal IP Exception
 
 ## Decision
 Token validation is skipped for requests from internal IP ranges
@@ -146,7 +146,7 @@ during startup. The security team approved this in RFC-007, on the condition
 that internal network access is controlled at the VPC level.
 
 ## Approved by
-Security team — Slack #eng-architecture — 2024-02-14
+Security team - Slack #eng-architecture - 2024-02-14
 EOF
 ```
 
@@ -176,7 +176,7 @@ def upload_file(filepath: str):
 
 if __name__ == "__main__":
     result = upload_file("phase0/sample_docs/auth_middleware.md")
-    # Note the source_id from the response — you need it for Step 3
+    # Note the source_id from the response - you need it for Step 3
     print("\nCopy your source_id for use in verify.py:", result)
 ```
 
@@ -192,14 +192,14 @@ Copy your source_id for use in verify.py: {'results': [{'source_id': 'YOUR_FILE_
 The exact value of `source_id` depends on HydraDB's internal file registration. Copy the value returned and use it in Step 3.
 
 **If it fails:**
-- `404 Tenant does not exist` — Step 1 not complete, or `tenant_id` mismatch.
-- `400 / missing files` — Confirm the field name is `files` (not `file`), and that `Content-Type` is NOT manually set in headers.
+- `404 Tenant does not exist` - Step 1 not complete, or `tenant_id` mismatch.
+- `400 / missing files` - Confirm the field name is `files` (not `file`), and that `Content-Type` is NOT manually set in headers.
 
 ---
 
-### Step 3 — Verify Indexing
+### Step 3 - Verify Indexing
 
-**What:** Polls `/ingestion/verify_processing` using the `source_id` returned in Step 2. HydraDB returns a `statuses` array; you read `statuses[0].indexing_status`. Querying before this reaches `"completed"` returns empty results with no error — the most common beginner confusion.
+**What:** Polls `/ingestion/verify_processing` using the `source_id` returned in Step 2. HydraDB returns a `statuses` array; you read `statuses[0].indexing_status`. Querying before this reaches `"completed"` returns empty results with no error - the most common beginner confusion.
 
 Replace `YOUR_FILE_ID_HERE` with the `source_id` from Step 2:
 
@@ -214,7 +214,7 @@ FILE_ID = "YOUR_FILE_ID_HERE"
 def verify_file(file_id: str, timeout: int = 120, interval: int = 3):
     """
     Polls verify_processing until indexing_status is "completed" or "errored".
-    HydraDB returns a "statuses" array — read statuses[0].indexing_status.
+    HydraDB returns a "statuses" array - read statuses[0].indexing_status.
     sub_tenant_id is NOT required for this working flow.
     """
     print(f"Verifying '{file_id}'...")
@@ -236,7 +236,7 @@ def verify_file(file_id: str, timeout: int = 120, interval: int = 3):
                 status = statuses[0].get("indexing_status")
                 if   status == "completed": print(f"✓ '{file_id}' ready."); return
                 elif status == "errored":   print("Indexing errored."); return
-                print(f"  indexing_status: {status} — waiting...")
+                print(f"  indexing_status: {status} - waiting...")
         except Exception:
             pass
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 Verifying 'YOUR_FILE_ID_HERE'...
 STATUS CODE: 200
 RESPONSE: {"statuses": [{"file_id": "YOUR_FILE_ID_HERE", "indexing_status": "processing"}]}
-  indexing_status: processing — waiting...
+  indexing_status: processing - waiting...
 STATUS CODE: 200
 RESPONSE: {"statuses": [{"file_id": "YOUR_FILE_ID_HERE", "indexing_status": "completed"}]}
 ✓ 'YOUR_FILE_ID_HERE' ready.
@@ -261,11 +261,11 @@ RESPONSE: {"statuses": [{"file_id": "YOUR_FILE_ID_HERE", "indexing_status": "com
 
 ---
 
-### Step 4 — Run Your First Recall Query
+### Step 4 - Run Your First Recall Query
 
-**What:** Sends a POST to `/recall/full_recall` and receives a `chunks` array. Each chunk has a `chunk_content` field — this is the text you will later pass to GPT-4o as context. This is the end-to-end proof that tenant, ingestion, indexing, and retrieval all work.
+**What:** Sends a POST to `/recall/full_recall` and receives a `chunks` array. Each chunk has a `chunk_content` field - this is the text you will later pass to GPT-4o as context. This is the end-to-end proof that tenant, ingestion, indexing, and retrieval all work.
 
-**Validated first recall — minimal working request:**
+**Validated first recall - minimal working request:**
 
 ```json
 {
@@ -276,7 +276,7 @@ RESPONSE: {"statuses": [{"file_id": "YOUR_FILE_ID_HERE", "indexing_status": "com
 
 // sub_tenant_id is NOT required for this working flow.
 // HydraDB handles scope internally when omitted.
-// Response contains a "chunks" array — read chunk_content from each item.
+// Response contains a "chunks" array - read chunk_content from each item.
 ```
 
 ```python
@@ -288,7 +288,7 @@ def recall(query: str, max_results: int = 10) -> dict:
     """
     Minimal working recall.
     Only tenant_id + query + max_results are required.
-    sub_tenant_id is NOT required — HydraDB handles scope internally.
+    sub_tenant_id is NOT required - HydraDB handles scope internally.
     Response: {"chunks": [...], "sources": [...]}
     """
     resp = requests.post(
@@ -335,11 +335,11 @@ Chunks returned: 2
 Sources: ['auth_middleware.md']
 ```
 
-**If it fails:** `chunks: []` — Indexing is not yet complete. Wait 30 seconds and retry. Re-run Step 3 to confirm `indexing_status: completed`.
+**If it fails:** `chunks: []` - Indexing is not yet complete. Wait 30 seconds and retry. Re-run Step 3 to confirm `indexing_status: completed`.
 
-> ✅ **Phase 0 complete.** The same `/recall/full_recall` endpoint — with the same minimal three-field body — is what every later phase uses. You'll only add parameters, not change the structure. The `chunks` array and `chunk_content` field are now your canonical recall response objects.
+> ✅ **Phase 0 complete.** The same `/recall/full_recall` endpoint - with the same minimal three-field body - is what every later phase uses. You'll only add parameters, not change the structure. The `chunks` array and `chunk_content` field are now your canonical recall response objects.
 
-**What you just built:** You now have a working **retrieval system**. HydraDB can store your content, index it, and return the most relevant chunks — each with a `chunk_content` text field and a `relevancy_score` — for a question. The missing layer is the reasoning backend that takes those chunks and turns them into a readable, cited answer.
+**What you just built:** You now have a working **retrieval system**. HydraDB can store your content, index it, and return the most relevant chunks - each with a `chunk_content` text field and a `relevancy_score` - for a question. The missing layer is the reasoning backend that takes those chunks and turns them into a readable, cited answer.
 
 | What works now | What comes next |
 |---|---|
@@ -350,7 +350,7 @@ Sources: ['auth_middleware.md']
 
 ---
 
-## Phase 1 — Improve Retrieval · 15–20 minutes
+## Phase 1 - Improve Retrieval · 15–20 minutes
 
 Ingest multiple files with structured metadata, use collections to organise content, and tune recall parameters. At the end of this phase, recall queries return more relevant chunks across many documents.
 
@@ -360,11 +360,11 @@ Ingest multiple files with structured metadata, use collections to organise cont
 
 Before writing more ingestion code, it's worth understanding what HydraDB actually returns and how to interpret it. This mental model applies to every phase.
 
-**Chunks vs. sources:** When HydraDB indexes a document, it splits the content into overlapping **chunks**. Each chunk is embedded independently and stored as a node in the context graph. When you call `/recall/full_recall`, you get back a `chunks` array. Iterate this array and read `chunk_content` from each item — that is the text you pass directly to your LLM as context.
+**Chunks vs. sources:** When HydraDB indexes a document, it splits the content into overlapping **chunks**. Each chunk is embedded independently and stored as a node in the context graph. When you call `/recall/full_recall`, you get back a `chunks` array. Iterate this array and read `chunk_content` from each item - that is the text you pass directly to your LLM as context.
 
-The response also includes a `sources` array — a deduplicated list of the original documents that contributed chunks. Use `sources` for citation labels; use `chunks` for the actual LLM context.
+The response also includes a `sources` array - a deduplicated list of the original documents that contributed chunks. Use `sources` for citation labels; use `chunks` for the actual LLM context.
 
-**Anatomy of a recall chunk — field reference:**
+**Anatomy of a recall chunk - field reference:**
 
 | Field | Required | Description |
 |---|---|---|
@@ -375,26 +375,26 @@ The response also includes a `sources` array — a deduplicated list of the orig
 | `url` | optional | The URL you set at ingestion time. Present only if supplied. Use for deep-links in citation UI. |
 | `meta` | optional | The metadata object from ingestion. May include `doc_type`, `repo`, `pr_number`, etc. |
 
-**How to interpret the `relevancy_score`:** Scores are relative within a single response — they indicate ranked relevance for your specific query, not absolute confidence.
+**How to interpret the `relevancy_score`:** Scores are relative within a single response - they indicate ranked relevance for your specific query, not absolute confidence.
 
 | relevancy_score range | What it means | What to do |
 |---|---|---|
-| `0.85+` | High confidence — chunk directly answers the query | Always include in LLM context |
-| `0.65–0.85` | Good match — chunk is relevant, may not be the exact answer | Include, let LLM decide relevance |
-| `0.40–0.65` | Weak match — tangentially related | Include only if few high-score results |
-| `below 0.40` | Low match — probably not relevant | Drop from context to reduce noise |
+| `0.85+` | High confidence - chunk directly answers the query | Always include in LLM context |
+| `0.65–0.85` | Good match - chunk is relevant, may not be the exact answer | Include, let LLM decide relevance |
+| `0.40–0.65` | Weak match - tangentially related | Include only if few high-score results |
+| `below 0.40` | Low match - probably not relevant | Drop from context to reduce noise |
 
 **How graph context changes recall:** When you add `"graph_context": true` to your recall request, HydraDB walks the explicit `relations.hydradb_source_ids` edges you set at ingestion time for every high-scoring chunk. A source file chunk can pull in the PR that last changed it. That PR can pull in the RFC it referenced. This multi-hop traversal is what makes "why" questions answerable.
 
-> 💡 **Always safe to add to Phase 0.** `"graph_context": true` has no downside with a single file and no relations — it returns the same result. Turn it on now.
+> 💡 **Always safe to add to Phase 0.** `"graph_context": true` has no downside with a single file and no relations - it returns the same result. Turn it on now.
 
 ---
 
-### P1 · Step 1 — Batch Upload with Explicit IDs (JSON Ingestion)
+### P1 · Step 1 - Batch Upload with Explicit IDs (JSON Ingestion)
 
-**What:** Switches to **JSON body ingestion** via `/upload/upload_app_sources` — the advanced ingestion path. This gives you full control over IDs, timestamps, collections, metadata, and (in Phase 2) explicit graph `relations`. The `{repo_name}/{relative_path}` ID convention is required for Phase 2 graph linking.
+**What:** Switches to **JSON body ingestion** via `/upload/upload_app_sources` - the advanced ingestion path. This gives you full control over IDs, timestamps, collections, metadata, and (in Phase 2) explicit graph `relations`. The `{repo_name}/{relative_path}` ID convention is required for Phase 2 graph linking.
 
-> ⚠️ **Advanced path — stricter validation.** JSON ingestion requires well-formed payloads with `id`, `type`, and `content.text` on every item. Malformed requests are rejected outright. Use the file upload path (Phase 0 Step 2) if you just want to get content indexed quickly. Use JSON ingestion when you need stable IDs and graph relations.
+> ⚠️ **Advanced path - stricter validation.** JSON ingestion requires well-formed payloads with `id`, `type`, and `content.text` on every item. Malformed requests are rejected outright. Use the file upload path (Phase 0 Step 2) if you just want to get content indexed quickly. Use JSON ingestion when you need stable IDs and graph relations.
 
 ```python
 import sys, os, time, subprocess, pathlib, requests
@@ -470,9 +470,9 @@ Verifying 54 files...
 
 ---
 
-### P1 · Step 2 — Metadata and Collections
+### P1 · Step 2 - Metadata and Collections
 
-**What:** `collections` are labels you define for scoping recall. `meta` fields are arbitrary key-value pairs used for filtering and citation labels. No extra API calls needed — these fields go in the ingestion payload.
+**What:** `collections` are labels you define for scoping recall. `meta` fields are arbitrary key-value pairs used for filtering and citation labels. No extra API calls needed - these fields go in the ingestion payload.
 
 ```json
 {
@@ -494,7 +494,7 @@ Verifying 54 files...
 
 ---
 
-### P1 · Step 3 — Tuned Recall with Graph Context
+### P1 · Step 3 - Tuned Recall with Graph Context
 
 ```python
 import sys, os, requests
@@ -543,7 +543,7 @@ def build_context(chunks: list, min_score: float = 0.5) -> tuple[str, list]:
 
 ---
 
-## Phase 2 — Multi-source Context · 20–30 minutes
+## Phase 2 - Multi-source Context · 20–30 minutes
 
 Connect GitHub source files to their pull requests, Slack decision threads, and internal wikis. Use explicit `relations.hydradb_source_ids` to guarantee graph edges. When a developer asks "why?", the answer now travels across all four source types in a single query.
 
@@ -577,9 +577,9 @@ When those sources share stable IDs and explicit relations, the assistant can mo
 
 ---
 
-### P2 · Step 1 — Ingest GitHub Source Files with Consistent IDs
+### P2 · Step 1 - Ingest GitHub Source Files with Consistent IDs
 
-**What:** Ingests source files using the `{repo_name}/{relative_path}` ID convention. These IDs are what PR ingestion will reference in `relations.hydradb_source_ids`. The IDs must match exactly — `myrepo/auth/middleware.py`, not `auth/middleware.py`.
+**What:** Ingests source files using the `{repo_name}/{relative_path}` ID convention. These IDs are what PR ingestion will reference in `relations.hydradb_source_ids`. The IDs must match exactly - `myrepo/auth/middleware.py`, not `auth/middleware.py`.
 
 Use `ingest_directory()` from Phase 1 Step 1. If you already ran Phase 1, your files are already indexed.
 
@@ -593,7 +593,7 @@ ingest_directory('/path/to/your/repo', 'myrepo')
 
 ---
 
-### P2 · Step 2 — Ingest Pull Requests with Explicit Graph Relations
+### P2 · Step 2 - Ingest Pull Requests with Explicit Graph Relations
 
 **What:** Fetches merged PRs and turns each into one document: title + description + review comments + changed-file list. The `relations.hydradb_source_ids` field guarantees graph edges form between the PR and every source file it changed.
 
@@ -673,9 +673,9 @@ if __name__ == "__main__":
 
 ---
 
-### P2 · Step 3 — Ingest Slack Threads
+### P2 · Step 3 - Ingest Slack Threads
 
-**What:** Groups messages by `thread_ts` so each conversation thread becomes one document. Architecture channels, post-mortems, and decision threads are the highest-value sources — these capture approvals that never get written up anywhere else.
+**What:** Groups messages by `thread_ts` so each conversation thread becomes one document. Architecture channels, post-mortems, and decision threads are the highest-value sources - these capture approvals that never get written up anywhere else.
 
 **Before:** A Slack export ZIP. Go to `your-workspace.slack.com/services/export` (requires admin), export, and unzip. Structure: `{export_dir}/{channel_name}/{YYYY-MM-DD}.json`.
 
@@ -691,7 +691,7 @@ def ingest_slack_export(export_dir: str, channels: list[str]) -> list:
     for channel in channels:
         channel_dir = root / channel
         if not channel_dir.is_dir():
-            print(f"  Skipping #{channel} — not found"); continue
+            print(f"  Skipping #{channel} - not found"); continue
         all_messages = []
         for day_file in sorted(channel_dir.glob("*.json")):
             try: all_messages.extend(json.loads(day_file.read_text()))
@@ -708,7 +708,7 @@ def ingest_slack_export(export_dir: str, channels: list[str]) -> list:
             ts_dt = datetime.fromtimestamp(float(thread_ts)).isoformat() + "Z"
             batch.append({
                 "id":          f"slack-{channel}-{thread_ts}",
-                "title":       f"Slack — #{channel} — {ts_dt[:10]}",
+                "title":       f"Slack - #{channel} - {ts_dt[:10]}",
                 "type":        "document",
                 "timestamp":   ts_dt,
                 "content":     {"text": f"Channel: #{channel}\n\n{text}"},
@@ -732,7 +732,7 @@ if __name__ == "__main__":
 
 ---
 
-### P2 · Step 4 — Ingest Wikis & RFCs
+### P2 · Step 4 - Ingest Wikis & RFCs
 
 **What:** Ingests Architecture Decision Records, RFCs, Confluence pages, and Notion wikis. Tag each with `doc_type` so recall can be scoped to decisions-only when that is what a question requires.
 
@@ -782,7 +782,7 @@ def ingest_markdown_folder(folder: str) -> list:
 
 ---
 
-### P2 · Step 5 — Run a Multi-source Graph Query
+### P2 · Step 5 - Run a Multi-source Graph Query
 
 ```python
 import sys, os, uuid, requests
@@ -822,16 +822,16 @@ if __name__ == "__main__":
 The auth middleware skips token validation for internal IPs per RFC-007
 [Source: wiki-rfc-007]. This was introduced in PR #142 [Source: pr-142]
 to resolve circular dependency issues at startup. The security team
-approved the exception in #eng-architecture [Source: Slack — 2024-02-14].
+approved the exception in #eng-architecture [Source: Slack - 2024-02-14].
 ```
 
 > ✅ **Phase 2 complete.** A "why" question now returns a multi-hop cited answer. Phase 3 wraps this in a production FastAPI server with your own GPT-4o answer generation layer.
 
 ---
 
-## Phase 3 — Backend & Answer Generation · 25–35 minutes
+## Phase 3 - Backend & Answer Generation · 25–35 minutes
 
-Build a production FastAPI server. HydraDB is the memory layer — it retrieves ranked `chunks` via `full_recall()`. GPT-4o is the reasoning layer — it reads those chunks and writes a grounded, cited answer. The two layers are kept strictly separate so they can be debugged and improved independently.
+Build a production FastAPI server. HydraDB is the memory layer - it retrieves ranked `chunks` via `full_recall()`. GPT-4o is the reasoning layer - it reads those chunks and writes a grounded, cited answer. The two layers are kept strictly separate so they can be debugged and improved independently.
 
 **Goal:** `POST /chat` and `POST /ask` → HydraDB chunks → GPT-4o → answer.
 
@@ -839,11 +839,11 @@ Build a production FastAPI server. HydraDB is the memory layer — it retrieves 
 
 The flow through the backend is:
 
-1. **Question** — `POST /chat` or `/ask`
-2. **Recall** — `full_recall()` → chunks
-3. **Context block** — `chunk_content` assembled
-4. **GPT-4o** — writes grounded answer
-5. **Response** — answer + citations
+1. **Question** - `POST /chat` or `/ask`
+2. **Recall** - `full_recall()` → chunks
+3. **Context block** - `chunk_content` assembled
+4. **GPT-4o** - writes grounded answer
+5. **Response** - answer + citations
 
 **Why split retrieval and reasoning?** Because they fail differently. Weak recall means you improve ingestion, metadata, or graph links. Weak answers mean you improve prompt construction or model behavior. Keeping the layers separate means you can isolate which side is the problem.
 
@@ -851,21 +851,21 @@ The flow through the backend is:
 
 ```
 backend/
-├── __init__.py       — makes backend a package so imports work
-├── config.py         — env vars, HYDRA_API_KEY, HEADERS, OpenAI keys, recall defaults
-├── hydra_client.py   — full_recall() as primary verified path; qna() marked advanced
-├── recall.py         — recall_context() and build_context_block(); extracts chunk_content
-├── answer.py         — prompt formatter, GPT-4o streaming call, anti-hallucination rules
-└── app.py            — FastAPI server; /chat (streaming) and /ask (sync JSON, easier for Postman)
+├── __init__.py       - makes backend a package so imports work
+├── config.py         - env vars, HYDRA_API_KEY, HEADERS, OpenAI keys, recall defaults
+├── hydra_client.py   - full_recall() as primary verified path; qna() marked advanced
+├── recall.py         - recall_context() and build_context_block(); extracts chunk_content
+├── answer.py         - prompt formatter, GPT-4o streaming call, anti-hallucination rules
+└── app.py            - FastAPI server; /chat (streaming) and /ask (sync JSON, easier for Postman)
 ```
 
 **Architecture summary:**
 
-- **`config.py`** — Loads `.env`, exposes `HYDRA_API_KEY`, `TENANT_ID`, `HEADERS`, `OPENAI_API_KEY`, and recall defaults. Every other file imports from here only.
-- **`hydra_client.py`** — `full_recall()` is the primary verified path — build and test on this first. `qna()` is available for advanced multi-hop use cases but is not required for the first working backend. Neither function formats prompts or calls OpenAI. Imported by → `recall.py`, `app.py`.
-- **`recall.py`** — `recall_context()` calls `full_recall()` and returns the raw payload. `build_context_block()` extracts `chunk_content` from each chunk and assembles a formatted context string for the LLM. Imported by → `app.py`.
-- **`answer.py`** — Takes the context block from `recall.py`, formats the system + user prompt, and calls the OpenAI streaming API. Contains all anti-hallucination rules. Never calls HydraDB. Imported by → `app.py`.
-- **`app.py`** — Two endpoints: `POST /chat` streams NDJSON token-by-token — ideal for a web or IDE frontend. `POST /ask` returns a complete JSON response with `answer`, `sources`, and `chunks` — easier for Postman testing. Both use the same `recall_context` → `build_context_block` → `stream_answer` pipeline.
+- **`config.py`** - Loads `.env`, exposes `HYDRA_API_KEY`, `TENANT_ID`, `HEADERS`, `OPENAI_API_KEY`, and recall defaults. Every other file imports from here only.
+- **`hydra_client.py`** - `full_recall()` is the primary verified path - build and test on this first. `qna()` is available for advanced multi-hop use cases but is not required for the first working backend. Neither function formats prompts or calls OpenAI. Imported by → `recall.py`, `app.py`.
+- **`recall.py`** - `recall_context()` calls `full_recall()` and returns the raw payload. `build_context_block()` extracts `chunk_content` from each chunk and assembles a formatted context string for the LLM. Imported by → `app.py`.
+- **`answer.py`** - Takes the context block from `recall.py`, formats the system + user prompt, and calls the OpenAI streaming API. Contains all anti-hallucination rules. Never calls HydraDB. Imported by → `app.py`.
+- **`app.py`** - Two endpoints: `POST /chat` streams NDJSON token-by-token - ideal for a web or IDE frontend. `POST /ask` returns a complete JSON response with `answer`, `sources`, and `chunks` - easier for Postman testing. Both use the same `recall_context` → `build_context_block` → `stream_answer` pipeline.
 
 **Install dependencies for Phase 3:**
 
@@ -920,7 +920,7 @@ RECALL_ALPHA       = 0.75  # semantic vs keyword balance
 
 ### backend/hydra_client.py
 
-`full_recall()` is the primary verified path — build and test your backend on this function first. `qna()` is an advanced endpoint for multi-hop "why" questions; it is not required for the first working backend and adds debugging complexity. Neither function formats prompts or decides routing.
+`full_recall()` is the primary verified path - build and test your backend on this function first. `qna()` is an advanced endpoint for multi-hop "why" questions; it is not required for the first working backend and adds debugging complexity. Neither function formats prompts or decides routing.
 
 ```python
 import uuid
@@ -943,12 +943,12 @@ def full_recall(
     recency_bias: float = 0.2,
 ) -> dict:
     """
-    PRIMARY VERIFIED PATH — build and test your backend on this function first.
+    PRIMARY VERIFIED PATH - build and test your backend on this function first.
 
-    Calls /recall/full_recall. scope (sub_tenant_id) is optional — omit to
+    Calls /recall/full_recall. scope (sub_tenant_id) is optional - omit to
     search all sub-tenants automatically. Response contains:
-      "chunks"  — iterate this array; read chunk_content from each item for LLM context
-      "sources" — deduplicated source list; use for citations
+      "chunks"  - iterate this array; read chunk_content from each item for LLM context
+      "sources" - deduplicated source list; use for citations
     """
     body = {
         "tenant_id":     TENANT_ID,
@@ -971,7 +971,7 @@ def full_recall(
 
 def qna(question: str, session_id: str = None, user_name: str = "dev") -> dict:
     """
-    ADVANCED — not required for the first working backend.
+    ADVANCED - not required for the first working backend.
 
     Calls /search/qna for multi-hop "why" questions with multi-step reasoning.
     Build and verify the full_recall() path before switching to this endpoint.
@@ -1018,7 +1018,7 @@ def recall_context(query: str, max_results: int = 10) -> dict:
     return full_recall(
         query=query,
         max_results=max_results,
-        scope=None,            # no sub_tenant_id needed — HydraDB handles scope
+        scope=None,            # no sub_tenant_id needed - HydraDB handles scope
         graph_context=True,
         recency_bias=0.2,
     )
@@ -1028,11 +1028,11 @@ def build_context_block(recall_payload: dict) -> str:
     """
     Extract chunk_content from each chunk and assemble the LLM context string.
 
-    chunks  — the main array; iterate this and read chunk_content from each item.
-    sources — the deduplicated source list; used for citations in app.py.
+    chunks  - the main array; iterate this and read chunk_content from each item.
+    sources - the deduplicated source list; used for citations in app.py.
 
     chunk_content is the canonical field to pass into the LLM.
-    Always iterate chunks[], never a "results" key — the correct key is "chunks".
+    Always iterate chunks[], never a "results" key - the correct key is "chunks".
     """
     chunks  = recall_payload.get("chunks", [])
     sources = recall_payload.get("sources", [])
@@ -1056,13 +1056,13 @@ def build_context_block(recall_payload: dict) -> str:
     return f"Context:\n{context_text}\n\nSources:\n{sources_text}"
 ```
 
-> 💡 **Production upgrade: score filtering.** `build_context_block` is intentionally simple for the first backend. For production, add a `relevancy_score` filter to drop low-quality chunks before building the context string — the same pattern used in Phase 1's `build_context()` helper.
+> 💡 **Production upgrade: score filtering.** `build_context_block` is intentionally simple for the first backend. For production, add a `relevancy_score` filter to drop low-quality chunks before building the context string - the same pattern used in Phase 1's `build_context()` helper.
 
 ---
 
 ### backend/answer.py
 
-Takes the context block string from `recall.py` and turns it into a grounded GPT-4o answer. This is the only file that touches OpenAI. If the context string is empty, it returns a safe fallback without calling the model at all — this is the primary hallucination guard.
+Takes the context block string from `recall.py` and turns it into a grounded GPT-4o answer. This is the only file that touches OpenAI. If the context string is empty, it returns a safe fallback without calling the model at all - this is the primary hallucination guard.
 
 ```python
 from typing import Generator
@@ -1090,7 +1090,7 @@ RULES:
 def format_prompt(question: str, context: str) -> list[dict]:
     """
     Build the messages array for the OpenAI API.
-    Context goes in the user message — not the system prompt.
+    Context goes in the user message - not the system prompt.
     This keeps the system prompt stable and makes context easy to audit.
     """
     user_content = (
@@ -1109,7 +1109,7 @@ def format_prompt(question: str, context: str) -> list[dict]:
 def stream_answer(question: str, context: str) -> Generator[str, None, None]:
     """
     Streams GPT-4o tokens. If context is empty, yields a safe fallback
-    WITHOUT calling OpenAI — prevents the model from hallucinating
+    WITHOUT calling OpenAI - prevents the model from hallucinating
     when HydraDB retrieval returned nothing.
     """
     if not context.strip():
@@ -1138,9 +1138,9 @@ def stream_answer(question: str, context: str) -> Generator[str, None, None]:
 
 ### backend/app.py
 
-The FastAPI server exposes two endpoints. **`POST /chat`** streams NDJSON — best for a web frontend or VS Code extension. **`POST /ask`** returns a complete JSON response — easier for Postman testing and best for API consumers that don't stream. Both use the same `recall_context` → `build_context_block` → `stream_answer` pipeline.
+The FastAPI server exposes two endpoints. **`POST /chat`** streams NDJSON - best for a web frontend or VS Code extension. **`POST /ask`** returns a complete JSON response - easier for Postman testing and best for API consumers that don't stream. Both use the same `recall_context` → `build_context_block` → `stream_answer` pipeline.
 
-> 💡 **Want WHY_SIGNALS routing?** Once this basic backend is working, add a question classifier that routes "why" questions to `hydra_client.qna()` for multi-step reasoning. Build on `full_recall()` first — `qna()` is an advanced endpoint and adds debugging complexity.
+> 💡 **Want WHY_SIGNALS routing?** Once this basic backend is working, add a question classifier that routes "why" questions to `hydra_client.qna()` for multi-step reasoning. Build on `full_recall()` first - `qna()` is an advanced endpoint and adds debugging complexity.
 
 ```python
 import json
@@ -1170,7 +1170,7 @@ def health():
 @app.post("/chat")
 async def chat(body: dict):
     """
-    Streaming NDJSON endpoint — best for frontends and VS Code extensions.
+    Streaming NDJSON endpoint - best for frontends and VS Code extensions.
     Line 1:  {"sources": [...]}
     Line 2+: {"text": "token chunk"}
     """
@@ -1193,7 +1193,7 @@ async def chat(body: dict):
 @app.post("/ask")
 def ask(body: dict):
     """
-    Synchronous JSON endpoint — easier for Postman testing and API consumers
+    Synchronous JSON endpoint - easier for Postman testing and API consumers
     that don't stream. Returns a complete response object in one round-trip.
     Returns answer, sources, chunks, and graph_context.
     """
@@ -1219,8 +1219,8 @@ def ask(body: dict):
 
 Understanding the exact data path prevents debugging confusion. `build_context_block()` does the following in order:
 
-1. **Read the `chunks` array** from the recall payload. `/recall/full_recall` returns `{"chunks": [...], "sources": [...]}` — always iterate `chunks`, never `results`.
-2. **Extract `chunk_content`** from each chunk object. This is the raw text of the chunk — a few hundred tokens of the original document. It is the only required field. Skip any chunk where `chunk_content` is absent or empty.
+1. **Read the `chunks` array** from the recall payload. `/recall/full_recall` returns `{"chunks": [...], "sources": [...]}` - always iterate `chunks`, never `results`.
+2. **Extract `chunk_content`** from each chunk object. This is the raw text of the chunk - a few hundred tokens of the original document. It is the only required field. Skip any chunk where `chunk_content` is absent or empty.
 3. **Join all `chunk_content` values** with double newlines to form the context body.
 4. **Append the sources list** from `recall_payload.get("sources", [])` in `- title (id)` format so the model can cite them.
 5. **Return the assembled string** to `stream_answer()`. This becomes the user message body inside the OpenAI prompt.
@@ -1249,7 +1249,7 @@ Sources:
 - auth/middleware.py (myrepo/auth/middleware.py)
 - PR #142: feat: skip token validation (pr-142)
 - RFC-007: Internal Network Auth Exception (wiki-rfc-007)
-- Slack — #eng-architecture — 2024-02-14 (slack-eng-arch-123)
+- Slack - #eng-architecture - 2024-02-14 (slack-eng-arch-123)
 ```
 
 ### Avoiding Hallucination
@@ -1306,11 +1306,11 @@ curl -s -X POST http://localhost:8000/ask \
   | python3 -m json.tool
 ```
 
-> ✅ **Phase 3 complete.** You have a production FastAPI backend. HydraDB is the memory layer — `full_recall()` retrieves ranked chunks. GPT-4o is the reasoning layer — it reads those chunks via `stream_answer()` and writes a grounded answer. The two layers are intentionally separate so you can debug and improve each independently.
+> ✅ **Phase 3 complete.** You have a production FastAPI backend. HydraDB is the memory layer - `full_recall()` retrieves ranked chunks. GPT-4o is the reasoning layer - it reads those chunks via `stream_answer()` and writes a grounded answer. The two layers are intentionally separate so you can debug and improve each independently.
 
 ---
 
-## Phase 4 — Productization · Coming next
+## Phase 4 - Productization · Coming next
 
 Ship the assistant to your team. Build the VS Code extension sidebar, set up a daily incremental sync cron job, wire a GitHub Actions workflow for on-push indexing, and monitor recall quality over time.
 
@@ -1333,44 +1333,44 @@ A good progression: Phase 0 recall in the terminal → FastAPI `/ask` in Postman
 
 ## Troubleshooting
 
-### 401 — Not Authenticated
+### 401 - Not Authenticated
 
 **Cause:** The Authorization header is missing or malformed. Most common: the `Bearer ` prefix is absent, quotes surround the key in `.env`, or there is a leading/trailing space in the key value.
 
-**Fix:** Run `python3 -c "from config import HYDRA_API_KEY; print(repr(HYDRA_API_KEY))"`. The output should be `'hdb_abc123'` — no surrounding spaces. Your header must be exactly `Authorization: Bearer hdb_abc123`.
+**Fix:** Run `python3 -c "from config import HYDRA_API_KEY; print(repr(HYDRA_API_KEY))"`. The output should be `'hdb_abc123'` - no surrounding spaces. Your header must be exactly `Authorization: Bearer hdb_abc123`.
 
-### 404 — Tenant Does Not Exist
+### 404 - Tenant Does Not Exist
 
 **Cause:** You are attempting to upload or query before the tenant was created, or the `tenant_id` in your request does not match the one you created. Tenant IDs are case-sensitive.
 
 **Fix:** Run `python3 phase0/create_tenant.py` and wait for "✓ Tenant ready." before proceeding. Confirm `TENANT_ID` in `config.py` exactly matches what you passed to `create_tenant`.
 
-### 404 — Not Found (on recall or ingestion endpoint)
+### 404 - Not Found (on recall or ingestion endpoint)
 
 **Cause:** The endpoint path has a typo, extra slash, or missing segment. Also occurs when querying a `sub_tenant_id` that has never had data written to it.
 
 **Fix:** Correct paths: `/ingestion/upload_knowledge` (file upload), `/upload/upload_app_sources` (JSON batch), `/recall/full_recall`, `/ingestion/verify_processing`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
 
-### 400 — Provide at least one of: files or app_sources
+### 400 - Provide at least one of: files or app_sources
 
 **Cause:** For file upload: the field name is wrong (`file` instead of `files`), or `Content-Type: application/json` was manually set (which breaks multipart). For JSON batch: the array is empty or objects are missing required fields.
 
 **Fix:** For file upload: use `files={"files": (filename, f, "text/markdown")}` and `data={"tenant_id": TENANT_ID}`. Do NOT set `Content-Type` manually. For JSON batch: confirm each item has `id`, `type`, and `content.text`.
 
-### Empty Recall — chunks: []
+### Empty Recall - chunks: []
 
 **Cause:** Indexing is still in progress, or `relevancy_score` filtering in `build_context_block` is too aggressive, or the query does not semantically match any ingested content.
 
-**Fix:** Step 1 — Run `verify_file()` and confirm `"indexing_status": "completed"` in the `statuses` array. Step 2 — Run `phase0/recall.py` directly and print the raw response — check that the `chunks` key is present and non-empty before any filtering. Step 3 — Check the `relevancy_score` values on returned chunks.
+**Fix:** Step 1 - Run `verify_file()` and confirm `"indexing_status": "completed"` in the `statuses` array. Step 2 - Run `phase0/recall.py` directly and print the raw response - check that the `chunks` key is present and non-empty before any filtering. Step 3 - Check the `relevancy_score` values on returned chunks.
 
-### 429 — OpenAI insufficient_quota
+### 429 - OpenAI insufficient_quota
 
-**Cause:** Your OpenAI account has run out of credits or hit its usage limit. This is an OpenAI-side error — HydraDB retrieval may be working perfectly. The error appears in `stream_answer()` inside `answer.py`, not in the HydraDB recall step.
+**Cause:** Your OpenAI account has run out of credits or hit its usage limit. This is an OpenAI-side error - HydraDB retrieval may be working perfectly. The error appears in `stream_answer()` inside `answer.py`, not in the HydraDB recall step.
 
-**Fix:** Add billing or upgrade your OpenAI plan at `platform.openai.com`. While debugging, replace `stream_answer` in `answer.py` with this temporary debug fallback — it returns the raw retrieved context without calling OpenAI:
+**Fix:** Add billing or upgrade your OpenAI plan at `platform.openai.com`. While debugging, replace `stream_answer` in `answer.py` with this temporary debug fallback - it returns the raw retrieved context without calling OpenAI:
 
 ```python
-# TEMPORARY DEBUG MODE — replace stream_answer in answer.py to test
+# TEMPORARY DEBUG MODE - replace stream_answer in answer.py to test
 # retrieval without OpenAI. Remove this before going to production.
 def stream_answer(question: str, context: str):
     yield "=== DEBUG MODE (NO OPENAI) ===\n\n"
@@ -1386,12 +1386,12 @@ def stream_answer(question: str, context: str):
 
 - **Batch size and rate limits.** The JSON batch upload endpoint accepts a maximum of **20 source objects per request**. Always sleep 1 second between batches. For large repos (1,000+ files), expect ingestion to take 10–30 minutes total.
 - **Indexing delays.** Indexing is async. Never rely on a fixed sleep; always poll `verify_processing` until the `statuses` array shows `"indexing_status": "completed"`.
-- **Consistency and upserts.** HydraDB upserts by `id` — re-uploading replaces the existing document. There is a brief window where recall may return stale chunks. Run verify on new IDs before marking a deployment complete.
+- **Consistency and upserts.** HydraDB upserts by `id` - re-uploading replaces the existing document. There is a brief window where recall may return stale chunks. Run verify on new IDs before marking a deployment complete.
 - **LLM context window.** The basic `build_context_block` assembles all chunk text. For production, add a `relevancy_score` filter and a character cap (e.g. 12,000 chars) to prevent exceeding GPT-4o's context window.
 - **Graph edge consistency.** Graph edges only form if both sides exist and are indexed. Always ingest source files first, then PRs. Re-ingest affected PRs if you add new files after initial ingestion.
 - **API key security.** The HydraDB API key grants full access to all tenant data. Never commit it to git. Use environment secrets in production. Rotate immediately if you suspect exposure.
 - **OpenAI token costs.** Each question sends context + system prompt + question to GPT-4o. For a 50-engineer team asking 200 questions/day, budget $2–4/day. Use `gpt-4o-mini` for factual lookups to reduce cost.
-- **Recall quality monitoring.** Log the `relevancy_score` value of each chunk included in a response. If median scores are falling over time, new content may be diluting the index — re-ingest with better metadata and collections tagging. Also confirm the `chunks` array is non-empty before sending context to GPT-4o.
+- **Recall quality monitoring.** Log the `relevancy_score` value of each chunk included in a response. If median scores are falling over time, new content may be diluting the index - re-ingest with better metadata and collections tagging. Also confirm the `chunks` array is non-empty before sending context to GPT-4o.
 
 ---
 
@@ -1401,7 +1401,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Create Tenant
 
-**POST** `/tenants/create` — Async, poll `/tenants/infra/status` before ingesting
+**POST** `/tenants/create` - Async, poll `/tenants/infra/status` before ingesting
 
 ```json
 Request:  { "tenant_id": "engineering-docs" }
@@ -1417,15 +1417,15 @@ GET /tenants/infra/status?tenant_id=engineering-docs
 → { "status": "ready" }
 ```
 
-### Upload File — Beginner Path
+### Upload File - Beginner Path
 
-**POST** `/ingestion/upload_knowledge` — Multipart form-data · field name `"files"` · tenant_id as form field
+**POST** `/ingestion/upload_knowledge` - Multipart form-data · field name `"files"` · tenant_id as form field
 
 ```python
 # Correct multipart file upload
 requests.post(
     f"{BASE_URL}/ingestion/upload_knowledge",
-    headers=upload_headers,             # no Content-Type — let requests set boundary
+    headers=upload_headers,             # no Content-Type - let requests set boundary
     files={"files": (filename, f, "text/markdown")},  # field name is "files"
     data={"tenant_id": TENANT_ID},         # tenant_id as form data, not query param
 )
@@ -1443,9 +1443,9 @@ requests.post(
 }
 ```
 
-### Upload Sources — JSON Body (Advanced)
+### Upload Sources - JSON Body (Advanced)
 
-**POST** `/upload/upload_app_sources` — Max 20 items · tenant_id via query param · supports relations
+**POST** `/upload/upload_app_sources` - Max 20 items · tenant_id via query param · supports relations
 
 ```json
 [{
@@ -1464,7 +1464,7 @@ requests.post(
 
 ### Verify Indexing
 
-**POST** `/ingestion/verify_processing` — Returns `statuses[]` array · poll until `"completed"`
+**POST** `/ingestion/verify_processing` - Returns `statuses[]` array · poll until `"completed"`
 
 ```json
 // Required: ?file_ids=<id>&tenant_id=engineering-docs
@@ -1478,9 +1478,9 @@ requests.post(
 // indexing_status: "processing" | "completed" | "errored"
 ```
 
-### Recall — Validated Minimal Request
+### Recall - Validated Minimal Request
 
-**POST** `/recall/full_recall` — Primary verified path · `sub_tenant_id` optional · returns `chunks[]` and `sources[]`
+**POST** `/recall/full_recall` - Primary verified path · `sub_tenant_id` optional · returns `chunks[]` and `sources[]`
 
 ```json
 {
@@ -1497,7 +1497,7 @@ requests.post(
 
 ### Multi-hop QnA (Advanced)
 
-**POST** `/search/qna` — Advanced — verify `full_recall` path first · not required for first backend
+**POST** `/search/qna` - Advanced - verify `full_recall` path first · not required for first backend
 
 ```json
 {
@@ -1528,6 +1528,6 @@ requests.post(
 | Cross-source recall (code + PR + Slack) | 14% | 79% | +464% |
 | Factual lookup ("what does X do?") | 71% | 91% | +28% |
 | Decision trail completeness (3+ hops cited) | 4% | 68% | +1,600% |
-| P95 recall latency | 180ms | <200ms | Sub-second |
+| P95 recall latency | 180ms | &lt;200ms | Sub-second |
 
-> ℹ️ The 22% accuracy on "why" questions isn't a tuning problem — it's structural. Embedding a source file and the RFC that motivated it produces similar-but-unlinked vectors. Without explicit graph edges, the RFC never surfaces when the source file matches. HydraDB makes the connection explicit: every node linked to your query gets traversed, not just nodes that look semantically similar.
+> ℹ️ The 22% accuracy on "why" questions isn't a tuning problem - it's structural. Embedding a source file and the RFC that motivated it produces similar-but-unlinked vectors. Without explicit graph edges, the RFC never surfaces when the source file matches. HydraDB makes the connection explicit: every node linked to your query gets traversed, not just nodes that look semantically similar.

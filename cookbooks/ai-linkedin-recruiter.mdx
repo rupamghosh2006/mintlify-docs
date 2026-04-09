@@ -1,5 +1,5 @@
 ---
-title: "Build an AI LinkedIn: People search in Natural Language"
+title: "AI LinkedIn: People search in Natural Language"
 description: "Learn how to build an intelligent recruiting platform that understands natural language queries like 'find me someone who has 5+ years of experience in machine learning and has worked at Apple before' using HydraDB's AI search capabilities."
 ---
 
@@ -33,7 +33,7 @@ With HydraDB, recruiters can search naturally:
 graph TD
     A["Recruiter Interface<br/>• Natural Language Search<br/>• AI Chat Assistant<br/>• Candidate Profiles"] 
     B["AI Search Engine<br/>• Query Understanding<br/>• Candidate Matching<br/>• Ranking & Scoring"]
-    C["HydraDB APIs<br/>• QnA Engine<br/>• AI Memories<br/>• Metadata Search"]
+    C["HydraDB APIs<br/>• Full Recall<br/>• AI Memories<br/>• Metadata Search"]
     
     D["Candidate Data Sources<br/>• LinkedIn profiles<br/>• Resumes/CVs<br/>• GitHub profiles<br/>• Portfolio sites"]
     E["Structured Metadata<br/>• Experience years<br/>• Skills & technologies<br/>• Company history<br/>• Education & certifications"]
@@ -60,45 +60,51 @@ The key to powerful AI search is structuring candidate data correctly. Here's ho
 const candidateProfile = {
   // Required fields for HydraDB
   id: 'candidate_123456',
+  tenant_id: 'recruiting_tenant',
+  sub_tenant_id: 'ml_engineering',
   title: 'Senior Machine Learning Engineer - John Smith',
-  type: 'candidate_profile', // Required by HydraDB
+  source: 'candidate_profile', // Source app identifier
   timestamp: '2024-01-15T10:30:00Z', // Profile last updated
-  
+
   // Main content for AI search
   content: {
-    text: `John Smith is a Senior Machine Learning Engineer with 6 years of experience in developing 
-           and deploying ML models at scale. He worked at Apple for 3 years on the Siri team, 
-           focusing on natural language processing and speech recognition. Prior to Apple, he spent 
-           2 years at a startup building recommendation systems. John has a Master's in Computer 
-           Science from Stanford and specializes in deep learning, Python, TensorFlow, and 
-           distributed systems. He has published 5 papers on neural networks and holds 2 patents 
-           in speech processing.`,
-    
-    markdown: `# John Smith - Senior ML Engineer
-    
+    text: `# John Smith - Senior ML Engineer
+
     ## Experience
     - **Apple Inc.** (3 years) - Senior ML Engineer, Siri Team
     - **StartupXYZ** (2 years) - ML Engineer, Recommendations
     - **Research Lab** (1 year) - ML Research Intern
-    
+
     ## Skills
     - Machine Learning & Deep Learning
     - Python, TensorFlow, PyTorch
     - Natural Language Processing
     - Distributed Systems
-    
+
     ## Education
     - MS Computer Science, Stanford University
-    - BS Mathematics, UC Berkeley`
+    - BS Mathematics, UC Berkeley
+
+    John Smith is a Senior Machine Learning Engineer with 6 years of experience in developing
+    and deploying ML models at scale. He worked at Apple for 3 years on the Siri team,
+    focusing on natural language processing and speech recognition. Prior to Apple, he spent
+    2 years at a startup building recommendation systems. John has a Master's in Computer
+    Science from Stanford and specializes in deep learning, Python, TensorFlow, and
+    distributed systems. He has published 5 papers on neural networks and holds 2 patents
+    in speech processing.`
   },
 
-  // Rich metadata for complex queries
+  // Tenant-level metadata (searchable/filterable fields defined in tenant schema)
   metadata: {
-    // Experience metadata
     total_years_experience: 6,
     years_at_current_role: 3,
     career_level: 'senior',
-    
+    primary_skills: ['machine_learning', 'deep_learning', 'nlp'],
+    job_search_status: 'actively_looking'
+  },
+
+  // Document-specific metadata
+  additional_metadata: {
     // Company history
     companies: [
       {
@@ -118,12 +124,11 @@ const candidateProfile = {
         company_type: 'private'
       }
     ],
-    
+
     // Skills and technologies
-    primary_skills: ['machine_learning', 'deep_learning', 'nlp'],
     technologies: ['python', 'tensorflow', 'pytorch', 'kubernetes'],
     programming_languages: ['python', 'java', 'scala'],
-    
+
     // Education
     education: [
       {
@@ -133,19 +138,18 @@ const candidateProfile = {
         graduation_year: 2018
       }
     ],
-    
+
     // Location and preferences
     location: {
       current: 'San Francisco, CA',
       willing_to_relocate: false,
       remote_preference: 'hybrid'
     },
-    
+
     // Availability and preferences
-    job_search_status: 'actively_looking',
     desired_salary_range: '200k-300k',
     desired_role_level: 'senior',
-    
+
     // Performance indicators
     publications_count: 5,
     patents_count: 2,
@@ -153,9 +157,6 @@ const candidateProfile = {
     conferences_spoken: 3
   },
 
-  // Collections for organization
-  collections: ['ml_engineers', 'apple_alumni', 'senior_candidates'],
-  
   // Profile URL and additional info
   url: 'https://linkedin.com/in/johnsmith-ml',
   description: 'Senior ML Engineer with Apple experience, specializing in NLP and speech recognition'
@@ -332,29 +333,22 @@ class AIRecruitingSearch {
 
   async findCandidates(query, recruiterContext = {}) {
     const searchPayload = {
-      question: query,
-      session_id: recruiterContext.sessionId || this.generateSessionId(),
+      query: query,
       tenant_id: this.tenantId,
-      user_name: recruiterContext.recruiterId, // Enables AI memories
-      
+
       // Hiring-specific configurations
-      top_n: 20, // More candidates for review
-      search_modes: ['creative', 'precise'], // Multiple search approaches
-      multi_step_reasoning: true, // Break down complex requirements
-      auto_agent_routing: true, // Route to specialized hiring agent
-      
+      max_results: 20, // More candidates for review
+      mode: 'thinking', // Multi-query with reranking for better results
+
       // Search tuning for candidate discovery
-      search_alpha: 0.6, // Favor semantic understanding
+      alpha: 0.6, // Favor semantic understanding
       recency_bias: 0.2, // Don't heavily favor recent profiles
-      
-      // Hiring-specific instructions
-      user_instructions: this.buildHiringInstructions(recruiterContext),
-      
-      // Metadata filtering if needed
-      metadata: this.buildMetadataFilter(recruiterContext)
+
+      // Additional context for the search
+      additional_context: this.buildHiringInstructions(recruiterContext)
     };
 
-    const response = await fetch(`${this.baseUrl}/search/qna`, {
+    const response = await fetch(`${this.baseUrl}/recall/full_recall`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -391,10 +385,10 @@ class AIRecruitingSearch {
   }
 
   enhanceCandidateResults(results, originalQuery) {
-    if (!results.sources) return results;
-    
+    if (!results.chunks) return results;
+
     // Add hiring-specific analysis to each candidate
-    const enhancedSources = results.sources.map(candidate => ({
+    const enhancedSources = results.chunks.map(candidate => ({
       ...candidate,
       fit_score: this.calculateFitScore(candidate, originalQuery),
       strengths: this.extractStrengths(candidate),
@@ -407,7 +401,7 @@ class AIRecruitingSearch {
 
     return {
       ...results,
-      sources: enhancedSources,
+      chunks: enhancedSources,
       search_insights: this.generateSearchInsights(enhancedSources, originalQuery)
     };
   }
@@ -525,10 +519,10 @@ class PersonalizedRecruitingSearch extends AIRecruitingSearch {
     const personalizedResults = {
       ...results,
       personalized_insights: {
-        recommended_candidates: this.getRecommendedCandidates(results.sources, recruiterProfile),
-        similar_to_past_hires: this.findSimilarToPastHires(results.sources, recruiterProfile),
-        interview_suggestions: this.generatePersonalizedInterviewQuestions(results.sources, recruiterProfile),
-        salary_insights: this.generateSalaryInsights(results.sources, recruiterProfile)
+        recommended_candidates: this.getRecommendedCandidates(results.chunks, recruiterProfile),
+        similar_to_past_hires: this.findSimilarToPastHires(results.chunks, recruiterProfile),
+        interview_suggestions: this.generatePersonalizedInterviewQuestions(results.chunks, recruiterProfile),
+        salary_insights: this.generateSalaryInsights(results.chunks, recruiterProfile)
       }
     };
 
@@ -708,8 +702,7 @@ class AdvancedCandidateSearch extends PersonalizedRecruitingSearch {
     const enhancedQuery = this.enhanceQueryWithContext(query, criteria);
 
     const results = await this.findCandidates(enhancedQuery, {
-      metadata: metadataFilter,
-      userInstructions: this.buildAdvancedInstructions(criteria)
+      additionalContext: this.buildAdvancedInstructions(criteria)
     });
 
     return this.rankByComplexCriteria(results, criteria);
@@ -976,7 +969,7 @@ Top Results:
 
 ### Intelligent Interview Question Generation
 
-AI search doesn't just find candidates—it helps prepare for better interviews:
+AI search doesn't just find candidates - it helps prepare for better interviews:
 
 
 ```javascript
@@ -1056,53 +1049,54 @@ class AIInterviewPrep {
 const recommendedCandidateFields = {
   // Core identification (Required by HydraDB)
   id: "unique_candidate_identifier",
+  tenant_id: "recruiting_tenant",
+  sub_tenant_id: "ml_engineering",
   title: "Descriptive candidate title with name and role",
-  type: "candidate_profile", // Required
-  timestamp: "2024-01-01T00:00:00Z", // Required - profile last updated
+  source: "candidate_profile", // Source app identifier
+  timestamp: "2024-01-01T00:00:00Z", // Profile last updated
 
   // Rich content for AI understanding (Critical for good search)
   content: {
-    text: `Comprehensive narrative covering:
-           - Current role and responsibilities
-           - Key achievements and quantified impact
-           - Technology stack and expertise areas
-           - Company context and team dynamics
-           - Career progression and major transitions
-           - Notable projects and their business impact
-           - Leadership experience and team building
-           - Industry recognition and community involvement`,
-    
-    markdown: `Structured format with clear sections:
-               ## Professional Summary
-               ## Experience History  
+    text: `## Professional Summary
+               ## Experience History
                ## Technical Skills
                ## Education & Certifications
-               ## Key Achievements`
+               ## Key Achievements
+
+               Comprehensive narrative covering:
+               - Current role and responsibilities
+               - Key achievements and quantified impact
+               - Technology stack and expertise areas
+               - Company context and team dynamics
+               - Career progression and major transitions
+               - Notable projects and their business impact
+               - Leadership experience and team building
+               - Industry recognition and community involvement`
   },
 
-  // Structured metadata for precise matching
+  // Tenant-level metadata (searchable/filterable fields defined in tenant schema)
   metadata: {
-    // Experience data
     total_years_experience: 6,
     years_in_current_role: 2,
     career_level: "senior",
-    
-    // Skills taxonomy
     primary_skills: ["machine_learning", "python", "tensorflow"],
-    secondary_skills: ["data_engineering", "aws", "kubernetes"],
-    
+    secondary_skills: ["data_engineering", "aws", "kubernetes"]
+  },
+
+  // Document-specific metadata
+  additional_metadata: {
     // Company history with context
     companies: [
       {
         name: "Apple Inc.",
-        role: "Senior ML Engineer", 
+        role: "Senior ML Engineer",
         team: "Siri",
         duration_years: 3,
         company_stage: "public",
         company_size: "large_tech"
       }
     ],
-    
+
     // Performance indicators
     impact_metrics: {
       team_size_managed: 0,
@@ -1249,4 +1243,4 @@ The key to success lies in:
 3. **AI memory utilization**: Continuous learning from recruiter behavior and preferences
 4. **Iterative refinement**: Improving search quality based on hiring outcomes
 
-Start with core search functionality, gradually add AI memories and personalization, and continuously optimize based on recruiter feedback and hiring success metrics. The result will be a hiring platform that doesn't just find candidates—it understands what makes great hires.
+Start with core search functionality, gradually add AI memories and personalization, and continuously optimize based on recruiter feedback and hiring success metrics. The result will be a hiring platform that doesn't just find candidates - it understands what makes great hires.

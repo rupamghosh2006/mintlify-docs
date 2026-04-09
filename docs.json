@@ -46,14 +46,28 @@
               "plugins/open-claw",
               "plugins/mcp"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Cookbooks",
+        "groups": [
           {
-            "group": "Use Cases",
+            "group": "Cookbooks",
             "pages": [
-              "use-cases/glean-clone",
-              "use-cases/ai-chief-of-staff",
-              "use-cases/ai-linkedin-recruiter",
-              "use-cases/ai-travel-planner"
+              "cookbooks/index",
+              "cookbooks/glean-clone",
+              "cookbooks/ai-chief-of-staff",
+              "cookbooks/ai-linkedin-recruiter",
+              "cookbooks/ai-travel-planner",
+              "cookbooks/cookbook-01-build-cursor-for-docs",
+              "cookbooks/customer-support-agent",
+              "cookbooks/cookbook-04-build-notion-ai",
+              "cookbooks/competitive-intelligence-agent",
+              "cookbooks/hydradb-cookbook-06",
+              "cookbooks/internal-search-perplexity",
+              "cookbooks/ai-onboarding-agent",
+              "cookbooks/cookbook-10-ai-financial-analyst"
             ]
           }
         ]

@@ -2,8 +2,9 @@
 	"license": "Apache-2.0",
 	"scripts": {
 		"dev": "mintlify dev",
-		"hygiene": "cargo run --manifest-path ../mintlify-hygiene/crates/mintlify-hygiene/Cargo.toml -- check",
-		"hygiene:strict": "cargo run --manifest-path ../mintlify-hygiene/crates/mintlify-hygiene/Cargo.toml -- check --deny-warnings"
+		"hygiene:install": "curl -fsSL https://raw.githubusercontent.com/usecortex/mintlify-hygiene/main/install.sh | bash -s -- --dest ./bin",
+		"hygiene": "(test -x ./bin/mintlify-hygiene || npm run hygiene:install) && ./bin/mintlify-hygiene check",
+		"hygiene:strict": "(test -x ./bin/mintlify-hygiene || npm run hygiene:install) && ./bin/mintlify-hygiene check --deny-warnings"
 	},
 	"dependencies": {
 		"mintlify": "^4.2.0"

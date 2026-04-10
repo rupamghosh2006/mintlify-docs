@@ -1,2 +1,5 @@
 node_modules
 .nvmrc
+
+# mintlify-hygiene CLI (downloaded via install script)
+/bin/

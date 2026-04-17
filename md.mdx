@@ -1,0 +1,1779 @@
+---
+title: "HydraDB Agent Integration Guide"
+description: "A comprehensive, agent-optimized reference for autonomously installing, configuring, and integrating HydraDB into any project."
+---
+
+# HydraDB Agent Integration Guide
+
+This document is a self-contained reference designed for AI coding agents. It covers everything needed to understand, install, configure, and integrate HydraDB into any project -- from zero prior knowledge to production-ready usage.
+
+**API Base URL:** `https://api.hydradb.com`
+
+**Dashboard:** `https://app.hydradb.com`
+
+**Documentation:** `https://docs.hydradb.com`
+
+---
+
+## 1. What Is HydraDB
+
+HydraDB is a context infrastructure platform for AI applications. It provides persistent memory, intelligent retrieval, and knowledge graph context for LLM-powered systems.
+
+**Core capabilities:**
+
+- **Three memory types**: User memories (preferences, habits), Knowledge memories (documents, files), and Hive memories (organization-wide learnings)
+- **Multi-stage recall**: Goes beyond vector similarity -- considers intent, context, graph relationships, recency, and personalization
+- **Knowledge graphs**: Automatically extracts entities and relationships from ingested content
+- **Multi-tenancy**: Complete data isolation via tenant/sub-tenant hierarchy
+- **Hybrid search**: Blends semantic (dense) and keyword (sparse) search with configurable alpha parameter
+
+**When to use HydraDB:**
+
+- Building AI agents or chatbots that need persistent memory across sessions
+- RAG (Retrieval-Augmented Generation) systems that need intelligent context retrieval
+- Applications requiring per-user personalization of AI responses
+- Knowledge management systems with document ingestion and search
+- Any LLM application where context quality directly impacts output quality
+
+**When NOT to use HydraDB:**
+
+- Pure vector similarity search with no need for memory, graphs, or personalization (use a standalone vector DB)
+- Structured relational data storage (use PostgreSQL, MySQL, etc.)
+- Real-time streaming data (use Kafka, Redis Streams, etc.)
+
+---
+
+## 2. Product Surface Area
+
+HydraDB offers the following user-facing products:
+
+| Product | Package / Install | Purpose |
+|---|---|---|
+| **Python SDK** | `pip install hydra-db-python` | Programmatic access from Python applications |
+| **TypeScript SDK** | `npm i @hydra_db/node` | Programmatic access from Node.js/TypeScript applications |
+| **HydraDB CLI** | `pip install hydradb-cli` | Command-line interface for terminal-based workflows and scripting |
+| **MCP Server** | `npx -y @hydra_db/mcp@0.1.1` | Model Context Protocol server for Claude Desktop, Cursor, Windsurf, VS Code |
+| **Claude Code Plugin** | Git clone + plugin install | Persistent cross-session memory for Claude Code |
+| **OpenClaw Plugin** | `openclaw plugins install @hydra_db/openclaw` | Memory plugin for OpenClaw-based agents |
+| **REST API** | `https://api.hydradb.com` | Direct HTTP access (all SDKs and tools use this underneath) |
+| **Web Dashboard** | `https://app.hydradb.com` | Browser-based UI for managing tenants, API keys, and viewing data |
+
+---
+
+## 3. Installation and Setup
+
+### 3.1 Prerequisites (All Products)
+
+1. A HydraDB API key -- obtain from [https://app.hydradb.com/keys](https://app.hydradb.com/keys)
+2. A tenant ID -- create or copy from [https://app.hydradb.com/tenants](https://app.hydradb.com/tenants)
+
+If you do not have an account, contact `founders@hydradb.com` for onboarding.
+
+All API requests require a Bearer token:
+
+```
+Authorization: Bearer <your_api_key>
+```
+
+### 3.2 Python SDK
+
+**Requirements:** Python 3.10+
+
+```bash
+pip install hydra-db-python
+```
+
+**Dependencies installed automatically:** `httpx>=0.24`, `pydantic>=1.10,<3`
+
+**Verify installation:**
+
+```python
+from hydra_db import HydraDB
+print("hydra-db-python installed successfully")
+```
+
+### 3.3 TypeScript SDK
+
+**Requirements:** Node.js 18+
+
+```bash
+npm i @hydra_db/node
+# or
+yarn add @hydra_db/node
+# or
+pnpm add @hydra_db/node
+```
+
+**Dependencies installed automatically:** `form-data@^4.0.0`, `node-fetch@2.7.0`
+
+**Important: Base URL override.** The TypeScript SDK defaults to `https://api.usecortex.ai` internally. This resolves to the same service as `https://api.hydradb.com`, but for consistency with documentation and other tools, explicitly set the base URL:
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+```
+
+### 3.4 HydraDB CLI
+
+**Requirements:** Python 3.10+
+
+```bash
+pip install hydradb-cli
+```
+
+**Authenticate:**
+
+```bash
+hydradb login
+```
+
+This interactive prompt asks for your API key and tenant ID, then saves them to `~/.hydradb/config.json` (file permissions `0600`).
+
+**Verify:**
+
+```bash
+hydradb whoami
+```
+
+**Alternative: environment variables (no login required):**
+
+```bash
+export HYDRADB_API_KEY="your-api-key"
+export HYDRADB_TENANT_ID="your-tenant-id"
+```
+
+Credential resolution order (first match wins):
+1. Environment variables (`HYDRADB_API_KEY`, `HYDRADB_TENANT_ID`)
+2. Config file (`~/.hydradb/config.json`, written by `hydradb login`)
+
+**CLI environment variables:**
+
+| Variable | Description | Default |
+|---|---|---|
+| `HYDRADB_API_KEY` | Your HydraDB API key | *Required* |
+| `HYDRADB_TENANT_ID` | Your HydraDB tenant identifier | *Required* |
+| `HYDRADB_API_URL` | API base URL | `https://api.hydradb.com` |
+| `HYDRADB_OUTPUT` | Default output format (`human` or `json`) | `human` |
+| `HYDRADB_SUB_TENANT_ID` | Sub-tenant for data partitioning | -- |
+
+### 3.5 MCP Server
+
+**Requirements:** Node.js 18+ (npx handles installation automatically)
+
+No manual install needed. Configure your MCP client with the server command.
+
+**Claude Desktop** -- add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "hydradb": {
+      "command": "npx",
+      "args": ["-y", "@hydra_db/mcp@0.1.1"],
+      "env": {
+        "HYDRA_DB_API_KEY": "your-api-key",
+        "HYDRA_DB_TENANT_ID": "your-tenant-id"
+      }
+    }
+  }
+}
+```
+
+**Cursor** -- add to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "hydradb": {
+      "command": "npx",
+      "args": ["-y", "@hydra_db/mcp@0.1.1"],
+      "env": {
+        "HYDRA_DB_API_KEY": "your-api-key",
+        "HYDRA_DB_TENANT_ID": "your-tenant-id"
+      }
+    }
+  }
+}
+```
+
+**Windsurf** -- add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "hydradb": {
+      "command": "npx",
+      "args": ["-y", "@hydra_db/mcp@0.1.1"],
+      "env": {
+        "HYDRA_DB_API_KEY": "your-api-key",
+        "HYDRA_DB_TENANT_ID": "your-tenant-id"
+      }
+    }
+  }
+}
+```
+
+**VS Code** -- add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "hydradb": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@hydra_db/mcp@0.1.1"],
+      "env": {
+        "HYDRA_DB_API_KEY": "your-api-key",
+        "HYDRA_DB_TENANT_ID": "your-tenant-id"
+      }
+    }
+  }
+}
+```
+
+**MCP environment variables:**
+
+| Variable | Description | Default |
+|---|---|---|
+| `HYDRA_DB_API_KEY` | Your HydraDB API key | *Required* |
+| `HYDRA_DB_TENANT_ID` | Your HydraDB tenant identifier | *Required* |
+| `HYDRA_DB_SUB_TENANT_ID` | Sub-tenant for data partitioning | `hydra-db-mcp` |
+| `HYDRA_DB_LOG_LEVEL` | Log level: DEBUG, INFO, WARN, ERROR | `ERROR` |
+
+### 3.6 Claude Code Plugin
+
+**Requirements:** Node.js 18+, npm, Claude Code installed
+
+```bash
+git clone https://github.com/usecortex/hydradb-claude-code.git
+cd hydradb-claude-code
+make bootstrap
+```
+
+Set credentials:
+
+```bash
+export HYDRADB_API_KEY="your-api-key"
+export HYDRADB_TENANT_ID="your-tenant-id"
+```
+
+Install in Claude Code:
+
+```
+/plugin marketplace add usecortex/hydradb-claude-code
+/plugin install hydradb@hydradb
+```
+
+Verify: run `/hydradb:status` in Claude Code.
+
+**Configuration** -- create `.hydradb-plugin.json` in your project root or edit `config.json` in the plugin directory:
+
+```json
+{
+  "apiBaseUrl": "https://api.hydradb.com",
+  "apiKey": "${HYDRADB_API_KEY}",
+  "tenantId": "${HYDRADB_TENANT_ID}",
+  "subTenantId": "",
+  "autoRecall": true,
+  "autoIngest": true,
+  "captureMode": "session-upsert",
+  "searchMode": "memory",
+  "ingestionMode": "memory"
+}
+```
+
+**Key configuration options:**
+
+| Field | Default | Description |
+|---|---|---|
+| `captureMode` | `session-upsert` | `turn` (each exchange isolated), `session-upsert` (one evolving session), `both`, or `off` |
+| `searchMode` | `memory` | `memory`, `knowledge`, or `both` |
+| `ingestionMode` | `memory` | `memory`, `knowledge`, or `auto` |
+| `recallMode` | `thinking` | `fast` (single query) or `thinking` (multi-query with reranking) |
+| `graphContext` | `true` | Include knowledge graph entity paths in recall |
+| `maxContextChars` | `7000` | Max characters injected into Claude's context per prompt |
+| `maxMemoryResults` | `6` | Max memory chunks returned per recall |
+| `maxKnowledgeResults` | `4` | Max knowledge chunks returned per recall |
+
+**Available slash commands:**
+
+| Command | Description |
+|---|---|
+| `/hydradb:setup` | Interactive configuration |
+| `/hydradb:status` | Show current config and connection status |
+| `/hydradb:search <query>` | Manual search against HydraDB |
+| `/hydradb:remember <text>` | Save a durable memory |
+| `/hydradb:save-session` | Save buffered conversation to HydraDB |
+| `/hydradb:sync-workspace` | Force re-sync of workspace markdown files |
+| `/hydradb:last-recall` | Debug: show last auto-recall results |
+
+### 3.7 OpenClaw Plugin
+
+**Requirements:** OpenClaw >= 2026.1.29 must be installed first. The plugin is an OpenClaw extension and cannot run standalone.
+
+```bash
+openclaw plugins install @hydra_db/openclaw
+openclaw hydra onboard
+openclaw gateway restart
+```
+
+Set credentials:
+
+```bash
+export HYDRA_OPENCLAW_API_KEY="your-api-key"
+export HYDRA_OPENCLAW_TENANT_ID="your-tenant-id"
+```
+
+**Available commands:**
+
+| Command | Description |
+|---|---|
+| `openclaw hydra onboard` | Interactive setup wizard |
+| `openclaw hydra onboard --advanced` | Full configuration wizard |
+| `openclaw hydra search <query>` | Search memories |
+| `openclaw hydra list` | List all memories |
+| `openclaw hydra delete <memory_id>` | Delete a memory |
+| `openclaw hydra get <source_id>` | Fetch full source content |
+| `openclaw hydra status` | Show current configuration |
+
+**Slash commands (in OpenClaw chat):** `/hydra-remember`, `/hydra-recall`, `/hydra-list`, `/hydra-delete`, `/hydra-get`, `/hydra-onboard`
+
+---
+
+## 4. Core Concepts
+
+### 4.1 Tenants and Sub-Tenants
+
+A **tenant** is a top-level data container (like a database). A **sub-tenant** is an isolated partition within a tenant (like a schema or collection).
+
+- Every tenant gets a DEFAULT sub-tenant automatically on creation
+- No data crosses tenant boundaries
+- Sub-tenants provide isolation within a tenant (e.g., per-user, per-department)
+
+**Multi-tenancy patterns:**
+
+| Pattern | tenant_id | sub_tenant_id | Use case |
+|---|---|---|---|
+| B2B SaaS | Customer org | Department/team | Enterprise clients with internal isolation |
+| B2C App | Your app name | Individual user ID | Per-user personalization |
+| Consulting | Your firm | Client project | Client data isolation |
+
+### 4.2 Memory Types
+
+| Type | What it stores | Scope | API endpoint |
+|---|---|---|---|
+| **User Memory** | Preferences, habits, conversation history | Per user (sub-tenant) | `POST /memories/add_memory` |
+| **Knowledge** | Documents, PDFs, text files, structured data | Shared or per user | `POST /ingestion/upload_knowledge` |
+| **Hive Memory** | Organization-wide learnings, collective insights | Organization-wide | `POST /memories/add_hive_memory` |
+
+### 4.3 Recall vs Vector Search
+
+HydraDB recall is a multi-stage retrieval pipeline, not a simple vector similarity search:
+
+1. Understands query intent
+2. Considers user context (tenant, sub-tenant)
+3. Traverses knowledge graph for entity relationships
+4. Weighs signals: recency, relevance, semantic similarity
+5. Ranks results by usefulness for the current task
+
+### 4.4 Metadata Architecture
+
+Two-tier metadata system:
+
+- **Tenant metadata**: Organization-level, immutable keys defined at tenant creation. Use for: compliance tags, business unit, region.
+- **Document metadata**: Per-document, fully dynamic and mutable. Use for: author, project, status, tags.
+
+Both can be used for filtering at recall time.
+
+### 4.5 Hybrid Search (Alpha Parameter)
+
+Controls the balance between semantic and keyword search:
+
+| Alpha value | Behavior | Best for |
+|---|---|---|
+| `0.0` | Pure keyword search | Exact term matching |
+| `0.5` | Balanced | General purpose |
+| `0.8` | Mostly semantic (recommended default) | Conceptual queries |
+| `1.0` | Pure semantic search | Abstract/conceptual queries |
+| `"auto"` | Intelligent auto-selection | When unsure |
+
+### 4.6 Recall Modes
+
+| Mode | Behavior | Latency | Best for |
+|---|---|---|---|
+| `fast` | Single semantic query | Lower | Simple lookups, real-time UIs |
+| `thinking` | Multi-query with reranking | Higher | Complex questions, higher accuracy |
+
+---
+
+## 5. Integration Playbooks
+
+### 5.1 Python Backend
+
+```python
+import os
+import json
+from hydra_db import HydraDB
+
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+TENANT_ID = os.environ["HYDRADB_TENANT_ID"]
+
+# --- Create a tenant (one-time setup) ---
+tenant = client.tenant.create(tenant_id=TENANT_ID)
+
+# --- Ingest a document ---
+with open("docs/architecture.pdf", "rb") as f:
+    result = client.upload.knowledge(
+        tenant_id=TENANT_ID,
+        files=[("architecture.pdf", f)],
+        file_metadata=json.dumps([
+            {
+                "id": "arch_doc_001",
+                "tenant_metadata": {"department": "engineering"},
+                "document_metadata": {"author": "Alice"}
+            }
+        ])
+    )
+print(f"Uploaded: {result.success_count} files")
+
+# --- Add a user memory ---
+memory_result = client.upload.add_memory(
+    tenant_id=TENANT_ID,
+    memories=[
+        {
+            "text": "User prefers concise responses with code examples",
+            "infer": True,
+            "user_name": "John"
+        }
+    ]
+)
+
+# --- Recall context ---
+recall_result = client.recall.full_recall(
+    query="How is authentication implemented?",
+    tenant_id=TENANT_ID,
+    alpha=0.8,
+    recency_bias=0.3
+)
+
+for chunk in recall_result.chunks or []:
+    print(f"[{chunk.relevancy_score}] {chunk.source_title}: {chunk.chunk_content[:200]}")
+
+# --- Search user preferences ---
+prefs = client.recall.recall_preferences(
+    query="What response style does the user prefer?",
+    tenant_id=TENANT_ID
+)
+
+# --- List ingested data ---
+sources = client.fetch.list_data(
+    tenant_id=TENANT_ID,
+    kind="knowledge",
+    page=1,
+    page_size=20
+)
+```
+
+**Async Python:**
+
+```python
+import os
+from hydra_db import AsyncHydraDB
+
+client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
+
+async def recall_context(query: str, tenant_id: str):
+    result = await client.recall.full_recall(
+        query=query,
+        tenant_id=tenant_id,
+        mode="thinking",
+        graph_context=True
+    )
+    return result.chunks
+```
+
+### 5.2 Node.js / TypeScript Backend
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+import fs from "node:fs";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+
+const TENANT_ID = process.env.HYDRADB_TENANT_ID!;
+
+// --- Create a tenant (one-time setup) ---
+const tenant = await client.tenant.create({
+  tenantId: TENANT_ID,
+});
+
+// --- Upload a document ---
+const uploadResult = await client.upload.knowledge({
+  tenantId: TENANT_ID,
+  files: [fs.readFileSync("docs/architecture.pdf")],
+  fileMetadata: JSON.stringify([
+    {
+      id: "arch_doc_001",
+      tenant_metadata: { department: "engineering" },
+      document_metadata: { author: "Alice" },
+    },
+  ]),
+});
+console.log(`Uploaded: ${uploadResult.successCount} files`);
+
+// --- Add a user memory ---
+const memoryResult = await client.upload.addMemory({
+  tenantId: TENANT_ID,
+  memories: [
+    {
+      text: "User prefers concise responses with code examples",
+      infer: true,
+      userName: "John",
+    },
+  ],
+});
+
+// --- Recall context ---
+const recallResult = await client.recall.fullRecall({
+  tenantId: TENANT_ID,
+  query: "How is authentication implemented?",
+  alpha: 0.8,
+  recencyBias: 0.3,
+});
+
+for (const chunk of recallResult.chunks ?? []) {
+  console.log(`[${chunk.relevancyScore}] ${chunk.sourceTitle}: ${chunk.chunkContent?.slice(0, 200)}`);
+}
+
+// --- Search user preferences ---
+const prefs = await client.recall.recallPreferences({
+  tenantId: TENANT_ID,
+  query: "What response style does the user prefer?",
+});
+
+// --- QnA with LLM answer generation ---
+const qna = await client.recall.qna({
+  tenantId: TENANT_ID,
+  question: "What are the Q3 revenue figures?",
+  mode: "thinking",
+  includeGraphContext: true,
+  llmProvider: "openai",
+  model: "gpt-4",
+  temperature: 0.7,
+});
+console.log("Answer:", qna.answer);
+```
+
+### 5.3 RAG / LLM System Integration
+
+The core pattern: retrieve context from HydraDB, inject it into your LLM prompt.
+
+**Python with OpenAI:**
+
+```python
+import os
+from hydra_db import HydraDB
+from openai import OpenAI
+
+hydra = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+openai_client = OpenAI()
+
+def rag_query(user_question: str, tenant_id: str, sub_tenant_id: str = ""):
+    # Step 1: Recall relevant context from HydraDB
+    recall_result = hydra.recall.full_recall(
+        query=user_question,
+        tenant_id=tenant_id,
+        sub_tenant_id=sub_tenant_id,
+        mode="thinking",
+        alpha=0.8,
+        max_results=10,
+        graph_context=True
+    )
+
+    # Step 2: Build context string from chunks
+    context_parts = []
+    for chunk in recall_result.chunks or []:
+        context_parts.append(
+            f"[Source: {chunk.source_title}]\n{chunk.chunk_content}"
+        )
+    context = "\n\n---\n\n".join(context_parts)
+
+    # Step 3: Also recall user preferences
+    prefs_result = hydra.recall.recall_preferences(
+        query=user_question,
+        tenant_id=tenant_id,
+        sub_tenant_id=sub_tenant_id,
+        max_results=5
+    )
+    user_prefs = "\n".join(
+        c.chunk_content for c in (prefs_result.chunks or [])
+    )
+
+    # Step 4: Send to LLM with context
+    response = openai_client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {
+                "role": "system",
+                "content": f"Answer based on the following context.\n\nContext:\n{context}\n\nUser preferences:\n{user_prefs}"
+            },
+            {"role": "user", "content": user_question}
+        ]
+    )
+    return response.choices[0].message.content
+```
+
+**TypeScript with Anthropic:**
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+import Anthropic from "@anthropic-ai/sdk";
+
+const hydra = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+const anthropic = new Anthropic();
+
+async function ragQuery(question: string, tenantId: string) {
+  // Recall context
+  const recall = await hydra.recall.fullRecall({
+    tenantId,
+    query: question,
+    mode: "thinking",
+    alpha: 0.8,
+    maxResults: 10,
+    graphContext: true,
+  });
+
+  const context = (recall.chunks ?? [])
+    .map((c) => `[${c.sourceTitle}]\n${c.chunkContent}`)
+    .join("\n\n---\n\n");
+
+  // Send to Claude with context
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `Answer based on the following context.\n\nContext:\n${context}`,
+    messages: [{ role: "user", content: question }],
+  });
+
+  return response.content[0].type === "text" ? response.content[0].text : "";
+}
+```
+
+### 5.4 Full-Stack App (Next.js Example)
+
+**API route** (`app/api/search/route.ts`):
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+import { NextRequest, NextResponse } from "next/server";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+
+export async function POST(req: NextRequest) {
+  const { query, userId } = await req.json();
+
+  const result = await client.recall.fullRecall({
+    tenantId: process.env.HYDRADB_TENANT_ID!,
+    subTenantId: userId,
+    query,
+    mode: "fast",
+    alpha: 0.8,
+    maxResults: 10,
+  });
+
+  return NextResponse.json({
+    results: (result.chunks ?? []).map((chunk) => ({
+      title: chunk.sourceTitle,
+      content: chunk.chunkContent,
+      score: chunk.relevancyScore,
+    })),
+  });
+}
+```
+
+### 5.5 Data Pipeline Ingestion
+
+```python
+import os
+import json
+from hydra_db import HydraDB
+
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+TENANT_ID = os.environ["HYDRADB_TENANT_ID"]
+
+def ingest_documents(file_paths: list[str]):
+    """Batch ingest documents into HydraDB. Max 20 files per request."""
+    batch_size = 20
+    for i in range(0, len(file_paths), batch_size):
+        batch = file_paths[i:i + batch_size]
+        files = []
+        metadata = []
+
+        for path in batch:
+            with open(path, "rb") as f:
+                files.append((os.path.basename(path), f.read()))
+            metadata.append({
+                "id": os.path.basename(path),
+                "document_metadata": {"source_path": path}
+            })
+
+        # Note: file_metadata must be a JSON string
+        result = client.upload.knowledge(
+            tenant_id=TENANT_ID,
+            files=files,
+            file_metadata=json.dumps(metadata)
+        )
+        print(f"Batch {i // batch_size + 1}: {result.success_count} uploaded, {result.failed_count} failed")
+```
+
+### 5.6 Agent Framework Integration
+
+For agent frameworks (LangChain, LlamaIndex, CrewAI, etc.), HydraDB serves as the memory and retrieval backend:
+
+```python
+import os
+from hydra_db import HydraDB
+
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+TENANT_ID = os.environ["HYDRADB_TENANT_ID"]
+
+class HydraDBMemory:
+    """Drop-in memory class for agent frameworks."""
+
+    def __init__(self, tenant_id: str, sub_tenant_id: str = ""):
+        self.tenant_id = tenant_id
+        self.sub_tenant_id = sub_tenant_id
+
+    def recall(self, query: str, max_results: int = 10) -> list[dict]:
+        result = client.recall.full_recall(
+            query=query,
+            tenant_id=self.tenant_id,
+            sub_tenant_id=self.sub_tenant_id,
+            max_results=max_results,
+            mode="thinking",
+            graph_context=True
+        )
+        return [
+            {
+                "content": c.chunk_content,
+                "source": c.source_title,
+                "score": c.relevancy_score,
+            }
+            for c in (result.chunks or [])
+        ]
+
+    def store(self, text: str, user_name: str = "agent"):
+        client.upload.add_memory(
+            tenant_id=self.tenant_id,
+            sub_tenant_id=self.sub_tenant_id,
+            memories=[{"text": text, "infer": True, "user_name": user_name}]
+        )
+
+    def store_conversation(self, pairs: list[dict]):
+        """Store user-assistant conversation pairs."""
+        client.upload.add_memory(
+            tenant_id=self.tenant_id,
+            sub_tenant_id=self.sub_tenant_id,
+            memories=[{"user_assistant_pairs": pairs, "infer": True}]
+        )
+```
+
+---
+
+## 6. Ingestion Workflows
+
+### 6.1 Ingestion via Python SDK
+
+**Upload files (PDF, DOCX, TXT, etc.):**
+
+```python
+import json
+from hydra_db import HydraDB
+
+client = HydraDB(token="your-api-key")
+
+with open("report.pdf", "rb") as f:
+    result = client.upload.knowledge(
+        tenant_id="my-tenant",
+        files=[("report.pdf", f)],
+        file_metadata=json.dumps([{
+            "id": "report_q3",
+            "tenant_metadata": {"department": "finance"},
+            "document_metadata": {"author": "CFO", "quarter": "Q3"}
+        }])
+    )
+```
+
+**Add user memories:**
+
+```python
+# Simple text memory with inference
+client.upload.add_memory(
+    tenant_id="my-tenant",
+    memories=[{
+        "text": "User prefers bullet points and dark mode",
+        "infer": True,
+        "user_name": "Alice"
+    }]
+)
+
+# Conversation pairs
+client.upload.add_memory(
+    tenant_id="my-tenant",
+    memories=[{
+        "user_assistant_pairs": [
+            {"user": "How do I like reports?", "assistant": "Weekly summaries with charts."},
+            {"user": "What timezone?", "assistant": "PST, morning delivery preferred."}
+        ],
+        "infer": True,
+        "user_name": "Alice"
+    }]
+)
+
+# Markdown content
+client.upload.add_memory(
+    tenant_id="my-tenant",
+    memories=[{
+        "text": "# Meeting Notes\n\n## Key Points\n- Budget approved\n- Launch date: March 15",
+        "is_markdown": True,
+        "infer": False,
+        "title": "Q3 Planning Meeting"
+    }]
+)
+```
+
+### 6.2 Ingestion via TypeScript SDK
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+import fs from "node:fs";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+
+// Upload files
+const result = await client.upload.knowledge({
+  tenantId: "my-tenant",
+  files: [fs.readFileSync("report.pdf")],
+  fileMetadata: JSON.stringify([{
+    id: "report_q3",
+    tenant_metadata: { department: "finance" },
+    document_metadata: { author: "CFO" },
+  }]),
+});
+
+// Add user memory
+await client.upload.addMemory({
+  tenantId: "my-tenant",
+  memories: [{
+    text: "User prefers bullet points and dark mode",
+    infer: true,
+    userName: "Alice",
+  }],
+});
+```
+
+### 6.3 Ingestion via CLI
+
+```bash
+# Upload a file
+hydradb knowledge upload my-tenant ./docs/architecture.md
+
+# Upload inline text
+hydradb knowledge upload-text my-tenant "Project uses PostgreSQL 15 with pgvector"
+
+# Add a user memory
+hydradb memories add my-tenant "The user prefers dark mode and uses VS Code"
+```
+
+### 6.4 Ingestion via REST API (cURL)
+
+```bash
+# Upload a file
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -F "file=@/path/to/document.pdf" \
+  -F "tenant_id=my-tenant"
+
+# Add a user memory
+curl -X POST 'https://api.hydradb.com/memories/add_memory' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memories": [{
+      "text": "User prefers concise responses",
+      "infer": true,
+      "user_name": "John"
+    }],
+    "tenant_id": "my-tenant"
+  }'
+```
+
+### 6.5 Verify Processing Status
+
+After uploading, documents are processed asynchronously (typically 1-5 minutes). Check status:
+
+```python
+status = client.upload.verify_processing(
+    tenant_id="my-tenant",
+    file_ids=["source_id_from_upload"]
+)
+for s in status.statuses:
+    print(f"{s.file_id}: {s.indexing_status}")
+    # Possible statuses: queued, processing, graph_creation, completed, errored
+```
+
+```bash
+# CLI
+hydradb knowledge verify my-tenant src_abc123
+```
+
+### 6.6 Ingestion Best Practices
+
+- **Batch limit**: Max 20 files per upload request
+- **Wait between batches**: 1 second between batch requests
+- **Always verify processing**: Poll `verify_processing` until status is `completed` before querying
+- **Use metadata**: Rich metadata improves filtering and retrieval quality
+- **Upsert**: Set `upsert=True` to update existing sources with the same ID instead of creating duplicates
+- **Inference**: Set `infer=True` on user memories to let HydraDB extract insights automatically; set `infer=False` for factual/deterministic data
+
+---
+
+## 7. Querying and Retrieval
+
+### 7.1 Full Recall (Knowledge Search)
+
+Search over indexed knowledge documents.
+
+**Python:**
+
+```python
+result = client.recall.full_recall(
+    query="How is authentication implemented?",
+    tenant_id="my-tenant",
+    sub_tenant_id="",          # Optional: scope to sub-tenant
+    mode="thinking",           # "fast" or "thinking"
+    alpha=0.8,                 # 0.0=keyword, 1.0=semantic, "auto"
+    recency_bias=0.3,          # 0.0=no bias, 1.0=strong recency
+    max_results=10,
+    graph_context=True,        # Include knowledge graph relations
+    metadata_filters={"department": "engineering"}  # Optional filtering
+)
+
+for chunk in result.chunks or []:
+    print(f"Score: {chunk.relevancy_score}")
+    print(f"Source: {chunk.source_title}")
+    print(f"Content: {chunk.chunk_content[:300]}")
+    print("---")
+```
+
+**TypeScript:**
+
+```typescript
+const result = await client.recall.fullRecall({
+  tenantId: "my-tenant",
+  query: "How is authentication implemented?",
+  mode: "thinking",
+  alpha: 0.8,
+  recencyBias: 0.3,
+  maxResults: 10,
+  graphContext: true,
+  metadataFilters: { department: "engineering" },
+});
+```
+
+**CLI:**
+
+```bash
+hydradb recall full my-tenant "How is authentication implemented?"
+```
+
+### 7.2 Memory Recall (User Preferences)
+
+Search over user memories and preferences.
+
+```python
+result = client.recall.recall_preferences(
+    query="What response format does the user prefer?",
+    tenant_id="my-tenant",
+    sub_tenant_id="user_123",
+    max_results=5
+)
+```
+
+```bash
+hydradb recall preferences my-tenant "What IDE does the user prefer?"
+```
+
+### 7.3 Boolean/Keyword Recall
+
+Deterministic keyword-based search with boolean operators.
+
+```python
+result = client.recall.boolean_recall(
+    query="PostgreSQL migration",
+    tenant_id="my-tenant",
+    operator="and",        # "or" (default), "and", "phrase"
+    max_results=25,
+    search_mode="sources"  # "sources" or "memories"
+)
+```
+
+```bash
+hydradb recall keyword my-tenant "PostgreSQL migration"
+```
+
+### 7.4 QnA (Answer Generation)
+
+Get an LLM-generated answer with supporting context. Available via TypeScript SDK and REST API.
+
+```typescript
+const qna = await client.recall.qna({
+  tenantId: "my-tenant",
+  question: "What are the Q3 revenue figures?",
+  mode: "thinking",
+  includeGraphContext: true,
+  llmProvider: "openai",
+  model: "gpt-4",
+  temperature: 0.7,
+  maxTokens: 1024,
+});
+
+console.log("Answer:", qna.answer);
+console.log("Model:", qna.modelUsed);
+console.log("Sources:", qna.chunks?.map((c) => c.sourceTitle));
+```
+
+### 7.5 MCP Server Tools
+
+When using the MCP server, AI agents have access to these tools:
+
+| Tool | Description |
+|---|---|
+| `hydra_db_search` | Semantic search with graph context |
+| `hydra_db_store` | Save text with automatic inference |
+| `hydra_db_ingest_conversation` | Save user-assistant conversation pairs |
+| `hydra_db_list_memories` | Browse stored memories |
+| `hydra_db_list_sources` | Browse ingested sources |
+| `hydra_db_delete_memory` | Remove a specific memory |
+| `hydra_db_fetch_content` | Retrieve full content of a source |
+
+### 7.6 Retrieval Performance Considerations
+
+- **`fast` mode**: Single query, lower latency. Use for real-time UIs and simple lookups.
+- **`thinking` mode**: Multi-query with reranking, higher accuracy. Use for complex questions and when quality matters more than speed.
+- **Alpha tuning**: Start with `0.8`. Lower toward `0.2` if users search for exact terms. Raise toward `1.0` for conceptual/abstract queries. Use `"auto"` when unsure.
+- **Recency bias**: Default `0.0` (no bias). Set `0.3-0.6` for time-sensitive content. Set `0.8-1.0` when recent content is strongly preferred.
+- **Metadata filters**: Narrow the search space before semantic matching for faster, more relevant results.
+- **Max results**: 10-20 is typical. Higher values increase latency.
+
+---
+
+## 8. Agent Decision Logic
+
+Use this decision tree to choose the right integration path based on user requirements.
+
+### Which product to use?
+
+```
+User request mentions...
+├── "Python" or "pip" or ".py" files
+│   └── Use: Python SDK (`pip install hydra-db-python`)
+│
+├── "Node" or "TypeScript" or "npm" or ".ts/.js" files
+│   └── Use: TypeScript SDK (`npm i @hydra_db/node`)
+│
+├── "CLI" or "terminal" or "command line" or "bash script"
+│   └── Use: HydraDB CLI (`pip install hydradb-cli`)
+│
+├── "Claude Desktop" or "Cursor" or "Windsurf" or "VS Code" or "MCP"
+│   └── Use: MCP Server (`npx -y @hydra_db/mcp@0.1.1`)
+│
+├── "Claude Code"
+│   └── Use: Claude Code Plugin
+│
+├── "OpenClaw"
+│   └── Use: OpenClaw Plugin (`openclaw plugins install @hydra_db/openclaw`)
+│
+├── "REST" or "API" or "cURL" or language not listed above
+│   └── Use: REST API directly (`https://api.hydradb.com`)
+│
+└── Unclear or "just integrate HydraDB"
+    ├── If project has package.json → TypeScript SDK
+    ├── If project has requirements.txt/pyproject.toml → Python SDK
+    ├── If project is a shell script or CI pipeline → CLI
+    └── If project is an AI agent workspace → MCP Server
+```
+
+### Which recall method to use?
+
+```
+What are you searching for?
+├── Documents, files, knowledge base content
+│   └── client.recall.full_recall() / client.recall.fullRecall()
+│
+├── User preferences, conversation history, personal context
+│   └── client.recall.recall_preferences() / client.recall.recallPreferences()
+│
+├── Exact keyword/term matching (deterministic)
+│   └── client.recall.boolean_recall() / client.recall.booleanRecall()
+│
+├── Need an LLM-generated answer with sources
+│   └── client.recall.qna()
+│
+└── Unsure
+    └── Start with full_recall (alpha=0.8, mode="thinking")
+```
+
+### Which memory type to use?
+
+```
+What data are you ingesting?
+├── PDF, DOCX, TXT, or other files
+│   └── client.upload.knowledge()
+│
+├── User preferences, habits, conversation pairs
+│   └── client.upload.add_memory() with infer=True
+│
+├── Factual text that should be stored as-is
+│   └── client.upload.add_memory() with infer=False
+│
+├── Markdown documentation
+│   └── client.upload.add_memory() with is_markdown=True
+│       OR client.upload.knowledge() for file-based upload
+│
+└── Pre-computed embedding vectors
+    └── client.embeddings.insert()
+```
+
+---
+
+## 9. CLI Command Reference
+
+### Authentication
+
+| Command | Description |
+|---|---|
+| `hydradb login` | Interactive login -- saves credentials to `~/.hydradb/config.json` |
+| `hydradb logout` | Remove stored credentials |
+| `hydradb whoami` | Show current auth status and tenant info |
+
+### Tenant Management
+
+| Command | Description |
+|---|---|
+| `hydradb tenant create` | Create a new tenant |
+| `hydradb tenant monitor TENANT_ID` | Get tenant status and statistics |
+| `hydradb tenant list-sub-tenants TENANT_ID` | List all sub-tenant IDs |
+| `hydradb tenant delete TENANT_ID` | Delete a tenant (irreversible) |
+
+### Memory Operations
+
+```bash
+hydradb memories add TENANT_ID "text to remember"
+hydradb memories list TENANT_ID
+hydradb memories delete TENANT_ID MEMORY_ID
+```
+
+### Knowledge Base
+
+```bash
+hydradb knowledge upload TENANT_ID FILES...
+hydradb knowledge upload-text TENANT_ID "text content"
+hydradb knowledge verify TENANT_ID SOURCE_ID
+hydradb knowledge delete TENANT_ID SOURCE_IDS...
+```
+
+### Context Retrieval
+
+```bash
+hydradb recall full TENANT_ID "search query"
+hydradb recall preferences TENANT_ID "search query"
+hydradb recall keyword TENANT_ID "search query"
+```
+
+### Data Inspection
+
+```bash
+hydradb fetch sources TENANT_ID
+hydradb fetch content TENANT_ID SOURCE_ID
+hydradb fetch relations TENANT_ID SOURCE_ID
+```
+
+### Output Formats
+
+Every command supports `--output human` (default, Rich-formatted tables) or `--output json` (machine-readable).
+
+```bash
+# Set default globally
+hydradb config set output json
+
+# Per-command override (global flag must precede the subcommand)
+hydradb -o json memories list my-tenant
+```
+
+**Note:** Global options like `--output` / `-o` must come before the subcommand, not after. `hydradb -o json memories list TENANT_ID` is correct; `hydradb memories list TENANT_ID -o json` will not work as expected.
+
+### Scripting
+
+```bash
+# List memories as JSON and filter with jq
+hydradb -o json memories list my-tenant | jq '.[] | .id'
+
+# Batch upload all markdown files in a directory
+find ./docs -name "*.md" -exec hydradb knowledge upload my-tenant {} +
+```
+
+---
+
+## 10. REST API Quick Reference
+
+**Base URL:** `https://api.hydradb.com`
+
+**Auth header:** `Authorization: Bearer <your_api_key>`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/tenants/create` | Create a tenant |
+| `GET` | `/tenants/infra/status?tenant_id=X` | Check infrastructure status |
+| `GET` | `/tenants/monitor?tenant_id=X` | Get tenant statistics |
+| `GET` | `/tenants/sub_tenant_ids?tenant_id=X` | List sub-tenants |
+| `DELETE` | `/tenants/delete` | Delete a tenant |
+| `POST` | `/ingestion/upload_knowledge` | Upload files (multipart/form-data) |
+| `POST` | `/ingestion/verify_processing` | Check processing status |
+| `POST` | `/memories/add_memory` | Add user memories |
+| `DELETE` | `/memories/delete_memory` | Delete a memory |
+| `POST` | `/recall/full_recall` | Search knowledge base |
+| `POST` | `/recall/recall_preferences` | Search user memories |
+| `POST` | `/recall/boolean_recall` | Keyword/boolean search |
+| `POST` | `/recall/qna` | QnA with LLM answer |
+| `POST` | `/list/data` | List sources/memories (paginated) |
+| `POST` | `/fetch/content` | Fetch full source content |
+| `GET` | `/list/graph_relations_by_id` | Get knowledge graph relations |
+| `POST` | `/knowledge/delete_knowledge` | Delete knowledge sources |
+| `POST` | `/embeddings/insert_raw_embeddings` | Insert custom embeddings |
+| `POST` | `/embeddings/search_raw_embeddings` | Search custom embeddings |
+| `POST` | `/embeddings/filter_raw_embeddings` | Filter embeddings by ID |
+| `DELETE` | `/embeddings/delete_raw_embeddings` | Delete embeddings |
+
+---
+
+## 11. Custom Embeddings
+
+For users with their own embedding models, HydraDB supports direct vector operations.
+
+**Create an embeddings-enabled tenant:**
+
+```python
+client.tenant.create(
+    tenant_id="my-embeddings-tenant",
+    is_embeddings_tenant=True,
+    embeddings_dimension=1536
+)
+```
+
+**Insert raw embeddings:**
+
+```python
+result = client.embeddings.insert(
+    tenant_id="my-embeddings-tenant",
+    sub_tenant_id="default",
+    embeddings=[{
+        "source_id": "doc_001",
+        "embeddings": [
+            {"chunk_id": "chunk_1", "embedding": [0.1, 0.2, 0.3, ...]},
+            {"chunk_id": "chunk_2", "embedding": [0.4, 0.5, 0.6, ...]}
+        ]
+    }],
+    upsert=True
+)
+```
+
+**Search embeddings:**
+
+```python
+results = client.embeddings.search(
+    tenant_id="my-embeddings-tenant",
+    sub_tenant_id="default",
+    query_embedding=[0.15, 0.25, 0.35, ...],
+    limit=10
+)
+```
+
+**Constraints:**
+- Max dimensions: 2000 rows x 3024 columns per insert
+- All vectors in a tenant must have the same dimension
+- Embeddings array must be non-empty
+
+---
+
+## 12. Error Handling and Edge Cases
+
+### HTTP Status Codes
+
+| Code | Meaning | Common Causes |
+|---|---|---|
+| 400 | Bad Request | Missing required parameters, invalid file format, malformed JSON |
+| 401 | Unauthorized | Invalid or missing API key, expired key |
+| 403 | Forbidden | API key lacks required permissions |
+| 404 | Not Found | Tenant not found, file not found, sub-tenant not found |
+| 409 | Conflict | Tenant already exists, duplicate file upload |
+| 422 | Unprocessable Entity | Invalid metadata schema, business rule violation |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Internal Server Error | Server-side issue (retry with backoff) |
+| 503 | Service Unavailable | Temporary outage (retry with backoff) |
+
+### Error Response Format
+
+```json
+{
+  "detail": {
+    "success": false,
+    "message": "Error description",
+    "error_code": "SPECIFIC_ERROR_CODE"
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | Description |
+|---|---|
+| `TENANT_ALREADY_EXISTS` | Tenant ID already in use |
+| `TENANT_NOT_FOUND` | Tenant does not exist |
+| `INVALID_TENANT_ID` | Tenant ID format invalid |
+| `FILE_NOT_FOUND` | File does not exist |
+| `INVALID_FILE_FORMAT` | Unsupported file format |
+| `FILE_TOO_LARGE` | File exceeds size limits |
+| `PROCESSING_FAILED` | Document processing error |
+| `MEMORY_NOT_FOUND` | Memory does not exist |
+| `MEMORY_LIMIT_EXCEEDED` | Storage limit reached |
+| `SEARCH_TIMEOUT` | Search operation timed out |
+
+### SDK Error Handling
+
+**Python:**
+
+```python
+from hydra_db import (
+    HydraDB,
+    UnauthorizedError,
+    NotFoundError,
+    TooManyRequestsError,
+    BadRequestError,
+)
+
+client = HydraDB(token="your-api-key")
+
+try:
+    result = client.recall.full_recall(
+        query="test", tenant_id="my-tenant"
+    )
+except UnauthorizedError:
+    print("Invalid API key. Check HYDRADB_API_KEY.")
+except NotFoundError:
+    print("Tenant not found. Create it first with client.tenant.create().")
+except TooManyRequestsError:
+    print("Rate limited. Wait and retry.")
+except BadRequestError as e:
+    print(f"Bad request: {e}")
+```
+
+**TypeScript:**
+
+```typescript
+import { HydraDBClient, HydraDB } from "@hydra_db/node";
+import { HydraDBTimeoutError } from "@hydra_db/node";
+
+try {
+  const result = await client.recall.fullRecall({
+    tenantId: "my-tenant",
+    query: "test",
+  });
+} catch (error) {
+  if (error instanceof HydraDB.UnauthorizedError) {
+    console.error("Invalid API key.");
+  } else if (error instanceof HydraDB.NotFoundError) {
+    console.error("Tenant not found.");
+  } else if (error instanceof HydraDB.TooManyRequestsError) {
+    console.error("Rate limited. Wait and retry.");
+  } else if (error instanceof HydraDBTimeoutError) {
+    console.error("Request timed out.");
+  }
+}
+```
+
+### Common Pitfalls
+
+1. **Querying before processing completes**: After uploading, documents take 1-5 minutes to process. Always call `verify_processing` and wait for `completed` status before querying.
+
+2. **Missing tenant creation**: You must create a tenant before any ingestion or recall operations. If you get `TENANT_NOT_FOUND`, create the tenant first.
+
+3. **Infrastructure not ready**: After creating a tenant, poll `GET /tenants/infra/status` until both `graph_status` and `vectorstore_status` are ready before ingesting data.
+
+4. **file_metadata must be a JSON string**: Both SDKs accept `file_metadata` as a string, not a list/array. Use `json.dumps()` in Python or `JSON.stringify()` in TypeScript.
+
+5. **TS SDK default base URL**: The TypeScript SDK defaults to `https://api.usecortex.ai`. While this resolves to the same service, explicitly set `baseUrl: "https://api.hydradb.com"` for consistency.
+
+6. **CLI global flags before subcommand**: In the HydraDB CLI, global options like `-o json` must precede the subcommand: `hydradb -o json memories list TENANT_ID`, not `hydradb memories list TENANT_ID -o json`.
+
+7. **Tenant IDs are case-sensitive**: `My-Tenant` and `my-tenant` are different tenants. Use consistent casing.
+
+8. **Rate limiting**: Implement exponential backoff on 429 responses. The SDKs have built-in retry (default: 2 retries for TS SDK).
+
+### Retry Pattern
+
+```python
+import time
+
+def retry_with_backoff(fn, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except TooManyRequestsError:
+            if attempt == max_retries - 1:
+                raise
+            wait = 2 ** attempt
+            time.sleep(wait)
+```
+
+---
+
+## 13. Minimal End-to-End Example
+
+A complete flow: install, configure, create tenant, ingest, verify, query.
+
+### Python (Complete)
+
+```bash
+pip install hydra-db-python
+```
+
+```python
+import os
+import json
+import time
+from hydra_db import HydraDB
+
+# --- Step 1: Initialize client ---
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+TENANT_ID = "my-demo-tenant"
+
+# --- Step 2: Create tenant ---
+tenant = client.tenant.create(tenant_id=TENANT_ID)
+print(f"Tenant created: {tenant.tenant_id}")
+
+# --- Step 3: Wait for infrastructure ---
+# Poll until infrastructure is ready (typically a few seconds)
+time.sleep(5)
+
+# --- Step 4: Ingest a user memory ---
+memory_result = client.upload.add_memory(
+    tenant_id=TENANT_ID,
+    memories=[
+        {
+            "text": "The user is a backend engineer who prefers Python and uses PostgreSQL.",
+            "infer": True,
+            "user_name": "demo-user"
+        }
+    ]
+)
+print(f"Memory ingested: {memory_result.success_count} success")
+
+# --- Step 5: Ingest a knowledge document ---
+with open("README.md", "rb") as f:
+    upload_result = client.upload.knowledge(
+        tenant_id=TENANT_ID,
+        files=[("README.md", f)],
+        file_metadata=json.dumps([{"id": "readme_001"}])
+    )
+print(f"Knowledge uploaded: {upload_result.success_count} success")
+
+# --- Step 6: Wait for processing ---
+source_ids = [r.source_id for r in (upload_result.results or [])]
+for _ in range(30):  # Poll for up to 5 minutes
+    status = client.upload.verify_processing(
+        tenant_id=TENANT_ID,
+        file_ids=source_ids
+    )
+    all_done = all(
+        s.indexing_status in ("completed", "success")
+        for s in status.statuses
+    )
+    if all_done:
+        print("Processing complete.")
+        break
+    print(f"Status: {[s.indexing_status for s in status.statuses]}")
+    time.sleep(10)
+
+# --- Step 7: Recall context ---
+recall_result = client.recall.full_recall(
+    query="What technologies does this project use?",
+    tenant_id=TENANT_ID,
+    mode="thinking",
+    alpha=0.8,
+    max_results=5,
+    graph_context=True
+)
+
+print("\n--- Recall Results ---")
+for chunk in recall_result.chunks or []:
+    print(f"[{chunk.relevancy_score}] {chunk.source_title}")
+    print(f"  {chunk.chunk_content[:200]}")
+    print()
+
+# --- Step 8: Recall user preferences ---
+prefs = client.recall.recall_preferences(
+    query="What does the user prefer?",
+    tenant_id=TENANT_ID
+)
+print("--- User Preferences ---")
+for chunk in prefs.chunks or []:
+    print(f"  {chunk.chunk_content[:200]}")
+
+# --- Step 9: List all data ---
+all_data = client.fetch.list_data(
+    tenant_id=TENANT_ID,
+    kind="knowledge"
+)
+print(f"\nTotal knowledge sources: {all_data.pagination.total if all_data.pagination else 'unknown'}")
+```
+
+### TypeScript (Complete)
+
+```bash
+npm i @hydra_db/node
+```
+
+```typescript
+import { HydraDBClient } from "@hydra_db/node";
+import fs from "node:fs";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+  baseUrl: "https://api.hydradb.com",
+});
+
+const TENANT_ID = "my-demo-tenant";
+
+// Step 1: Create tenant
+const tenant = await client.tenant.create({ tenantId: TENANT_ID });
+console.log(`Tenant created: ${tenant.tenantId}`);
+
+// Step 2: Wait for infrastructure
+await new Promise((r) => setTimeout(r, 5000));
+
+// Step 3: Ingest a user memory
+const memResult = await client.upload.addMemory({
+  tenantId: TENANT_ID,
+  memories: [
+    {
+      text: "The user is a backend engineer who prefers TypeScript.",
+      infer: true,
+      userName: "demo-user",
+    },
+  ],
+});
+console.log(`Memory ingested: ${memResult.successCount} success`);
+
+// Step 4: Upload a document
+const uploadResult = await client.upload.knowledge({
+  tenantId: TENANT_ID,
+  files: [fs.readFileSync("README.md")],
+  fileMetadata: JSON.stringify([{ id: "readme_001" }]),
+});
+console.log(`Knowledge uploaded: ${uploadResult.successCount} success`);
+
+// Step 5: Wait for processing
+const sourceIds = uploadResult.results?.map((r) => r.sourceId) ?? [];
+for (let i = 0; i < 30; i++) {
+  const status = await client.upload.verifyProcessing({
+    tenantId: TENANT_ID,
+    fileIds: sourceIds,
+  });
+  const allDone = status.statuses.every(
+    (s) => s.indexingStatus === "completed" || s.indexingStatus === "success"
+  );
+  if (allDone) {
+    console.log("Processing complete.");
+    break;
+  }
+  console.log(`Status: ${status.statuses.map((s) => s.indexingStatus)}`);
+  await new Promise((r) => setTimeout(r, 10000));
+}
+
+// Step 6: Recall context
+const recall = await client.recall.fullRecall({
+  tenantId: TENANT_ID,
+  query: "What technologies does this project use?",
+  mode: "thinking",
+  alpha: 0.8,
+  maxResults: 5,
+  graphContext: true,
+});
+
+console.log("\n--- Recall Results ---");
+for (const chunk of recall.chunks ?? []) {
+  console.log(`[${chunk.relevancyScore}] ${chunk.sourceTitle}`);
+  console.log(`  ${chunk.chunkContent?.slice(0, 200)}`);
+}
+```
+
+### CLI (Complete)
+
+```bash
+# Install
+pip install hydradb-cli
+
+# Authenticate
+hydradb login
+# (enter API key and tenant ID when prompted)
+
+# Create tenant
+hydradb tenant create
+
+# Add a memory
+hydradb memories add my-demo-tenant "The user prefers Python and dark mode"
+
+# Upload a document
+hydradb knowledge upload my-demo-tenant ./README.md
+
+# Check processing
+hydradb knowledge verify my-demo-tenant src_abc123
+
+# Search knowledge
+hydradb recall full my-demo-tenant "What technologies does this project use?"
+
+# Search user preferences
+hydradb recall preferences my-demo-tenant "What does the user prefer?"
+
+# List all data
+hydradb fetch sources my-demo-tenant
+```
+
+---
+
+## 14. SDK Method Reference
+
+### Python SDK (`hydra_db`)
+
+**Client classes:** `HydraDB` (sync), `AsyncHydraDB` (async)
+
+**Import:** `from hydra_db import HydraDB, AsyncHydraDB`
+
+| Resource | Method | Description |
+|---|---|---|
+| `client.tenant` | `.create(tenant_id, ...)` | Create a tenant |
+| `client.tenant` | `.monitor(tenant_id)` | Get tenant statistics |
+| `client.tenant` | `.get_sub_tenant_ids(tenant_id)` | List sub-tenants |
+| `client.tenant` | `.get_infra_status(tenant_id)` | Check infrastructure status |
+| `client.tenant` | `.delete_tenant(tenant_id)` | Delete a tenant |
+| `client.upload` | `.knowledge(tenant_id, files, file_metadata, ...)` | Upload files |
+| `client.upload` | `.add_memory(tenant_id, memories, ...)` | Add user memories |
+| `client.upload` | `.delete_memory(tenant_id, memory_id, ...)` | Delete a memory |
+| `client.upload` | `.verify_processing(tenant_id, file_ids, ...)` | Check processing status |
+| `client.recall` | `.full_recall(query, tenant_id, ...)` | Search knowledge base |
+| `client.recall` | `.recall_preferences(query, tenant_id, ...)` | Search user memories |
+| `client.recall` | `.boolean_recall(query, tenant_id, ...)` | Keyword/boolean search |
+| `client.recall` | `.qna(question, tenant_id, ...)` | QnA with LLM answer |
+| `client.fetch` | `.list_data(tenant_id, kind, ...)` | List sources/memories |
+| `client.fetch` | `.graph_relations_by_source_id(source_id, tenant_id, ...)` | Get graph relations |
+| `client.fetch` | `.content(id, tenant_id, ...)` | Fetch full source content |
+| `client.data` | `.delete(tenant_id, ids, ...)` | Delete knowledge sources |
+| `client.embeddings` | `.insert(tenant_id, embeddings, ...)` | Insert raw embeddings |
+| `client.embeddings` | `.search(tenant_id, sub_tenant_id, query_embedding, ...)` | Search embeddings |
+| `client.embeddings` | `.filter(tenant_id, sub_tenant_id, ...)` | Filter embeddings |
+| `client.embeddings` | `.delete(tenant_id, ...)` | Delete embeddings |
+| `client.key` | `.create_api_key()` | Create a new API key |
+
+### TypeScript SDK (`@hydra_db/node`)
+
+**Client class:** `HydraDBClient`
+
+**Import:** `import { HydraDBClient } from "@hydra_db/node";`
+
+| Resource | Method | Description |
+|---|---|---|
+| `client.tenant` | `.create({ tenantId, ... })` | Create a tenant |
+| `client.tenant` | `.monitor({ tenantId })` | Get tenant statistics |
+| `client.tenant` | `.getSubTenantIds({ tenantId })` | List sub-tenants |
+| `client.tenant` | `.getInfraStatus({ tenantId })` | Check infrastructure status |
+| `client.tenant` | `.deleteTenant({ tenantId })` | Delete a tenant |
+| `client.upload` | `.knowledge({ tenantId, files, fileMetadata, ... })` | Upload files |
+| `client.upload` | `.addMemory({ tenantId, memories, ... })` | Add user memories |
+| `client.upload` | `.deleteMemory({ tenantId, memoryId, ... })` | Delete a memory |
+| `client.upload` | `.verifyProcessing({ tenantId, fileIds, ... })` | Check processing status |
+| `client.recall` | `.fullRecall({ tenantId, query, ... })` | Search knowledge base |
+| `client.recall` | `.recallPreferences({ tenantId, query, ... })` | Search user memories |
+| `client.recall` | `.booleanRecall({ tenantId, query, ... })` | Keyword/boolean search |
+| `client.recall` | `.qna({ tenantId, question, ... })` | QnA with LLM answer |
+| `client.fetch` | `.listData({ tenantId, kind, ... })` | List sources/memories |
+| `client.fetch` | `.graphRelationsBySourceId({ sourceId, tenantId, ... })` | Get graph relations |
+| `client.data` | `.delete({ tenantId, ids, ... })` | Delete knowledge sources |
+| `client.embeddings` | `.insert({ tenantId, embeddings, ... })` | Insert raw embeddings |
+| `client.embeddings` | `.search({ tenantId, subTenantId, queryEmbedding, ... })` | Search embeddings |
+| `client.embeddings` | `.filter({ tenantId, subTenantId, ... })` | Filter embeddings |
+| `client.embeddings` | `.delete({ tenantId, ... })` | Delete embeddings |
+| `client.key` | `.createApiKey()` | Create a new API key |
+
+**Naming convention:** Python SDK uses `snake_case` parameters. TypeScript SDK uses `camelCase` parameters. Both mirror the REST API structure: `client.<resource>.<method>()`.
+
+---
+
+## 15. Navigation and Further Reading
+
+### Documentation Site
+
+| Page | URL | Content |
+|---|---|---|
+| Overview | [docs.hydradb.com](https://docs.hydradb.com) | Product introduction |
+| Core Concepts | [docs.hydradb.com/concepts](https://docs.hydradb.com/concepts) | Memory types, recall, metadata |
+| Quickstart | [docs.hydradb.com/quickstart](https://docs.hydradb.com/quickstart) | 5-minute getting started |
+| Recall | [docs.hydradb.com/essentials/recall](https://docs.hydradb.com/essentials/recall) | Recall pipeline deep dive |
+| Memories | [docs.hydradb.com/essentials/memories](https://docs.hydradb.com/essentials/memories) | Memory types explained |
+| Context Graphs | [docs.hydradb.com/essentials/context-graph](https://docs.hydradb.com/essentials/context-graph) | Knowledge graph features |
+| Multi-Tenancy | [docs.hydradb.com/essentials/multi-tenant](https://docs.hydradb.com/essentials/multi-tenant) | Tenant/sub-tenant patterns |
+| Metadata | [docs.hydradb.com/essentials/metadata](https://docs.hydradb.com/essentials/metadata) | Metadata architecture |
+| API Reference | [docs.hydradb.com/api-reference/sdks](https://docs.hydradb.com/api-reference/sdks) | SDK documentation |
+| Error Codes | [docs.hydradb.com/api-reference/error-responses](https://docs.hydradb.com/api-reference/error-responses) | Error handling reference |
+
+### GitHub Repositories
+
+| Repository | URL | Content |
+|---|---|---|
+| Python SDK | [github.com/usecortex/python-sdk](https://github.com/usecortex/python-sdk) | Python SDK source |
+| TypeScript SDK | [github.com/usecortex/ts-sdk](https://github.com/usecortex/ts-sdk) | TypeScript SDK source |
+| HydraDB CLI | [github.com/usecortex/hydradb-cli](https://github.com/usecortex/hydradb-cli) | CLI source |
+| MCP Server | [github.com/usecortex/hydradb-mcp](https://github.com/usecortex/hydradb-mcp) | MCP server source |
+| Claude Code Plugin | [github.com/usecortex/hydradb-claude-code](https://github.com/usecortex/hydradb-claude-code) | Claude Code plugin source |
+| OpenClaw Plugin | [github.com/usecortex/openclaw-hydradb](https://github.com/usecortex/openclaw-hydradb) | OpenClaw plugin source |
+
+### Package Registries
+
+| Package | Registry | Install |
+|---|---|---|
+| `hydra-db-python` | [PyPI](https://pypi.org/project/hydra-db-python/) | `pip install hydra-db-python` |
+| `hydradb-cli` | [PyPI](https://pypi.org/project/hydradb-cli/) | `pip install hydradb-cli` |
+| `@hydra_db/node` | [npm](https://www.npmjs.com/package/@hydra_db/node) | `npm i @hydra_db/node` |
+| `@hydra_db/mcp` | [npm](https://www.npmjs.com/package/@hydra_db/mcp) | `npx -y @hydra_db/mcp@0.1.1` |
+| `@hydra_db/openclaw` | [npm](https://www.npmjs.com/package/@hydra_db/openclaw) | `openclaw plugins install @hydra_db/openclaw` |
+
+### Support
+
+- Email: [founders@hydradb.com](mailto:founders@hydradb.com)
+- Dashboard: [app.hydradb.com](https://app.hydradb.com)

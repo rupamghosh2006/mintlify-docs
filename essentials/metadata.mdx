@@ -17,7 +17,7 @@ HydraDB metadata lets you **structure, scope, and constrain** recall  -  so your
 - **Recall & Search**: apply metadata filters to deterministically include/exclude results.
 - **Ranking**: metadata can also act as a scoring signal (e.g., boost approved docs).
 
-**Note:** When ingesting, use `metadata` (tenant-level) and `additional_metadata` (document-level) in the request body. In recall responses, these are returned as `tenant_metadata` and `document_metadata` respectively.
+**Note:** When ingesting, use `metadata` (tenant-level) and `additional_metadata` (document-level) in the request body. In recall responses, these are returned under the same field names: `metadata` and `additional_metadata`.
 
 ---
 

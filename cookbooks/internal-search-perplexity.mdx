@@ -613,7 +613,7 @@ def print_results(result: dict) -> None:
     chunks = result.get("chunks", [])
     print(f"\n{len(chunks)} chunks retrieved:\n")
     for chunk in chunks:
-        fname = chunk.get("document_metadata", {}) or {}
+        fname = chunk.get("additional_metadata", {}) or {}
         score = chunk.get("relevancy_score", 0)
         print(f"  [{fname.get('filename', 'memory')} - {score:.2f}]")
         print(f"  {chunk['chunk_content'][:200]}...")
@@ -691,7 +691,7 @@ def explain_decision(question: str, user_id: str) -> str:
     # Build context with source attribution
     ctx_parts = []
     for c in chunks:
-        fname = (c.get("document_metadata") or {}).get("filename", "unknown source")
+        fname = (c.get("additional_metadata") or {}).get("filename", "unknown source")
         score = c.get("relevancy_score", 0)
         ctx_parts.append(f"[{fname} | score:{score:.2f}]\n{c['chunk_content']}")
 
@@ -799,7 +799,7 @@ curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
       "source_id":  "0726e63e-e818-4515-88fc-ffbe3b1b523f",
       "chunk_content": "Alice is a senior engineer on the platform team. She owns the auth service and data pipeline. Prefers technical depth with references to PRs and ADRs.",
       "relevancy_score": 0.634,
-      "document_metadata": null
+      "additional_metadata": null
     }
   ],
   "sources": [...],
@@ -807,7 +807,7 @@ curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
 }
 ```
 
-> **Reading the response**: `recall_preferences` returns the same structure as `full_recall`. Read the profile from `chunks[0]["chunk_content"]`. `document_metadata` will be `null` for memory entries - this is expected.
+> **Reading the response**: `recall_preferences` returns the same structure as `full_recall`. Read the profile from `chunks[0]["chunk_content"]`. `additional_metadata` will be `null` for memory entries - this is expected.
 
 ---
 

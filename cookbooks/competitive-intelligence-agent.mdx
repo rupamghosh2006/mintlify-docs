@@ -423,7 +423,7 @@ def print_results(result: dict) -> None:
     chunks = result.get("chunks", [])
     print(f"\n{len(chunks)} chunks retrieved:\n")
     for chunk in chunks:
-        fname = chunk.get("document_metadata", {}).get("filename", "unknown")
+        fname = chunk.get("additional_metadata", {}).get("filename", "unknown")
         score = chunk.get("relevancy_score", 0)
         print(f"  [{fname} - {score:.2f}]")
         print(f"  {chunk['chunk_content'][:200]}...")
@@ -448,7 +448,7 @@ print_results(result)
       "source_id":  "d25fb5a6-...",
       "chunk_content": "Signal type: press_release\nCompetitor: acme-corp\n\nAcme Corp today announced AcmeShield...",
       "relevancy_score": 0.818,
-      "document_metadata": {
+      "additional_metadata": {
         "filename":      "press-acme-corp-1234567890.txt",
         "sub_tenant_id": "acme-corp"
       }

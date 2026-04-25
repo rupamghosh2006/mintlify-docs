@@ -131,7 +131,6 @@ These keywords are used internally by HydraDB for document processing and search
 Each schema object in the `tenant_metadata_schema` array should specify:
 
 - **name**: The metadata field name (immutable once set)
-- **name**: The metadata field name (immutable once set)
 - **data_type**: The field's data type (see supported types below)
 - **searchable**: Whether this field can be searched semantically
 - **filterable**: Whether this field can be used for exact filtering
@@ -278,8 +277,8 @@ With the metadata schema defined above, users can perform sophisticated queries:
 "Find all engineering documents about security compliance"
 ```
 
-- Searches through `department` (`enable_dense_embedding: true`)
-- Searches through `compliance_framework` (`enable_dense_embedding: true`)
+- Searches through `department` (`searchable: true`)
+- Searches through `compliance_framework` (`searchable: true`)
 - Searches through document content and titles
 
 #### Precise Filtering (Match / Scalar Fields)

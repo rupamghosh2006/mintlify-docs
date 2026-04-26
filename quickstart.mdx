@@ -1,110 +1,75 @@
 ---
 title: "Quickstart"
-description: "Start building amazing LLM experiences in under 5 minutes"
+description: "Add memory and recall to your AI app in minutes"
 ---
 
 > Base URL: `https://api.hydradb.com`
 >
-> Sign up on the platform for setting up your workspace or contact us to get your API key at [founders@hydradb.com](mailto:founders@hydradb.com) for a personalized onboarding
+> [Sign up](https://hydradb.com/) or contact [founders@hydradb.com](mailto:founders@hydradb.com) to get your API key.
 
-All endpoints require an API key sent as a Bearer token in the `Authorization` header.
+All endpoints require an API key as a Bearer token:
 
-```mdx
+```
 Authorization: Bearer <your_api_key>
 ```
 
-## Quick Start
+## Step 1: Create a tenant
 
-### Prerequisites
-
-- Node.js / Python (or any backend language)
-- Basic knowledge of HTTP requests
-- An API key from [HydraDB](https://hydradb.com/) (`Authorization: Bearer <your_api_key>`)
-- A user conversation with an LLM assistant (or use our sample content)
-
-### Step 1: Create a tenant
-
-Create a tenant space for your data:
-
-```mdx
-POST /tenants/create
-```
-
-```mdx
+```bash
 curl -X POST 'https://api.hydradb.com/tenants/create' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "your_tenant_id"}'
 ```
 
-### **Step 2: Upload memories**
+<Note>
+  After creating a tenant, poll **GET /tenants/infra/status?tenant_id=...** until provisioning is complete before ingesting.
+</Note>
 
-You can upload messages, emails, PDFs, DOCXs, or use the memories API for text/markdown.
+## Step 2: Upload content
 
-#### Option A: Upload a knowledge memory
+#### Option A: Upload files (PDF, DOCX, TXT, etc.)
 
-```mdx
-POST /ingestion/upload_knowledge
-```
-
-- `memory`: your document
-- `tenant_id`: your unique tenant ID
-
-```mdx
+```bash
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer <your_api_key>" \
-  -F "file=@/path/to/your/document.pdf" \
-  -F "tenant_id=your_tenant_id"
+  -F "tenant_id=your_tenant_id" \
+  -F "files=@/path/to/document.pdf"
 ```
 
-#### Option B: Upload user memories
+#### Option B: Add user memories (text, markdown, conversation pairs)
 
-Use [Add Memory](/api-reference/endpoint/add-memories) for uploading user conversations, user-LLM pairs, texts, or markdowns
-
-### **(Optional): Verify Processing**
-
-Check if the memories are fully indexed:
-
-```mdx
-POST /ingestion/verify_processing?file_ids=YOUR_FILE_ID&tenant_id=your_tenant_id
-```
-
-**Request Body:**
-
-```json
-{
-  "question": "What did the team say about pricing?",
-  "session_id": "user-session-123",
-  "tenant_id": "your_tenant_id",
-  "context_list": ["optional_specific_file_id"],
-  "tenant_metadata": {"source_title": "contract.pdf"}
-}
-```
-
-**Example (cURL):**
-
-```mdx
-curl -X POST 'https://api.hydradb.com/search/qna' \
+```bash
+curl -X POST 'https://api.hydradb.com/memories/add_memory' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
   -d '{
-    "question": "Summarize the contract terms",
-    "session_id": "user-123-session",
     "tenant_id": "your_tenant_id",
-    "tenant_metadata": {"source_title": "contract.pdf"},
-    "document_metadata": {"source_title": "contract.pdf"}
+    "sub_tenant_id": "user_123",
+    "memories": [
+      {
+        "text": "User prefers concise bullet-point responses",
+        "infer": false
+      }
+    ]
   }'
 ```
 
-### **Step 3: Give context to your agents**
+## Step 3: (Optional) Verify processing
 
-Use the recall endpoint: what should the agent know about the world, the user, and the task before acting? For context from your **documents**, use full recall; for **user memories**, use [recall preferences](/api-reference/endpoint/recall-preferences).
-
-```mdx
-POST /recall/full_recall
+```bash
+curl -X POST \
+  'https://api.hydradb.com/ingestion/verify_processing?file_ids=YOUR_FILE_ID&tenant_id=your_tenant_id' \
+  -H "Authorization: Bearer <your_api_key>"
 ```
 
-```mdx
+Status values: `queued` → `processing` → `completed` (or `errored`).
+
+## Step 4: Recall context for your agent
+
+For **knowledge** (documents): use `full_recall`. For **user memories**: use `recall_preferences`.
+
+```bash
 curl -X POST 'https://api.hydradb.com/recall/full_recall' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "Content-Type: application/json" \
@@ -122,14 +87,14 @@ curl -X POST 'https://api.hydradb.com/recall/full_recall' \
   "chunks": [
     {
       "chunk_uuid": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-      "id": "doc_12345",
-      "chunk_content": "The team discussed a tiered pricing model: $29/month for Starter, $79/month for Pro, and $199/month for Enterprise. Enterprise includes dedicated support and custom integrations.",
+      "source_id": "doc_12345",
+      "chunk_content": "The team discussed a tiered pricing model: $29/month for Starter, $79/month for Pro, and $199/month for Enterprise.",
       "source_type": "file",
       "source_title": "Q4 Pricing Strategy",
       "source_upload_time": "2023-10-27T10:00:00Z",
       "relevancy_score": 0.92,
-      "document_metadata": { "author": "Product Team" },
-      "tenant_metadata": { "department": "Sales" }
+      "additional_metadata": { "author": "Product Team" },
+      "metadata": { "department": "Sales" }
     }
   ],
   "graph_context": {
@@ -139,3 +104,5 @@ curl -X POST 'https://api.hydradb.com/recall/full_recall' \
   }
 }
 ```
+
+Pass `chunks[*].chunk_content` as context to your LLM prompt.

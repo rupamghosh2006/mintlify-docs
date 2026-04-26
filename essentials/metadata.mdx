@@ -17,7 +17,7 @@ HydraDB metadata lets you **structure, scope, and constrain** recall  -  so your
 - **Recall & Search**: apply metadata filters to deterministically include/exclude results.
 - **Ranking**: metadata can also act as a scoring signal (e.g., boost approved docs).
 
-**Note:** For uploads, use `tenant_metadata` and `document_metadata` (same schema as the original `metadata` field). These fields are not used in the QnA endpoint.
+**Note:** When ingesting, use `metadata` (tenant-level) and `additional_metadata` (document-level) in the request body. In recall responses, these are returned under the same field names: `metadata` and `additional_metadata`.
 
 ---
 
@@ -36,18 +36,13 @@ Organization-level metadata that applies consistently across everything in a ten
 
 Example:
 
-```
+```json
 {
   "tenant_metadata_schema": [
-    {"key": "compliance_framework", "type": "string", "searchable": true},
-    {"key": "data_classification", "type": "string", "searchable": true},
-    {"key": "region", "type": "string", "searchable": true}
-  ],
-  "tenant_metadata": {
-    "compliance_framework": "SOC2",
-    "data_classification": "internal",
-    "region": "us"
-  }
+    {"name": "compliance_framework", "data_type": "string", "searchable": true, "filterable": true},
+    {"name": "data_classification",  "data_type": "string", "filterable": true},
+    {"name": "region",               "data_type": "string", "filterable": true}
+  ]
 }
 ```
 
@@ -95,18 +90,22 @@ Example user request:
 
 > “All information related to Project Strawberry from last month.”
 
-Deterministic filter:
+Pass it as `metadata_filters` in a recall request:
 
-```
+```json
 {
-  "document_metadata": {
-    "project": "strawberry",
-    "created_at": {"$gte": "2025-03-01", "$lt": "2025-04-01"}
+  "tenant_id": "your_tenant_id",
+  "query": "Project Strawberry updates",
+  "metadata_filters": {
+    "document_metadata": {
+      "project": "strawberry",
+      "created_at": {"$gte": "2025-03-01", "$lt": "2025-04-01"}
+    }
   }
 }
 ```
 
-In HydraDB recall, this filter is applied _before_ semantic and graph ranking.
+The filter is applied _before_ semantic and graph ranking — only matching documents enter the retrieval pipeline.
 
 ### Common Filtering Patterns
 

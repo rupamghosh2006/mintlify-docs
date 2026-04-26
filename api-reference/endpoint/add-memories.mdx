@@ -252,7 +252,7 @@ The API supports three types of content input:
 
 ### `infer` (boolean)
 
-Controls whether HydraDB extracts insights, likes, dislikes, preferences, and outcomes from the content. If it nothing is specified, default behaviour is `true`
+Controls whether HydraDB extracts insights, likes, dislikes, preferences, and outcomes from the content. If nothing is specified, default behaviour is `false`
 
 | Value   | Behavior                                                              |
 | ------- | --------------------------------------------------------------------- |
@@ -305,8 +305,8 @@ Each item in the `memories` array can have the following fields:
 | `user_name`            | string  | No       | User's name for personalization              |
 | `id`                   | string  | No       | Custom unique identifier                     |
 | `title`                | string  | No       | Display title for the memory                 |
-| `tenant_metadata`      | string  | No       | JSON string of tenant-level metadata         |
-| `document_metadata`    | string  | No       | JSON string of document-level metadata       |
+| `metadata`             | object  | No       | Dict of tenant-level metadata                |
+| `additional_metadata`  | object  | No       | Dict of document-level metadata              |
 
 ## Response Format
 
@@ -316,7 +316,7 @@ Each item in the `memories` array can have the following fields:
   "message": "Memories queued for ingestion successfully",
   "results": [
     {
-      "id": "abc123-def456",
+      "source_id": "abc123-def456",
       "title": "My Document",
       "status": "queued",
       "infer": false,

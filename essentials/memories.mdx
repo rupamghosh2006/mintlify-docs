@@ -222,26 +222,31 @@ The fastest way to see value:
 
 ### Example
 
-```
-curl -X POST https://api.hydradb.com/memory/add \
+```bash
+curl -X POST https://api.hydradb.com/memories/add_memory \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "demo",
-    "user_id": "john",
-    "content": "John prefers dark mode and detailed technical explanations",
-    "infer": true
+    "sub_tenant_id": "john",
+    "memories": [
+      {
+        "text": "John prefers dark mode and detailed technical explanations",
+        "infer": true
+      }
+    ]
   }'
 ```
 
 Then recall it:
 
-```
-curl -X POST https://api.hydradb.com/memory/recall \
+```bash
+curl -X POST https://api.hydradb.com/recall/recall_preferences \
   -H "Authorization: Bearer <API_KEY>" \
+  -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "demo",
-    "user_id": "john",
+    "sub_tenant_id": "john",
     "query": "How should I explain this feature?"
   }'
 ```

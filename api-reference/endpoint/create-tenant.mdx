@@ -32,23 +32,21 @@ If you pass `tenant_id` as a query parameter, that ID will be used. If not provi
         tenant_id="tenant_1234",
         tenant_metadata_schema=[
             {
-                "key": "department",
-                "type": "string",
+                "name": "department",
+                "data_type": "string",
                 "searchable": True,
-                "filterable": True
+                "filterable": True,
             },
             {
-                "key": "compliance_framework",
-                "type": "string",
+                "name": "compliance_framework",
+                "data_type": "string",
                 "searchable": True,
-                "filterable": False
             },
             {
-                "key": "data_classification",
-                "type": "string",
-                "searchable": False,
-                "filterable": True
-            }
+                "name": "data_classification",
+                "data_type": "string",
+                "filterable": True,
+            },
         ]
     )
     ```
@@ -132,75 +130,59 @@ These keywords are used internally by HydraDB for document processing and search
 
 Each schema object in the `tenant_metadata_schema` array should specify:
 
-- **key**: The metadata field name (immutable once set)
-- **type**: Data type (see supported types below)
-- **searchable**: Whether this field can be used in search queries
-- **filterable**: Whether this field can be used for filtering
+- **name**: The metadata field name (immutable once set)
+- **data_type**: The field's data type (see supported types below)
+- **searchable**: Whether this field can be searched semantically
+- **filterable**: Whether this field can be used for exact filtering
 
 ## Supported Metadata Types
-
-HydraDB supports a comprehensive range of data types for metadata fields:
 
 ### Primitive Types
 
 | Type        | Description       | Example Values                              | Use Cases                                  |
 | ----------- | ----------------- | ------------------------------------------- | ------------------------------------------ |
-| **string**  | Text data         | `"Engineering"`, `"SOC2"`, `"confidential"` | Categorical data, identifiers, labels      |
-| **number**  | Numeric values    | `5`, `100.5`, `2024`                        | Quantitative metrics, versions, priorities |
-| **boolean** | True/false values | `true`, `false`                             | Binary flags, status indicators            |
-| **date**    | Date/time values  | `"2024-01-15T10:30:00Z"`                    | Temporal data, audit trails                |
+| `string`    | Text data         | `"Engineering"`, `"SOC2"`, `"confidential"` | Categorical data, identifiers, labels      |
+| `integer`   | Whole number      | `5`, `100`, `2024`                          | Counts, versions, priorities               |
+| `float`     | Decimal number    | `0.95`, `3.14`, `99.9`                      | Scores, percentages, measurements          |
+| `boolean`   | True/false        | `true`, `false`                             | Binary flags, status indicators            |
 
 ### Complex Types
 
-| Type       | Description     | Example Values                      | Use Cases                                |
-| ---------- | --------------- | ----------------------------------- | ---------------------------------------- |
-| **object** | Structured data | `{"city": "SF", "country": "USA"}`  | Hierarchical relationships, nested data  |
-| **array**  | Multiple values | `["security", "api", "compliance"]` | Multi-value attributes, tags, categories |
+| Type      | Description     | Example Values                      | Use Cases                                |
+| --------- | --------------- | ----------------------------------- | ---------------------------------------- |
+| `object`  | Structured data | `{"city": "SF", "country": "USA"}`  | Hierarchical relationships, nested data  |
+| `array`   | Multiple values | `["security", "api", "compliance"]` | Multi-value attributes, tags, categories |
 
-## Searchable vs Filterable Flags
+## Searchable vs Filterable
 
-Understanding the difference between `searchable` and `filterable` is crucial for optimal metadata design:
-
-**1. Searchable Fields**
-
-- **Purpose**: Fields that can be used in **semantic search queries** and **QnA operations**
-- **Behavior**: Content is indexed for AI-powered search and question answering
-- **Use When**: You want users to find documents by asking questions about these fields
-- **Example**: `"Which documents are from the Engineering department?"`
+**`searchable: true`** — indexes the field for semantic and keyword search. Use when you want users to find documents by asking questions about this field.
 
 ```json
 {
-  "key": "department", 
-  "type": "string", 
-  "searchable": true,  // ✅ Can be searched semantically
+  "name": "department",
+  "data_type": "string",
+  "searchable": true
+}
+```
+
+**`filterable: true`** — enables exact-match filtering (e.g. `department = "Engineering"`). Use for precise narrowing before semantic ranking.
+
+```json
+{
+  "name": "data_classification",
+  "data_type": "string",
   "filterable": true
 }
 ```
 
-**2. Filterable Fields**
-
-- **Purpose**: Fields that can be used for **precise filtering** and **exact matching**
-- **Behavior**: Content is indexed for fast exact-match filtering operations
-- **Use When**: You want to narrow down results with precise criteria
-- **Example**: `department = "Engineering" AND status = "active"`
+**Combined — filterable and searchable:**
 
 ```json
 {
-  "key": "data_classification", 
-  "type": "string", 
-  "searchable": false,  // ❌ Not semantically searchable
-  "filterable": true    // ✅ Can be filtered exactly
-}
-```
-
-**3. Combined Usage**
-
-```json
-{
-  "key": "compliance_framework", 
-  "type": "string", 
-  "searchable": true,   // ✅ "Find SOC2 compliance documents"
-  "filterable": true    // ✅ compliance_framework = "SOC2"
+  "name": "compliance_framework",
+  "data_type": "string",
+  "searchable": true,
+  "filterable": true
 }
 ```
 
@@ -210,48 +192,12 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 ```json
 [
-  {
-    "key": "department", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "compliance_framework", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "data_classification", 
-    "type": "string", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "business_unit", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "retention_period", 
-    "type": "number", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "is_confidential", 
-    "type": "boolean", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "created_date", 
-    "type": "date", 
-    "searchable": false, 
-    "filterable": true
-  }
+  { "name": "department",           "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "compliance_framework", "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "data_classification",  "data_type": "string",  "filterable": true },
+  { "name": "business_unit",        "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "retention_period",     "data_type": "integer", "filterable": true },
+  { "name": "is_confidential",      "data_type": "boolean", "filterable": true }
 ]
 ```
 
@@ -259,42 +205,12 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 ```json
 [
-  {
-    "key": "practice_area", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "client_id", 
-    "type": "string", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "confidentiality_level", 
-    "type": "string", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "jurisdiction", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "case_priority", 
-    "type": "number", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "requires_approval", 
-    "type": "boolean", 
-    "searchable": false, 
-    "filterable": true
-  }
+  { "name": "practice_area",        "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "client_id",            "data_type": "string",  "filterable": true },
+  { "name": "confidentiality_level","data_type": "string",  "filterable": true },
+  { "name": "jurisdiction",         "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "case_priority",        "data_type": "integer", "filterable": true },
+  { "name": "requires_approval",    "data_type": "boolean", "filterable": true }
 ]
 ```
 
@@ -302,42 +218,12 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 ```json
 [
-  {
-    "key": "product_line", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "team", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "component", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "priority", 
-    "type": "number", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "is_critical", 
-    "type": "boolean", 
-    "searchable": false, 
-    "filterable": true
-  },
-  {
-    "key": "tags", 
-    "type": "array", 
-    "searchable": true, 
-    "filterable": true
-  }
+  { "name": "product_line", "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "team",         "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "component",    "data_type": "string",  "searchable": true, "filterable": true },
+  { "name": "priority",     "data_type": "integer", "filterable": true },
+  { "name": "is_critical",  "data_type": "boolean", "filterable": true },
+  { "name": "tags",         "data_type": "array",   "filterable": true }
 ]
 ```
 
@@ -345,18 +231,8 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 ```json
 [
-  {
-    "key": "organization", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  },
-  {
-    "key": "environment", 
-    "type": "string", 
-    "searchable": true, 
-    "filterable": true
-  }
+  { "name": "organization", "data_type": "string", "searchable": true, "filterable": true },
+  { "name": "environment",  "data_type": "string", "filterable": true }
 ]
 ```
 
@@ -370,19 +246,19 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 **2. Type Selection Guidelines**
 
-- **Strings**: For categorical data, identifiers, and labels
-- **Numbers**: For quantitative metrics, versions, and priorities
-- **Booleans**: For binary flags and status indicators
-- **Dates**: For temporal data and audit trails
-- **Arrays**: For multi-value fields like tags and categories
-- **Objects**: For structured, hierarchical data
+- **`string`**: Text, labels, and any field that needs semantic or keyword search
+- **`integer`**: Counts, versions, priorities
+- **`float`**: Scores, percentages, measurements
+- **`boolean`**: Binary flags and status indicators
+- **`object`**: Structured, hierarchical data
+- **`array`**: Multi-value fields like tags and categories
 
 **3. Searchable vs Filterable Strategy**
 
-- **Make searchable**: Fields users will ask questions about
-- **Make filterable**: Fields used for precise result narrowing
-- **Combine both**: For fields used in both semantic search and filtering
-- **Filterable only**: For sensitive data or exact-match requirements
+- **`searchable: true`**: Fields users will ask natural-language questions about
+- **`filterable: true`**: Fields used for precise exact-match filtering
+- **Combine both**: For fields that need to support both free-text search and exact filtering
+- Non-string types (`integer`, `boolean`) support scalar filtering without any flags needed
 
 **4. Performance Considerations**
 
@@ -395,37 +271,34 @@ Understanding the difference between `searchable` and `filterable` is crucial fo
 
 With the metadata schema defined above, users can perform sophisticated queries:
 
-#### Semantic Search (Searchable Fields)
+#### Semantic Search (Dense Embedding Fields)
 
 ```
-
 "Find all engineering documents about security compliance"
 ```
 
-- Searches through `department` (searchable: true)
-- Searches through `compliance_framework` (searchable: true)
+- Searches through `department` (`searchable: true`)
+- Searches through `compliance_framework` (`searchable: true`)
 - Searches through document content and titles
 
-#### Precise Filtering (Filterable Fields)
+#### Precise Filtering (Match / Scalar Fields)
 
 ```
-
 department = "Engineering" AND data_classification = "internal" AND is_confidential = false
 ```
 
-- Exact match on `department` (filterable: true)
-- Exact match on `data_classification` (filterable: true)
-- Exact match on `is_confidential` (filterable: true)
+- Exact match on `department` (`filterable: true`)
+- Exact match on `data_classification` (`filterable: true`)
+- Scalar filter on `is_confidential` (`data_type: "boolean"`)
 
 #### Combined Queries
 
 ```
-
 "Show me all SOC2 compliance documents from the Product business unit"
 ```
 
-- Semantic search for "SOC2 compliance" (searchable fields)
-- Precise filter: `business_unit = "Product"` (filterable: true)
+- Semantic search for "SOC2 compliance" (`searchable: true` fields)
+- Precise filter: `business_unit = "Product"` (`filterable: true`)
 
 ### Real-World Use Cases
 
@@ -482,4 +355,4 @@ All documents in your tenant automatically inherit the tenant metadata schema yo
 - Creates and persists the tenant
 - Returns the final `tenant_id` and a confirmation message
 
-> Note: If your use case is to directly upload and search embeddings (without document/text ingestion), use the dedicated embeddings-tenant endpoint instead: `/embeddings/create_tenant`. This sets `sub_tenant_id = tenant_id` and prepares the tenant for embeddings-first workloads.
+> Note: If your use case is to directly upload and search embeddings (without document/text ingestion), pass `"is_embeddings_tenant": true` (and optionally `"embeddings_dimension"`) in the request body to `POST /tenants/create`. This sets `sub_tenant_id = tenant_id` and prepares the tenant for embeddings-first workloads.

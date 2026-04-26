@@ -3,15 +3,15 @@ title: "Core Concepts"
 description: "The mental model for building AI that remembers"
 ---
 
-HydraDB gives your AI three types of memory  -  the same way humans remember. Once you understand this model, everything else clicks.
+HydraDB gives your AI three types of memory. Once you understand this model, everything else clicks.
 
 ## The Three Types of Memory
 
 | Memory Type | What It Stores | Scope |
 |-------------|----------------|-------|
-| **User Memory** | Preferences, habits, past interactions | Per user |
-| **Knowledge Memory** | Documents, data, information from apps | Shared or per user |
-| **Hive Memory** | Collective learnings across all agents | Organization-wide |
+| **User Memory** | Preferences, habits, past interactions | Per user (`sub_tenant_id`) |
+| **Knowledge Memory** | Documents, files, app data | Shared or scoped to a sub-tenant |
+| **Hive Memory** | Collective learnings across agents | Organization-wide |
 
 Here's how they work together:
 
@@ -45,21 +45,10 @@ Here's how they work together:
 
 **What your AI remembers about each person.**
 
-User Memory captures everything that makes a user unique: their preferences, communication style, past questions, likes, dislikes, and behavioral patterns.
+User Memory captures preferences, communication style, past questions, likes, dislikes, and behavioral patterns. Each user is represented by a `sub_tenant_id`.
 
-```typescript
-// Store a user memory
-await hydradb.userMemory.store({
-  userId: "sarah_123",
-  memory: "Prefers concise responses with bullet points. Dislikes jargon."
-});
-
-// Memories also extract automatically from conversations
-await hydradb.userMemory.extractFromConversation({
-  userId: "sarah_123",
-  messages: conversationHistory
-});
-```
+- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memories)
+- **Recall**: [`POST /recall/recall_preferences`](/api-reference/endpoint/recall-preferences)
 
 **What you can build:**
 - AI assistants that adapt to each user's style
@@ -72,29 +61,18 @@ await hydradb.userMemory.extractFromConversation({
 
 **What your AI knows from documents, apps, and data.**
 
-Knowledge Memory is your AI's factual foundation  -  company policies, product docs, Slack threads, emails, Notion pages, and any unstructured data your agents need to do their job.
+Knowledge Memory is your AI's factual foundation — company policies, product docs, Slack threads, emails, Notion pages, and any unstructured data your agents need.
 
-```typescript
-// Ingest a document
-await hydradb.knowledgeMemory.ingest({
-  file: policyDocument,
-  filename: "refund-policy.pdf"
-});
-
-// Connect an app
-await hydradb.knowledgeMemory.connectSource({
-  source: "notion",
-  workspaceId: "acme-corp"
-});
-```
+- **Ingest files**: [`POST /ingestion/upload_knowledge`](/api-reference/endpoint/add-knowledge-memories) (PDF, DOCX, TXT, etc.)
+- **Ingest app sources**: same endpoint with `app_sources` form field (Gmail, Slack, Notion, etc.)
+- **Recall**: [`POST /recall/full_recall`](/api-reference/endpoint/full-recall)
 
 **What gets stored:**
 - PDFs, docs, spreadsheets, presentations
 - Slack messages, email threads
 - Notion, Google Drive, Confluence pages
-- Any text, image, or structured data
 
-Every piece of knowledge is parsed, chunked, and indexed for instant recall.
+Every piece of knowledge is parsed, chunked, and indexed for recall.
 
 ---
 
@@ -102,97 +80,32 @@ Every piece of knowledge is parsed, chunked, and indexed for instant recall.
 
 **What all your agents learn together.**
 
-Hive Memory is collective intelligence  -  learnings, corrections, and institutional knowledge that every agent in your system can access. When one agent learns something, every agent knows.
+Hive Memory is collective intelligence — learnings and institutional knowledge that every agent in your system can access.
 
-```typescript
-// Store a hive memory
-await hydradb.hiveMemory.store({
-  memory: "When users ask about cancellation, always offer a 30-day extension first",
-  category: "support_playbook"
-});
-
-// All agents can now recall this
-const playbook = await hydradb.hiveMemory.recall({
-  query: "handling cancellation requests"
-});
-```
-
-**What you can build:**
-- Agents that never repeat the same mistake
-- Instant propagation of policy updates
-- Self-improving AI systems that get smarter over time
+- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memories) (coming soon: dedicated endpoint)
+- **Recall**: [`POST /recall/full_recall`](/api-reference/endpoint/full-recall)
 
 ---
 
-## Memory Spaces
+## Tenants and Sub-Tenants
 
-**How you organize and isolate memory.**
+A **tenant** (`tenant_id`) is the top-level isolation boundary — one per customer organization or application.
 
-A Memory Space is an isolated container for all three memory types. Use them to separate organizations, projects, or environments.
+A **sub-tenant** (`sub_tenant_id`) is a workspace within a tenant. Sub-tenants are created automatically on first use.
 
-```
-Memory Space: "acme-corp"
-├── User Memories (per employee)
-├── Knowledge Memories (company docs)
-└── Hive Memories (shared learnings)
-
-Memory Space: "globex-inc"
-├── User Memories (per employee)
-├── Knowledge Memories (company docs)
-└── Hive Memories (shared learnings)
-```
-
-**No data crosses Memory Space boundaries. Ever.**
-
-### B2B vs B2C Patterns
-
-**B2B (Multi-tenant SaaS):** Each customer organization gets their own Memory Space.
-
-```typescript
-// Acme Corp's data is completely isolated
-await hydradb.knowledgeMemory.ingest({
-  memorySpaceId: "acme-corp",
-  file: acmePolicy
-});
-
-// Globex can never see Acme's data
-await hydradb.knowledgeMemory.ingest({
-  memorySpaceId: "globex-inc",
-  file: globexPolicy
-});
-```
-
-**B2C (Consumer apps):** One Memory Space, with User Memory doing the personalization.
-
-```typescript
-// All users share knowledge, but have personal memories
-await hydradb.userMemory.store({
-  memorySpaceId: "my-app",
-  userId: "user_123",  // Personal to this user
-  memory: "Prefers dark mode and metric units"
-});
-```
+**B2B pattern**: Each customer organization is a separate `tenant_id`.
+**B2C pattern**: One `tenant_id` for your app, one `sub_tenant_id` per user.
 
 ---
 
 ## Memory Recall
 
-**How your agents retrieve the right context.**
+At query time, HydraDB retrieves the most relevant context using hybrid retrieval (semantic + keyword + graph traversal + personalized ranking).
 
-Recall is how you pull relevant memories at query time. HydraDB searches across all memory types and returns what's most relevant.
-
-```typescript
-const context = await hydradb.memory.recall({
-  memorySpaceId: "acme-corp",
-  userId: "sarah_123",
-  query: "What's our refund policy?",
-  include: {
-    userMemory: true,      // Sarah's preferences
-    knowledgeMemory: true, // Policy documents
-    hiveMemory: true       // Org-wide learnings
-  }
-});
-```
+| Endpoint | Searches |
+|----------|----------|
+| `POST /recall/full_recall` | Knowledge (documents, app sources) |
+| `POST /recall/recall_preferences` | User memories |
 
 ### Recall Strategies
 
@@ -201,55 +114,31 @@ const context = await hydradb.memory.recall({
 | **Semantic** | Meaning-based search ("docs about refunds") |
 | **Keyword** | Exact matches ("policy v2.3") |
 | **Hybrid** | Best of both (default, recommended) |
-| **Graph** | Relationship queries ("Sarah's manager") |
 
 ---
 
 ## Metadata
 
-**How you filter and organize memories.**
+Tag any memory with key-value metadata for deterministic filtering at recall time.
 
-Tag any memory with key-value metadata for precise filtering at recall time.
+- **`metadata`** — tenant-level attributes set at ingestion (scoped by tenant schema)
+- **`additional_metadata`** — document-level attributes set at ingestion
+- **`metadata_filters`** — filter applied in recall requests before semantic ranking
 
-```typescript
-// Store with metadata
-await hydradb.knowledgeMemory.ingest({
-  file: hrPolicy,
-  metadata: {
-    department: "hr",
-    confidentiality: "internal",
-    version: "2024-01"
-  }
-});
-
-// Filter at recall time
-const results = await hydradb.memory.recall({
-  query: "vacation policy",
-  filter: {
-    department: "hr",
-    confidentiality: "internal"
-  }
-});
-```
-
-**Common metadata patterns:**
-- `department`, `team`, `role`  -  access control
-- `version`, `updated_at`  -  document versioning
-- `source`, `author`  -  provenance tracking
-- `confidentiality`  -  security classification
+**Common patterns:** `department`, `team`, `project`, `source`, `created_at`, `is_confidential`
 
 ---
 
 ## Quick Reference
 
-| Concept | What It Is | Key Question It Answers |
-|---------|------------|------------------------|
-| **User Memory** | Per-user preferences & history | "What do I know about this person?" |
-| **Knowledge Memory** | Documents, apps, data | "What facts do I have access to?" |
-| **Hive Memory** | Org-wide shared learnings | "What has the team learned?" |
-| **Memory Space** | Isolated container for a tenant | "Whose data is this?" |
-| **Recall** | Context retrieval at query time | "What's relevant right now?" |
-| **Metadata** | Tags for filtering | "How do I narrow this down?" |
+| Concept | API |
+|---------|-----|
+| Create tenant | `POST /tenants/create` |
+| Upload files | `POST /ingestion/upload_knowledge` |
+| Add user memories | `POST /memories/add_memory` |
+| Check processing | `POST /ingestion/verify_processing` |
+| Recall knowledge | `POST /recall/full_recall` |
+| Recall user memory | `POST /recall/recall_preferences` |
 
 ---
 
@@ -259,13 +148,16 @@ const results = await hydradb.memory.recall({
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Add memory to your AI in 5 minutes
   </Card>
-    <Card title="User Memories" icon="user" href="/essentials/memories">
+  <Card title="User Memories" icon="user" href="/essentials/memories">
     Deep dive into personalization
   </Card>
-  <Card title="Add Knowledge Memories" icon="book" href="/api-reference/endpoint/add-knowledge-memories">
-    Ingest documents and apps
+  <Card title="Knowledge Base" icon="book" href="/api-reference/endpoint/add-knowledge-memories">
+    Ingest documents and app sources
   </Card>
-  <Card title="Add Hive Memories" icon="hexagon" href="/api-reference/endpoint/add-hive-memories">
-    Build collective intelligence
+  <Card title="Full Recall" icon="magnifying-glass" href="/api-reference/endpoint/full-recall">
+    Query your knowledge base
+  </Card>
+  <Card title="Hive Memories" icon="hexagon" href="/api-reference/endpoint/add-hive-memories">
+    Build collective intelligence across agents
   </Card>
 </CardGroup>

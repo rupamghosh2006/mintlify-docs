@@ -717,7 +717,7 @@ def query_trend(
     # Build context with explicit period labels and source attribution
     context_parts = []
     for c in chunks_sorted:
-        meta        = c.get("document_metadata", {})
+        meta        = c.get("additional_metadata", {})
         period      = meta.get("period_label", "unknown period")
         doc_type    = meta.get("doc_type", "unknown source")
         score       = c.get("relevancy_score", 0)
@@ -980,14 +980,14 @@ def track_narrative_shift(
 
     chunks = sorted(
         recall.get("chunks", []),
-        key=lambda c: c.get("document_metadata", {}).get("period_end_date", ""),
+        key=lambda c: c.get("additional_metadata", {}).get("period_end_date", ""),
     )
 
     if not chunks:
         return f"No earnings transcripts found for {ticker}. Verify ingestion."
 
     context_text = "\n\n".join(
-        f"[{c['document_metadata'].get('period_label', '?')}]\n{c['chunk_content']}"
+        f"[{c['additional_metadata'].get('period_label', '?')}]\n{c['chunk_content']}"
         for c in chunks
     )
 
@@ -1267,8 +1267,8 @@ def generate_quarterly_briefing(
     # ── 4. Synthesize briefing ────────────────────────────────────────────
     print("[4/4] Synthesizing briefing...")
     current_context = "\n\n".join(
-        f"[{c.get('document_metadata', {}).get('period_label','?')} | "
-        f"{c.get('document_metadata', {}).get('doc_type','?')}]\n{c['chunk_content']}"
+        f"[{c.get('additional_metadata', {}).get('period_label','?')} | "
+        f"{c.get('additional_metadata', {}).get('doc_type','?')}]\n{c['chunk_content']}"
         for c in current_chunks
     )
 
@@ -1612,7 +1612,7 @@ POST /recall/recall_preferences
       "source_title":      "ACME Q2 2023 Earnings Transcript",
       "relevancy_score":   0.91,
       "source_upload_time":"2023-06-30T00:00:00Z",
-      "document_metadata": {
+      "additional_metadata": {
         "ticker":         "ACME",
         "doc_type":       "earnings_transcript",
         "period_label":   "Q2 2023",

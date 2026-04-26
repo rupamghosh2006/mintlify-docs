@@ -16,7 +16,7 @@ openapi: "POST /fetch/content"
     -d '{
     "tenant_id": "string",
     "sub_tenant_id": "string",
-    "id": "string",
+    "source_id": "string",
     "mode": "content",
     "expiry_seconds": 3600
     }'
@@ -26,11 +26,11 @@ openapi: "POST /fetch/content"
   <Tab title="TypeScript">
     ```ts
     const content = await client.fetch.content({
-      id: "HydraDoc1234",
-      file_type: "pdf",
+      source_id: "HydraDoc1234",
       tenant_id: "tenant_1234",
-      return_content: true,
-      sub_tenant_id: "sub_tenant_4567"
+      sub_tenant_id: "sub_tenant_4567",
+      mode: "content",
+      expiry_seconds: 3600
     });
     ```
   </Tab>
@@ -38,11 +38,11 @@ openapi: "POST /fetch/content"
     ```python
     # Async usage is similar, just use async_client and await
     content = client.fetch.content(
-        id="HydraDoc1234",
-        file_type="pdf",
+        source_id="HydraDoc1234",
         tenant_id="tenant_1234",
-        return_content=True,
-        sub_tenant_id="sub_tenant_4567"
+        sub_tenant_id="sub_tenant_4567",
+        mode="content",
+        expiry_seconds=3600
     )
     ```
   </Tab>
@@ -53,6 +53,6 @@ openapi: "POST /fetch/content"
 - Extracts user credentials and organization details from the API key
 - Validates the file access permissions for the specified tenant
 - Creates secure access tokens for file retrieval
-- When `return_content` is `true`: Returns the actual file content directly
-- When `return_content` is `false`: Generates time-limited download URLs for the requested file
-- Returns downloadable URLs that can be used to access the file content
+- `mode="content"`: Returns the actual file content directly
+- `mode="url"`: Generates a time-limited download URL for the requested file
+- `mode="both"`: Returns both content and a download URL

@@ -20,7 +20,7 @@ This guide explains the response format and how to transform it into a clean, fo
       "chunk_content": "Text content of the retrieved chunk...",
       "relevancy_score": 1.09,
       "extra_context_ids": ["ctx-id-1"],
-      "document_metadata": { ... }
+      "additional_metadata": { ... }
     }
   ],
   "graph_context": {
@@ -204,8 +204,8 @@ export interface VectorStoreChunk {
   source_last_updated_time: string;
   layout: string | null;
   relevancy_score: number | null;
-  document_metadata: Record<string, unknown> | null;
-  tenant_metadata: Record<string, unknown> | null;
+  additional_metadata: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   extra_context_ids: string[] | null;
 }
 
@@ -257,8 +257,8 @@ export interface SourceInfo {
   description: string;
   url: string;
   timestamp: string;
-  tenant_metadata: Record<string, unknown>;
-  document_metadata: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  additional_metadata: Record<string, unknown>;
 }
 
 export interface RetrievalResult {

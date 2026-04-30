@@ -123,15 +123,6 @@
               "api-reference/delete-memory",
               "api-reference/delete-knowledge"
             ]
-          },
-          {
-            "group": "Custom Embeddings",
-            "pages": [
-              "api-reference/endpoint/add-embeddings",
-              "api-reference/endpoint/recall-embeddings",
-              "api-reference/endpoint/filter-embeddings",
-              "api-reference/endpoint/delete-embeddings"
-            ]
           }
         ]
       }

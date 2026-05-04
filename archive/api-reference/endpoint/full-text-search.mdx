@@ -132,7 +132,7 @@ Returns an array of relevant content chunks from your indexed sources based on t
 ```
 
 
-> **Note:** This API performs full text search with configurable operators for precise text matching. For conversational Q&A with AI-generated responses, use the `/search/qna` API instead.
+> **Note:** This API performs full text search with configurable operators for precise text matching. For retrieval-backed answers, use `POST /recall/full_recall` and generate the final response in your application layer.
 
 ### Operator Parameter
 The `operator` parameter controls how the search terms are combined:

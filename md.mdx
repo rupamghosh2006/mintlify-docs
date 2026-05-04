@@ -562,17 +562,8 @@ const prefs = await client.recall.recallPreferences({
   query: "What response style does the user prefer?",
 });
 
-// --- QnA with LLM answer generation ---
-const qna = await client.recall.qna({
-  tenant_id: TENANT_ID,
-  question: "What are the Q3 revenue figures?",
-  mode: "thinking",
-  include_graph_context: true,
-  llm_provider: "openai",
-  model: "gpt-4",
-  temperature: 0.7,
-});
-console.log("Answer:", qna.answer);
+// --- Generate answers in your app layer ---
+// Pass recallResult.chunks into your LLM prompt; HydraDB returns retrieved context.
 ```
 
 ### 5.3 RAG / LLM System Integration
@@ -1042,25 +1033,23 @@ result = client.recall.boolean_recall(
 hydradb recall keyword my-tenant "PostgreSQL migration"
 ```
 
-### 7.4 QnA (Answer Generation)
+### 7.4 LLM Answer Generation
 
-Get an LLM-generated answer with supporting context. Available via TypeScript SDK and REST API.
+HydraDB returns retrieved context. Generate final answers in your application by passing recall chunks into your LLM prompt.
 
 ```typescript
-const qna = await client.recall.qna({
+const context = await client.recall.fullRecall({
   tenant_id: "my-tenant",
-  question: "What are the Q3 revenue figures?",
-  mode: "thinking",
-  include_graph_context: true,
-  llm_provider: "openai",
-  model: "gpt-4",
-  temperature: 0.7,
-  max_tokens: 1024,
+  query: "What are the Q3 revenue figures?",
+  graph_context: true,
+  max_results: 8,
 });
 
-console.log("Answer:", qna.answer);
-console.log("Model:", qna.model_used);
-console.log("Sources:", qna.chunks?.map((c) => c.source_title));
+const prompt = context.chunks
+  .map((chunk) => chunk.chunk_content)
+  .join("\n\n");
+
+// Send `prompt` plus the user question to your LLM provider.
 ```
 
 ### 7.5 MCP Server Tools
@@ -1138,7 +1127,7 @@ What are you searching for?
 │   └── client.recall.boolean_recall() / client.recall.booleanRecall()
 │
 ├── Need an LLM-generated answer with sources
-│   └── client.recall.qna()
+│   └── client.recall.full_recall(), then pass chunks to your LLM
 │
 └── Unsure
     └── Start with full_recall (alpha=0.8, mode="thinking")
@@ -1265,7 +1254,6 @@ find ./docs -name "*.md" -exec hydradb knowledge upload my-tenant {} +
 | `POST` | `/recall/full_recall` | Search knowledge base |
 | `POST` | `/recall/recall_preferences` | Search user memories |
 | `POST` | `/recall/boolean_recall` | Keyword/boolean search |
-| `POST` | `/recall/qna` | QnA with LLM answer |
 | `POST` | `/list/data` | List sources/memories (paginated) |
 | `POST` | `/fetch/content` | Fetch full source content |
 | `GET` | `/list/graph_relations_by_id` | Get knowledge graph relations |
@@ -1714,7 +1702,6 @@ hydradb fetch sources my-demo-tenant
 | `client.recall` | `.full_recall(query, tenant_id, ...)` | Search knowledge base |
 | `client.recall` | `.recall_preferences(query, tenant_id, ...)` | Search user memories |
 | `client.recall` | `.boolean_recall(query, tenant_id, ...)` | Keyword/boolean search |
-| `client.recall` | `.qna(question, tenant_id, ...)` | QnA with LLM answer |
 | `client.fetch` | `.list_data(tenant_id, kind, ...)` | List sources/memories |
 | `client.fetch` | `.graph_relations_by_source_id(source_id, tenant_id, ...)` | Get graph relations |
 | `client.fetch` | `.content(id, tenant_id, ...)` | Fetch full source content |
@@ -1745,7 +1732,6 @@ hydradb fetch sources my-demo-tenant
 | `client.recall` | `.fullRecall({ tenant_id, query, ... })` | Search knowledge base |
 | `client.recall` | `.recallPreferences({ tenant_id, query, ... })` | Search user memories |
 | `client.recall` | `.booleanRecall({ tenant_id, query, ... })` | Keyword/boolean search |
-| `client.recall` | `.qna({ tenant_id, question, ... })` | QnA with LLM answer |
 | `client.fetch` | `.listData({ tenant_id, kind, ... })` | List sources/memories |
 | `client.fetch` | `.graphRelationsBySourceId({ source_id, tenant_id, ... })` | Get graph relations |
 | `client.data` | `.delete({ tenant_id, ids, ... })` | Delete knowledge sources |

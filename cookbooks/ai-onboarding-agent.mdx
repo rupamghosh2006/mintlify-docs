@@ -37,7 +37,7 @@ graph LR
     E -->|"recall_preferences()"| F["Manager dashboard"]
 ```
 
-- **Phase 0**: Install SDK, create tenant, upload one document, run first Q&A query.
+- **Phase 0**: Install SDK, create tenant, upload one document, run the first recall query.
 - **Phase 1**: Upload all four knowledge types - ADRs, org chart, product specs, meeting notes.
 - **Phase 2**: Store per-hire memory and build the manager dashboard.
 
@@ -532,7 +532,7 @@ if __name__ == "__main__":
 
 ---
 
-### Step 5 - Test Multi-source Q&A
+### Step 5 - Test Multi-source Recall
 
 After all four knowledge types are uploaded, test with questions that require pulling from multiple sources:
 
@@ -676,7 +676,7 @@ if __name__ == "__main__":
 
 ---
 
-### Step 2 - Personalized Q&A
+### Step 2 - Personalized Recall
 
 Use the hire's `sub_tenant_id` for personal memory and the default company knowledge scope for source context:
 

@@ -1,11 +1,11 @@
 ---
 title: "Build your own Glean with HydraDB"
-description: "Learn how to build a comprehensive workplace search and AI assistant platform using HydraDB APIs. This guide covers data ingestion, search capabilities, and AI-powered Q&A across multiple data sources."
+description: "Learn how to build a comprehensive workplace search and AI assistant platform using HydraDB APIs. This guide covers data ingestion, retrieval, and app-layer answer generation across multiple data sources."
 ---
 
 > **Status**: This guide is in progress.
 
-This guide will walk you through building an extremely powerful workplace search and AI assistant platform that rivals Glean using HydraDB APIs. You'll learn how to create a unified search experience across multiple data sources with AI-powered Q&A capabilities.
+This guide will walk you through building an extremely powerful workplace search and AI assistant platform that rivals Glean using HydraDB APIs. You'll learn how to create a unified retrieval experience across multiple data sources and generate answers in your application layer.
 
 > **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own Glean-like application with HydraDB APIs. You'll need to adapt these examples to your specific use case, technology stack, and requirements.
 
@@ -14,7 +14,7 @@ This guide will walk you through building an extremely powerful workplace search
 A Glean-like application typically includes these core features:
 
 - **Universal Search**: Search across multiple data sources (documents, emails, chats, etc.)
-- **AI-Powered Q&A**: Get intelligent answers based on company knowledge
+- **Retrieval-Assisted Answers**: Generate intelligent answers from retrieved company knowledge
 - **AI Memories for User Preferences**: Remember and adapt to individual user preferences, search patterns, and behavioral patterns
 - **Data Ingestion**: Connect to various apps and services
 - **Knowledge Graph**: Build connections between information
@@ -26,7 +26,7 @@ A Glean-like application typically includes these core features:
 graph TD
     A["Frontend UI<br/>• Search UI<br/>• Chat Interface<br/>• Results View"] 
     B["Backend API<br/>• Data Sync<br/>• Auth/ACL<br/>• App Connectors"]
-    C["HydraDB APIs<br/>• QnA Engine<br/>• Document Index<br/>• Memory Store"]
+    C["HydraDB APIs<br/>• Retrieval Engine<br/>• Document Index<br/>• Memory Store"]
     
     D["Data Sources<br/>• Google apps<br/>• Slack<br/>• Notion<br/>• Jira"]
     E["App Connectors for Fetching Data<br/><br/>• Composio<br/>• Vanilla APIs<br/>• Webhooks<br/>• Scheduled Jobs"]
@@ -280,7 +280,7 @@ class HydraDBDataIngestion {
 ```
 
 
-## Step 2: Search and Q&A Implementation
+## Step 2: Search and Answer Generation
 
 ### 2.1 Universal Search Interface
 

@@ -1,6 +1,6 @@
 ---
-title: How to Use API Results (full_recall)
-description: Transform raw full_recall responses into clean context strings ready to pass into your LLM.
+title: "How to Use API Results"
+description: "Transform raw full_recall responses into clean context strings ready to pass into your LLM."
 ---
 
 The `/recall/full_recall` endpoint returns a structured JSON response containing retrieved chunks, graph context, and source metadata. While this raw JSON has everything you need, you cannot pass it directly to an LLM, because it contains nested objects, IDs, and metadata the model doesn't need, and lacks the clean readable structure that produces good answers.
@@ -61,7 +61,7 @@ This guide explains the response format and how to transform it into a clean, fo
 ### Key Fields
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | `chunks[]` | Retrieved document chunks ranked by relevance |
 | `chunks[].chunk_content` | The raw text of the chunk |
 | `chunks[].source_title` | Document name the chunk came from |
@@ -348,7 +348,6 @@ export function buildContextString(result: RetrievalResult): string {
 ## Usage Example
 
 <Steps>
-
   <Step title="Install packages">
     <Tabs>
       <Tab title="Python">
@@ -363,13 +362,12 @@ export function buildContextString(result: RetrievalResult): string {
       </Tab>
     </Tabs>
   </Step>
-
   <Step title="Call the full_recall endpoint">
     <Tabs>
       <Tab title="Python">
         ```python
         import httpx
-
+        
         response = httpx.post(
             "https://api.hydradb.com/recall/full_recall",
             headers={"Authorization": "Bearer YOUR_HYDRADB_API_KEY"},
@@ -388,7 +386,7 @@ export function buildContextString(result: RetrievalResult): string {
                 },
             }
         )
-
+        
         result = response.json()
         ```
       </Tab>
@@ -415,41 +413,39 @@ export function buildContextString(result: RetrievalResult): string {
             },
           }),
         });
-
+        
         const result = await res.json() as RetrievalResult;
         ```
       </Tab>
     </Tabs>
   </Step>
-
   <Step title="Transform the response into a clean context string">
     <Tabs>
       <Tab title="Python">
         ```python
         from context_builder import build_context_string
-
+        
         context = build_context_string(result)
         ```
       </Tab>
       <Tab title="TypeScript">
         ```typescript
         import { buildContextString, RetrievalResult } from "./contextBuilder";
-
+        
         const context = buildContextString(result);
         ```
       </Tab>
     </Tabs>
   </Step>
-
   <Step title="Pass to OpenAI and get an answer">
     <Tabs>
       <Tab title="Python">
         ```python
         from openai import OpenAI
-
+        
         client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
         question = "How does authentication work?"
-
+        
         completion = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -463,17 +459,17 @@ export function buildContextString(result: RetrievalResult): string {
                 },
             ],
         )
-
+        
         print(completion.choices[0].message.content)
         ```
       </Tab>
       <Tab title="TypeScript">
         ```typescript
         import OpenAI from "openai";
-
+        
         const client = new OpenAI({ apiKey: "YOUR_OPENAI_API_KEY" });
         const question = "How does authentication work?";
-
+        
         const completion = await client.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -488,13 +484,12 @@ export function buildContextString(result: RetrievalResult): string {
             },
           ],
         });
-
+        
         console.log(completion.choices[0].message.content);
         ```
       </Tab>
     </Tabs>
   </Step>
-
 </Steps>
 
 ---
@@ -503,7 +498,7 @@ export function buildContextString(result: RetrievalResult): string {
 
 After transformation, the context string passed to your LLM looks like this:
 
-```
+```text
 === ENTITY PATHS ===
 [auth-service] -> DEPENDS_ON -> [user-db]: database dependency
   ↳ [user-db] -> MODIFIED_BY -> [migration-v2]: schema change [Time: 2024-03]
@@ -530,7 +525,6 @@ The auth service runs as a stateless container and scales horizontally.
 </Note>
 
 ---
-
 
 ## Important
 

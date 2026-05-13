@@ -71,7 +71,7 @@ Those belong in the query, recall mode, or downstream reranking logic.
 
 Filterable top-level metadata fields are defined in the `tenant_metadata_schema` when you create a tenant.
 
-Tenant metadata keys are immutable once set during tenant creation, so plan filterable fields before ingestion. If a field needs to be used in `metadata_filters`, define it up front and set `enable_match: true` on it.
+Tenant metadata schema fields should be planned before ingestion. If your application needs to filter on a field, define it in the tenant metadata schema before writing data that depends on that filter. Set `enable_match: true` on any field you intend to use in `metadata_filters`.
 
 ### 2. Attach metadata when writing data
 
@@ -124,6 +124,110 @@ Use it for fields that your application will filter on repeatedly, such as:
 - `document_type`
 - `status`
 - `customer_tier`
+
+#### Schema field examples
+
+Each entry in `tenant_metadata_schema` declares one filterable field. The most common pattern is a `VARCHAR` field with `enable_match: true` for exact-match filtering, but other data types are supported when the value isn't a string. See [Create Tenant](/api-reference/endpoint/create-tenant) for the full field reference.
+
+**Single exact-match field**
+
+The minimum useful schema entry: a string field that can be filtered on exactly.
+
+```json
+{
+  "tenant_id": "acme_corp",
+  "tenant_metadata_schema": [
+    {
+      "name": "environment",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    }
+  ]
+}
+```
+
+After this, `environment` is usable in `metadata_filters`:
+
+```json
+{
+  "tenant_id": "acme_corp",
+  "query": "How do I rotate API keys?",
+  "metadata_filters": {
+    "environment": "production"
+  }
+}
+```
+
+**Multiple fields with mixed data types**
+
+Declare each field your application will filter on. Use `INT32`, `INT64`, `BOOL`, `FLOAT`, or other typed fields when the value isn't a string. Every filterable field needs `enable_match: true`.
+
+```json
+{
+  "tenant_id": "acme_corp",
+  "tenant_metadata_schema": [
+    {
+      "name": "environment",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    },
+    {
+      "name": "document_type",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    },
+    {
+      "name": "version",
+      "data_type": "INT32",
+      "enable_match": true
+    },
+    {
+      "name": "is_published",
+      "data_type": "BOOL",
+      "enable_match": true
+    }
+  ]
+}
+```
+
+Recall against this schema can combine any of those fields:
+
+```json
+{
+  "tenant_id": "acme_corp",
+  "query": "What changed in the v2 API key rotation flow?",
+  "metadata_filters": {
+    "environment": "production",
+    "document_type": "runbook",
+    "version": 2,
+    "is_published": true
+  }
+}
+```
+
+All four filters apply as exact-match constraints. A chunk must satisfy every key in `metadata_filters` to remain a candidate.
+
+**Long-form VARCHAR fields**
+
+`VARCHAR` defaults to a max length of 1024 characters. If a filterable value can be longer (for example, a long tag string or compound identifier), set `max_length` explicitly.
+
+```json
+{
+  "name": "compliance_label",
+  "data_type": "VARCHAR",
+  "max_length": 4096,
+  "enable_match": true
+}
+```
+
+**Where these fields are used**
+
+Once a field is declared in `tenant_metadata_schema` with `enable_match: true`:
+
+1. Attach it under `metadata` when writing Knowledge or Memories.
+2. Pass it under `metadata_filters` during recall.
+
+Fields that are stored but not declared in the schema - or declared without `enable_match: true` - are ignored by `metadata_filters`. Put those in `additional_metadata` instead.
 
 ### `enable_match`
 
@@ -202,18 +306,23 @@ The exact tenant creation request may include additional fields. See [Create Ten
 
 ### 2. Attach metadata when writing content
 
-```json
-{
-  "tenant_id": "acme_corp",
-  "app_sources": [
-    {
-      "text": "Authentication controls are reviewed quarterly for SOC2.",
-      "metadata": {
-        "compliance_framework": "SOC2"
+Send the content through `/ingestion/upload_knowledge` with the metadata value attached:
+
+```bash
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_knowledge": [
+      {
+        "tenant_id": "acme_corp",
+        "text": "Authentication controls are reviewed quarterly for SOC2.",
+        "metadata": {
+          "compliance_framework": "SOC2"
+        }
       }
-    }
-  ]
-}
+    ]
+  }'
 ```
 
 ### 3. Recall with `metadata_filters`
@@ -294,7 +403,7 @@ For stronger separation between production and staging, prefer separate tenants.
 ## 8. Common mistakes
 
 **Filtering on fields that were not configured for matching.**
-If a field is not declared with `enable_match: true`, HydraDB ignores that filter. Plan filterable fields before ingestion.
+If a field is not declared with `enable_match: true`, do not rely on it for deterministic filtering. Plan filterable fields before ingestion.
 
 **Using metadata filters for fuzzy search.**
 Metadata filters are for structured constraints. Use semantic recall for fuzzy meaning, synonyms, or conceptual matches.
@@ -302,8 +411,8 @@ Metadata filters are for structured constraints. Use semantic recall for fuzzy m
 **Trying to use metadata as a tenant boundary.**
 Metadata narrows results inside a scope. It should not replace `tenant_id` or `sub_tenant_id` for scoping customers, users, or workspaces.
 
-**Adding filterable fields too late.**
-Tenant metadata keys are immutable once set. Plan them early and declare them before ingestion.
+**Adding filterable fields after data has already been written.**
+Plan filterable fields early. If your application needs deterministic filtering on a field, define it in the tenant metadata schema before writing data that depends on that filter.
 
 **Putting filterable values in `additional_metadata`.**
 `additional_metadata` is not matched against `metadata_filters`. Move filterable fields to `metadata` and declare them in `tenant_metadata_schema`.

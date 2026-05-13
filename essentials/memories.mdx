@@ -172,7 +172,81 @@ Ingestion is asynchronous - memories aren't immediately searchable. Poll [`/inge
 
 ---
 
-## 7. Minimal working example
+## N. Forceful relations
+
+Forceful relations let you explicitly link Memory items to each other at ingestion time. When a query matches a memory that has forceful relations declared, HydraDB pulls the linked memories into `additional_context` alongside the primary results.
+
+This is separate from the entity and relationship graph HydraDB builds automatically during ingestion. Graph extraction is derived from content; forceful relations are declared by you.
+
+Set the `relations` field on any item in the `memories` array:
+
+```json
+{
+  "relations": {
+    "hydradb_source_ids": ["memory-id-1", "memory-id-2"]
+  }
+}
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/memories/add_memory' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_alex",
+    "memories": [
+      {
+        "text": "User prefers concise answers",
+        "source_id": "pref-concise",
+        "infer": true,
+        "relations": { "hydradb_source_ids": ["pref-tone", "pref-format"] }
+      }
+    ]
+  }'
+```
+```typescript TypeScript SDK
+await client.memories.add({
+  tenantId: "acme_corp",
+  subTenantId: "user_alex",
+  memories: [
+    {
+      text: "User prefers concise answers",
+      sourceId: "pref-concise",
+      infer: true,
+      relations: { hydradb_source_ids: ["pref-tone", "pref-format"] },
+    },
+  ],
+});
+```
+```python Python SDK
+client.memories.add(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=[
+        {
+            "text": "User prefers concise answers",
+            "source_id": "pref-concise",
+            "infer": True,
+            "relations": {"hydradb_source_ids": ["pref-tone", "pref-format"]},
+        }
+    ],
+)
+```
+</CodeGroup>
+
+At recall, linked memories are returned in the `additional_context` field. Set `search_forceful_relations: true` (the default) on the request to include them.
+
+<Warning>
+**Memory items only.** Forceful relations work within the same store. Pointing a Memory item at a Knowledge source ID (or vice versa) will silently return nothing at recall time.
+</Warning>
+
+<Warning>
+**`thinking` mode only.** Forceful-relation context is fetched only when `mode: "thinking"` is set on the recall request. In `fast` mode, `search_forceful_relations` is ignored even if set to `true`.
+</Warning>
+
+## 8. Minimal working example
 
 Store a user preference scoped to a specific user.
 
@@ -255,7 +329,7 @@ Poll [`/ingestion/verify_processing`](/api-reference/endpoint/verify-processing)
 
 ---
 
-## 8. Inference in practice
+## 9. Inference in practice
 
 A realistic example. The user has been toggling dark mode in your app. Instead of extracting the preference yourself, ship the raw log:
 
@@ -328,7 +402,7 @@ The same input with `infer: false` would index the raw text verbatim - useful on
 
 ---
 
-## 9. Common mistakes
+## 10. Common mistakes
 
 | Mistake | What goes wrong | Fix |
 |---|---|---|

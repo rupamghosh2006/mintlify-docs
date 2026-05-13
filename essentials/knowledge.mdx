@@ -246,8 +246,75 @@ Poll every few seconds. Most documents complete in 1–5 minutes.
 | `upsert` | boolean | `true` | Replace existing items with the same `source_id` / `file_id`. |
 
 ---
+## 7. Forceful relations
 
-## 7. Metadata on knowledge
+Forceful relations let you explicitly link Knowledge sources to each other at ingestion time. When a query matches a source that has forceful relations declared, HydraDB pulls the linked sources into `additional_context` alongside the primary results.
+
+This is separate from the entity and relationship graph HydraDB builds automatically during ingestion. Graph extraction is derived from content; forceful relations are declared by you.
+
+Set the `relations` field on any item in `file_metadata` or `app_sources`:
+
+```json
+{
+  "relations": {
+    "hydradb_source_ids": ["source-id-1", "source-id-2"]
+  }
+}
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -F "tenant_id=acme_corp" \
+  -F 'app_sources=[
+    {
+      "source_id": "auth-guide",
+      "title": "Authentication Guide",
+      "text": "...",
+      "relations": { "hydradb_source_ids": ["auth-troubleshooting", "auth-faq"] }
+    }
+  ]'
+```
+```typescript TypeScript SDK
+await client.upload.knowledge({
+  tenantId: "acme_corp",
+  appSources: [
+    {
+      source_id: "auth-guide",
+      title: "Authentication Guide",
+      text: "...",
+      relations: { hydradb_source_ids: ["auth-troubleshooting", "auth-faq"] },
+    },
+  ],
+});
+```
+```python Python SDK
+client.upload.knowledge(
+    tenant_id="acme_corp",
+    app_sources=[
+        {
+            "source_id": "auth-guide",
+            "title": "Authentication Guide",
+            "text": "...",
+            "relations": {"hydradb_source_ids": ["auth-troubleshooting", "auth-faq"]},
+        }
+    ],
+)
+```
+</CodeGroup>
+
+At recall, linked sources are returned in the `additional_context` field. Set `search_forceful_relations: true` (the default) on the request to include them.
+
+<Warning>
+**Knowledge sources only.** Forceful relations work within the same store. Pointing a Knowledge source at a Memory source ID (or vice versa) will silently return nothing at recall time.
+</Warning>
+
+<Warning>
+**`thinking` mode only.** Forceful-relation context is fetched only when `mode: "thinking"` is set on the recall request. In `fast` mode, `search_forceful_relations` is ignored even if set to `true`.
+</Warning>
+
+## 8. Metadata on knowledge
 
 Attach `metadata` at ingestion to enable deterministic filtering at recall time:
 
@@ -272,7 +339,7 @@ See [Essentials → Metadata](/essentials/metadata) for schema design and filter
 
 ---
 
-## 8. Common mistakes
+## 9. Common mistakes
 
 | Mistake | What goes wrong | Fix |
 |---|---|---|

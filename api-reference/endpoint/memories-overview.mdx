@@ -7,21 +7,37 @@ description: "Quick reference for all Memories endpoints, their lifecycle, and w
 
 ```mermaid
 flowchart LR
-    A[Add Memory] --> B[Verify Processing]
-    B --> C{Status?}
+    %% HydraDB Dark Mode Mermaid: classDefs
+    classDef standard fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
+    classDef innovation fill:#4c1d95,stroke:#8b5cf6,stroke-width:3px,color:#ffffff,font-weight:bold;
+    classDef success fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+    classDef failure fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+
+    %% Nodes (rounded)
+    A([Add Memory])
+    B([Verify Processing])
+    C{{Status?}}
+    D([Recall Preferences])
+    E([Pass to LLM])
+    F([Delete Memory])
+
+    %% Edges
+    A --> B
+    B --> C
     C -- queued/processing --> B
-    C -- completed --> D[Recall Preferences]
-    D --> E[Pass to LLM]
-    D -.cleanup.-> F[Delete Memory]
+    C -- completed --> D
+    D --> E
+    D -.cleanup.-> F
 
-    style A fill:#e8f4f8
-    style B fill:#fff4e8
-    style D fill:#e8f8ea
-    style E fill:#e8f8ea
-    style F fill:#ffe8e8
+    %% Classes
+    class A,B,D standard;
+    class C innovation;
+    class E success;
+    class F failure;
+
+    %% Link Style
+    linkStyle default stroke:#64748b,stroke-width:2px;
 ```
-
-Blue = ingestion. Orange = async wait. Green = operational. Red = destructive.
 
 ## Endpoint reference
 

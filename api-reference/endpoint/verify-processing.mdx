@@ -100,14 +100,33 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 
 ```mermaid
 flowchart LR
-    Q[queued] --> P[processing]
-    P --> G[graph_creation]
-    G --> C[completed]
-    P -.failure.-> E[errored]
+    %% HydraDB Dark Mode Styling System
+    classDef standard fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
+    classDef innovation fill:#4c1d95,stroke:#8b5cf6,stroke-width:3px,color:#ffffff,font-weight:bold;
+    classDef success fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+    classDef failure fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+
+    subgraph processing_flow [ ]
+      direction LR
+      Q([queued])
+      P([processing])
+      G([graph_creation])
+      C([completed])
+      E([errored])
+    end
+
+    Q --> P
+    P --> G
+    G --> C
+    P -.failure.-> E
     G -.failure.-> E
 
-    style C fill:#e8f8ea
-    style E fill:#ffe8e8
+    class Q,P standard;
+    class G innovation;
+    class C success;
+    class E failure;
+
+    linkStyle default stroke:#64748b,stroke-width:2px;
 ```
 
 | Status | Meaning |

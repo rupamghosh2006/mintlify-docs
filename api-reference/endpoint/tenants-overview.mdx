@@ -7,30 +7,46 @@ description: "Quick reference for all Tenants endpoints, their lifecycle, and wh
 
 ```mermaid
 flowchart LR
-    A[Create Tenant] --> B[Poll Infra Status]
-    B --> C{Ready?}
+
+    %% HydraDB Dark Mode class definitions
+    classDef standard fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
+    classDef innovation fill:#4c1d95,stroke:#8b5cf6,stroke-width:3px,color:#ffffff,font-weight:bold;
+    classDef success fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+    classDef failure fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+
+    %% Core lifecycle flow
+    subgraph TenantLifecycle [" "]
+      direction LR
+      A[Create Tenant]
+      B[Poll Infra Status]
+      C{Ready?}
+      D[Ingest Knowledge/<br/>Memories]
+      E[Recall]
+      M[Monitor &<br/>List Tenants]
+    end
+    class TenantLifecycle fill:none,stroke:none;
+
+    %% Flow
+    A --> B
+    B --> C
     C -- no --> B
-    C -- yes --> D[Ingest Knowledge<br/>or Memories]
-    D --> E[Recall]
+    C -- yes --> D
+    D --> E
     E --> D
 
-    A -.observability.-> M[Monitor /<br/>List Tenants /<br/>List Sub-Tenants]
-    D -.observability.-> M
-    E -.observability.-> M
+    %% Observability and Teardown flows
+    A -.-> M
+    D -.-> M
+    E -.-> M
 
-    A -.teardown.-> F[Delete Tenant]
-    D -.teardown.-> F
-    E -.teardown.-> F
+    %% Class assignments
+    class A,B,D,E,M standard;
+    class F failure;
+    class C success;
 
-    style A fill:#e8f4f8
-    style B fill:#fff4e8
-    style D fill:#e8f8ea
-    style E fill:#e8f8ea
-    style M fill:#f4f0ff
-    style F fill:#ffe8e8
+    %% Link styling
+    linkStyle default stroke:#64748b,stroke-width:2px;
 ```
-
-Blue = setup. Orange = async wait. Green = operational. Purple = observability. Red = destructive.
 
 ## Endpoint reference
 

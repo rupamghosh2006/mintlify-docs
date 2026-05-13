@@ -6,20 +6,48 @@ description: "Quick reference for all Recall endpoints, their differences, and w
 ## Which recall endpoint should I use?
 
 ```mermaid
-flowchart TD
-    Q[I want to retrieve context]
-    Q --> KM{Knowledge or memories?}
+flowchart LR
 
-    KM -- Documents, files, app sources --> KType{What kind of query?}
-    KM -- User preferences, conversations --> RP[/recall/recall_preferences/]
+%% HydraDB Dark Mode class definitions
+classDef standard fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
+classDef innovation fill:#4c1d95,stroke:#8b5cf6,stroke-width:3px,color:#ffffff,font-weight:bold;
+classDef success fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+classDef failure fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
 
-    KType -- Semantic question --> FR[/recall/full_recall/]
-    KType -- Exact term/phrase lookup --> BR[/recall/boolean_recall/]
+%% Nodes
+Q([I want to retrieve context])
+KM([Knowledge or memories?])
+KType([What kind of query?])
+FR([/recall/full_recall/])
+RP([/recall/recall_preferences/])
+BR([/recall/boolean_recall/])
 
-    style FR fill:#e8f4f8
-    style RP fill:#e8f4f8
-    style BR fill:#e8f4f8
+%% Links
+Q --> KM
+KM -- "Documents, files, app sources" --> KType
+KM -- "User preferences, conversations" --> RP
+KType -- "Semantic question" --> FR
+KType -- "Exact term/phrase lookup" --> BR
+
+%% Classes
+class Q,KM,KType standard;
+class FR innovation;
+class RP standard;
+class BR standard;
+
+%% Link style
+linkStyle default stroke:#64748b,stroke-width:2px;
 ```
+/* 
+Structural: 
+- flowchart LR
+- All nodes are rounded ([Text])
+- No explicit subgraph needed as groups are short and visual separation is clear.
+
+Styling: 
+- classDef includes standard, innovation, success, failure. 
+- innovation given to FR (core differentiator), others standard.
+*/
 
 ## Endpoint reference
 

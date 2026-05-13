@@ -137,9 +137,123 @@ For text fields that need to be searchable, use `VARCHAR` and enable the appropr
 Schema field names are **immutable** after tenant creation. You can add new `additional_metadata` fields per document at ingestion time, but tenant-level fields cannot be renamed or removed. Plan the schema carefully before creating the tenant.
 </Warning>
 
-<Note>
-  **`vectorstore_status` index mapping:** Index `0` is the **Memories** vector store (user preferences, conversation history). Index `1` is the **Knowledge** vector store (documents, app sources). Both must be `true` before your first ingestion call.
-</Note>
+### Metadata schema examples
+
+The following patterns cover the most common shapes of `tenant_metadata_schema`. Each example shows only the schema entries – wrap them in a full `POST /tenants/create` request like the [Example](#example) above.
+
+**Single exact-match filter field**
+
+The minimum useful schema field for deterministic filtering with `metadata_filters` is a `VARCHAR` field with `enable_match: true`.
+
+```json
+{
+  "tenant_metadata_schema": [
+    {
+      "name": "environment",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    }
+  ]
+}
+```
+
+Values written under `metadata.environment` at ingestion time can then be filtered exactly during recall:
+
+```json
+{
+  "metadata_filters": {
+    "environment": "production"
+  }
+}
+```
+
+**Multiple filterable fields**
+
+Applications commonly define several stable fields they expect to filter on. Use `INT32`, `INT64`, `BOOL`, `FLOAT`, or other typed fields when the value is not a string. Every filterable field needs `enable_match: true`.
+
+```json
+{
+  "tenant_metadata_schema": [
+    {
+      "name": "environment",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    },
+    {
+      "name": "document_type",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    },
+    {
+      "name": "version",
+      "data_type": "INT32",
+      "enable_match": true
+    },
+    {
+      "name": "is_published",
+      "data_type": "BOOL",
+      "enable_match": true
+    }
+  ]
+}
+```
+
+When multiple keys are passed in `metadata_filters`, they combine as structured exact-match constraints – a chunk must satisfy every key to remain a candidate.
+
+**Long VARCHAR field**
+
+`VARCHAR` defaults to a `max_length` of 1024 characters. For longer structured string values – compound identifiers, full label strings, or composite tags – set `max_length` explicitly.
+
+```json
+{
+  "name": "compliance_label",
+  "data_type": "VARCHAR",
+  "max_length": 4096,
+  "enable_match": true
+}
+```
+
+**Matchable vs non-matchable fields**
+
+Only fields declared with `enable_match: true` should be relied on for deterministic filtering. A field without `enable_match` can still be stored, but should not be relied on for deterministic filtering through `metadata_filters`.
+
+```json
+{
+  "tenant_metadata_schema": [
+    {
+      "name": "region",
+      "data_type": "VARCHAR",
+      "enable_match": true
+    },
+    {
+      "name": "internal_notes",
+      "data_type": "VARCHAR"
+    }
+  ]
+}
+```
+
+- `region` can be used in `metadata_filters`.
+- `internal_notes` can be stored as tenant metadata, but should not be relied on for deterministic filtering unless match-enabled.
+- For free-form display or bookkeeping fields that do not need filtering, prefer `additional_metadata` at ingestion time rather than adding them to the tenant schema.
+
+**Embeddings-enabled text field**
+
+Embedding flags are for retrieval over text content, not for exact-match metadata filtering. Use them when the field itself is a body of searchable text – for example, a description that you want included in semantic or keyword recall.
+
+```json
+{
+  "name": "product_description",
+  "data_type": "VARCHAR",
+  "max_length": 4096,
+  "enable_dense_embedding": true,
+  "enable_sparse_embedding": true
+}
+```
+
+- Use `enable_match: true` for fields you intend to filter on exactly via `metadata_filters`.
+- Use `enable_dense_embedding` / `enable_sparse_embedding` for `VARCHAR` fields that should be searchable as text.
+- These flags are independent: an embedding-enabled field is not automatically usable as a `metadata_filters` key.
 
 ## Behavior notes
 

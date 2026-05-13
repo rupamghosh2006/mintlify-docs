@@ -41,7 +41,6 @@
               "essentials/api-results",
               "essentials/semantic-search"
             ]
-       
           },
           {
             "group": "Plugins",
@@ -101,14 +100,15 @@
             ]
           },
           {
-            "group": "Memories & Knowledge",
+            "group": "Knowledge & Memories",
             "pages": [
               "api-reference/endpoint/ingestion-overview",
-              "api-reference/endpoint/upload-knowledge",
-              "api-reference/endpoint/verify-processing",
               "api-reference/endpoint/memories-overview",
+              "api-reference/endpoint/upload-knowledge",
               "api-reference/endpoint/add-memory",
-              "api-reference/endpoint/delete-memory"
+              "api-reference/endpoint/verify-processing",
+              "api-reference/endpoint/delete-memory",
+              "api-reference/endpoint/delete-knowledge"
             ]
           },
           {
@@ -121,29 +121,16 @@
             ]
           },
           {
-            "group": "Manage Data",
+            "group": "Managing Data",
             "pages": [
               "api-reference/endpoint/list-overview",
               "api-reference/endpoint/list-data",
               "api-reference/endpoint/graph-relations",
-              "api-reference/endpoint/fetch-content",
-              "api-reference/endpoint/delete-knowledge"
+              "api-reference/endpoint/fetch-content"
             ]
-          },
-          {
-            "group": "Embeddings",
-            "pages": [
-              "api-reference/endpoint/embeddings-overview",
-              "api-reference/endpoint/insert-raw-embeddings",
-              "api-reference/endpoint/search-raw-embeddings",
-              "api-reference/endpoint/filter-raw-embeddings",
-              "api-reference/endpoint/delete-raw-embeddings"
-            ]
-       
           }
         ]
       }
- 
     ]
   },
   "logo": {

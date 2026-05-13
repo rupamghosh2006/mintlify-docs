@@ -25,7 +25,7 @@ flowchart LR
   style E fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc,stroke-linecap:round
 ```
 
-Step 3 is async — HydraDB parses, chunks, embeds, and graphs your content in the background. Steps 1, 2, 4, and 5 run in real time.
+Step 3 is async - HydraDB parses, chunks, embeds, and graphs your content in the background. Steps 1, 2, 4, and 5 run in real time.
 
 ---
 
@@ -41,7 +41,7 @@ Step 3 is async — HydraDB parses, chunks, embeds, and graphs your content in t
 
 <CodeGroup>
 ```bash cURL
-# No install needed — use curl directly
+# No install needed - use curl directly
 ```
 ```typescript TypeScript SDK
 npm install @hydradb/sdk
@@ -430,7 +430,7 @@ memories = client.recall.recall_preferences(
   **`relevancy_score`:** A metric to evaluate each chunk's relevance to the query. Ranges from `0.0` to `2.0`.
 </Note>
 
-`chunks` is retrieved content ranked by relevance. `graph_context` contains entity relationships extracted from your data — useful for reasoning about *how* things connect, not just *what* was said.
+`chunks` is retrieved content ranked by relevance. `graph_context` contains entity relationships extracted from your data - useful for reasoning about *how* things connect, not just *what* was said.
 
 </Step>
 
@@ -516,14 +516,14 @@ For the `build_context_string()` helper, see [How to Use API Results](/essential
 
 ## You're done
 
-That's the full loop: create a tenant, ingest Knowledge and Memories, wait for processing, recall context, feed it to an LLM. Everything else in HydraDB — metadata filters, sub-tenants, graph traversal, personalization — builds on this foundation.
+That's the full loop: create a tenant, ingest Knowledge and Memories, wait for processing, recall context, feed it to an LLM. Everything else in HydraDB - metadata filters, sub-tenants, graph traversal, personalization - builds on this foundation.
 
 **Where to go next:**
 
-- [Essentials → Memories](/essentials/memories) — how user-scoped memory works
-- [Essentials → Knowledge](/essentials/knowledge) — how document ingestion works
-- [Essentials → Recall](/essentials/recall) — parameters, modes, and tuning
-- [API Reference](/api-reference) — full endpoint documentation
-- [Cookbooks](/cookbooks) — end-to-end use case guides
+- [Essentials → Memories](/essentials/memories) - how user-scoped memory works
+- [Essentials → Knowledge](/essentials/knowledge) - how document ingestion works
+- [Essentials → Recall](/essentials/recall) - parameters, modes, and tuning
+- [API Reference](/api-reference) - full endpoint documentation
+- [Cookbooks](/cookbooks) - end-to-end use case guides
 
 Stuck? Reach out at [founders@hydradb.com](mailto:founders@hydradb.com).

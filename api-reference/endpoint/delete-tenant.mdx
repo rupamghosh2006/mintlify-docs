@@ -1,38 +1,91 @@
 ---
 title: "Delete Tenant"
-description: "Permanently delete a tenant. Irreversible."
-openapi: "DELETE /tenants/delete"
+description: "Permanently delete a tenant and all its data."
 ---
 
+## When to use it
+
+- **Offboarding** – a customer has churned and you need to remove their data
+- **Environment teardown** – delete test or staging tenants
+- **Compliance** – right-to-deletion requests under GDPR or similar
+
+<Warning>
+**This operation is irreversible.** Deleting a tenant permanently removes:
+
+- Graph database storage
+- Vector store collections (knowledge and memory)
+- Source documents
+- Chunk data
+- Tenant metadata schema
+- Tenant ID mapping
+
+This data cannot be recovered.
+</Warning>
+
+## Endpoint
+
+```
+DELETE /tenants/delete
+```
+
+- **Auth:** Bearer token
+- **Idempotency:** Re-sending for a deleted tenant returns `404 TENANT_NOT_FOUND`
+- **Async:** Yes – returns `deletion_scheduled`. Cleanup runs in the background.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE 'https://api.hydradb.com/tenants/delete?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>"
+```
+```typescript TypeScript SDK
+const response = await client.tenant.deleteTenant({
+  tenantId: "my_first_tenant"
+});
+```
+```python Python SDK
+response = client.tenant.delete_tenant(tenant_id="my_first_tenant")
+```
+</CodeGroup>
+
+## Query parameters
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `tenant_id` | string | Yes | The tenant to delete. |
+
+## Response
+
+```json
+{
+  "tenant_id": "my_first_tenant",
+  "status": "deletion_scheduled",
+  "message": "Tenant deregistered. Background cleanup is in progress."
+}
+```
+
+| Field | Description |
+|---|---|
+| `tenant_id` | The tenant scheduled for deletion. |
+| `status` | Always `deletion_scheduled`. Cleanup is asynchronous. |
+| `message` | Human-readable status. |
+
+## Behavior notes
+
 <Info>
-**This operation is irreversible.** After deletion, the tenant and all its data cannot be recovered.
+**Cleanup is asynchronous.** Deletion runs in the background and is typically complete within a few minutes. Treat deletion as eventually consistent.
 </Info>
 
-### Examples
+<Info>
+**Re-creation.** Once deletion is scheduled, re-creating a tenant with the same `tenant_id` may fail until cleanup completes. If you need to re-create immediately, use a different `tenant_id`.
+</Info>
 
-<Tabs>
-  <Tab title="API Request">
-    ```bash wrap
-    curl -X 'DELETE' \
-      'https://api.hydradb.com/tenants/delete?tenant_id=tenant_1234' \
-      --header 'Authorization: Bearer YOUR_API_KEY'
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python
-    # Async usage: use async_client and await
-    response = client.tenant.delete_tenant(tenant_id="tenant_1234")
-    ```
-  </Tab>
-</Tabs>
+## Related endpoints
 
-### Query Parameters
+- **Before this:** [List data](/api-reference/endpoint/list-data) – confirm what's stored before deleting
+- **Alternative:** [Delete knowledge](/api-reference/endpoint/delete-knowledge) · [Delete memory](/api-reference/endpoint/delete-memory) – remove individual items instead of the whole tenant
 
-- **tenant_id**: Required string – Unique identifier for the tenant to delete.
+## Errors
 
-### Response
-
-- **tenant_id**: The tenant that was scheduled for deletion.
-- **tracking_id**: ID to track status of deletion job (endpoint coming soon)
-- **status**: e.g. `deletion_scheduled`.
-- **message**: Confirmation that cleanup is in progress.
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`. See [Error Responses](/api-reference/error-responses) for the full list.

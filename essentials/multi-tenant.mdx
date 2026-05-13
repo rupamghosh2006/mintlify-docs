@@ -1,267 +1,282 @@
 ---
 title: "Multi-Tenant Support"
-description: "Create completely isolated workspaces called tenants for secure, scalable B2B platforms that serve many organizations without cross-contamination of data."
+description: "How HydraDB scopes data using tenants and sub-tenants, and how scoping affects writes and recall."
 ---
 
-HydraDB provides a robust multi-tenant architecture with hierarchical tenant support, enabling you to build secure, scalable B2B platforms. Understanding the difference between `tenant_id` and `sub_tenant_id` is crucial for implementing proper data isolation and access control.
+# Multi-Tenant Support
 
-## Understanding Tenant Hierarchy
+## 1. What it is
 
-### Tenant ID (`tenant_id`) - Your Organization
-The **tenant_id** is like your company's main identifier. It represents the primary organizational unit - typically your main enterprise client or organization. This is the top-level identifier that provides the broadest scope of data isolation.
+HydraDB scopes data using two identifiers:
 
-**Think of it as**: The company name or organization ID that completely separates your data from all other organizations using HydraDB.
+- **`tenant_id`** — the top-level scoping identifier. Use it for customers, environments, or other primary data boundaries.
+- **`sub_tenant_id`** — an optional scoping identifier within a tenant. Use it for users, workspaces, teams, or other logical partitions.
 
-### Sub-Tenant ID (`sub_tenant_id`) - Your Department/Team
-The **sub_tenant_id** represents a subdivision within a tenant - such as departments, teams, or individual customers within an enterprise. This enables hierarchical data organization and more granular access control.
+HydraDB write and recall operations are scoped by `tenant_id`. When `sub_tenant_id` is provided, it further narrows the scope for that operation. If you omit `sub_tenant_id`, HydraDB uses the tenant's default sub-tenant.
 
-**Think of it as**: The department or team name within your company (like "Engineering", "Sales", or "HR").
+Use the same scoping values consistently across writes and reads. If you write data with one `sub_tenant_id` and later recall with a different one, that data may not appear in the recall results.
 
-### Default Sub-Tenant Behavior
-**Important**: When you create a tenant, HydraDB automatically creates a **DEFAULT sub-tenant** that acts as a global space for that tenant. 
+---
 
-- If you don't specify a `sub_tenant_id` when using any API, your data will be stored in this default sub-tenant
-- This means if you upload documents with just a `tenant_id` and leave `sub_tenant_id` empty, they'll go to the default sub-tenant
-- The default sub-tenant is perfect for organization-wide data that should be accessible across all departments
+## 2. When to use each
 
-## Creating Additional Sub-Tenants
+| Goal | Use |
+|---|---|
+| Separate customers on your platform | A different `tenant_id` per customer |
+| Separate environments (`prod` vs `staging`) | A different `tenant_id` per environment |
+| Separate per-user state within one customer | One `tenant_id`, `sub_tenant_id = user_id` |
+| Separate per-workspace data within one customer | One `tenant_id`, `sub_tenant_id = workspace_id` |
+| Store broadly shared Knowledge | Omit `sub_tenant_id` to use the tenant's default sub-tenant |
 
-**No Explicit API Required**: HydraDB doesn't require a separate API call to create sub-tenants. Sub-tenants are created automatically when you first use a new `sub_tenant_id` that doesn't exist yet.
+Two practical rules:
 
-### How Sub-Tenant Creation Works
+- Use a separate **tenant** whenever data must not mix across customers or environments.
+- Use a **sub-tenant** for logical partitions inside a tenant, such as users, workspaces, teams, or projects.
 
-1. **Automatic Creation**: When you upload a document, text, or any content with a `sub_tenant_id` that doesn't exist, HydraDB automatically creates that sub-tenant
-2. **First Upload Triggers Creation**: The first API call with a new `sub_tenant_id` will create the sub-tenant and then process your content
-3. **Immediate Availability**: Once created, the sub-tenant is immediately available for all subsequent operations
+Do not use `sub_tenant_id` as a substitute for separate production and staging tenants. Environments should usually be separated at the `tenant_id` level.
 
-**Example - Creating a New Sub-Tenant:**
+---
 
-```bash
-curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -F "tenant_id=acme_corp" \
-  -F "sub_tenant_id=engineering_team_alpha" \
-  -F "files=@engineering_standards.pdf" \
-  -F 'file_metadata=[{"additional_metadata":{"title":"Engineering Standards","department":"Engineering"}}]'
+## 3. Recommended patterns
+
+### B2C application
+
+Use one tenant for the application or customer account, and use each end-user as a sub-tenant.
+
+```text
+tenant_id      = "acme_app"
+sub_tenant_id  = "user_123"
 ```
 
+Use this when each user has private Memories, preferences, or conversation history.
 
-If `engineering_team_alpha` doesn't exist as a sub-tenant under `acme_corp`, HydraDB will:
-1. ✅ Create the new sub-tenant `engineering_team_alpha`
-2. ✅ Upload and process the document
-3. ✅ Make the sub-tenant available for future operations
+Typical flow:
 
-### Sub-Tenant ID Best Practices
+- Write user Memories with `sub_tenant_id = user_id`.
+- Recall user Memories with the same `sub_tenant_id`.
+- Keep shared Knowledge outside the user-specific scope.
 
-#### **Recommended Naming Conventions**
+### B2B SaaS
 
-**For User-Based Sub-Tenants (B2C):**
+Use one tenant per customer organization. Use `sub_tenant_id` for the workspace, team, project, or user scope inside that customer.
 
-
-```javascript
-// Use user IDs as sub-tenant IDs for individual user workspaces
-sub_tenant_id: "user_12345"
-sub_tenant_id: "user_67890"
-sub_tenant_id: "user_abc123"
+```text
+tenant_id      = "acme_corp"
+sub_tenant_id  = "workspace_42"
 ```
 
+Typical flow:
 
-**For Department/Team-Based Sub-Tenants (B2B):**
+- Customer-level Knowledge uses the customer `tenant_id`.
+- Workspace-specific data uses a workspace `sub_tenant_id`.
+- User-specific Memories use a user-level `sub_tenant_id`.
 
+### Shared Knowledge + user personalization
 
-```javascript
-// Use descriptive department names
-sub_tenant_id: "engineering"
-sub_tenant_id: "sales"
-sub_tenant_id: "hr"
-sub_tenant_id: "marketing"
+For personalized answers grounded in shared Knowledge, keep the two retrieval paths explicit:
+
+- Use `full_recall` for shared Knowledge — this hits the Knowledge vector store (`vectorstore_status` index `2`).
+- Use `recall_preferences` for user-specific Memories — this hits the Memories vector store (`vectorstore_status` index `1`).
+- Merge the two results in your application before prompting the LLM.
+
+This mirrors the pattern used throughout the Recall and Memories pages: shared context and personal context are retrieved separately, then combined at prompt time.
+
+---
+
+## 4. How scoping works
+
+### Writes
+
+Writes include `tenant_id`, and may include `sub_tenant_id`.
+
+Use `sub_tenant_id` when the data belongs to a specific user, workspace, team, or other logical partition. Omit it when you intentionally want the data written to the tenant's default sub-tenant.
+
+Examples:
+
+- A memory about John's preferences should be written with John's `sub_tenant_id`.
+- Workspace-specific runbooks should be written with that workspace's `sub_tenant_id`.
+- Broadly shared Knowledge should use the same scope you plan to use when recalling it.
+
+### Reads
+
+Recall requests include `tenant_id`, and may include `sub_tenant_id`. If `sub_tenant_id` is omitted, recall uses the tenant's default sub-tenant.
+
+Use the same scoping values on recall that you used when writing the data. A recall request with one `sub_tenant_id` should not be expected to retrieve data written under a different `sub_tenant_id`.
+
+If your application needs to combine data from multiple scopes, make separate recall calls and merge the results in your application.
+
+Use `sub_tenant_id` for partitioning data. Use `metadata_filters` for narrowing results within that scope.
+
+### Memories and Knowledge
+
+Memory recall and Knowledge recall are separate retrieval paths:
+
+- `recall_preferences` retrieves **Memories** (user-scoped, personal).
+- `full_recall` retrieves **Knowledge** (shared documents and app sources).
+
+For a personalized answer, a common pattern is:
+
+1. Recall shared Knowledge with `full_recall`.
+2. Recall user Memories with `recall_preferences`.
+3. Format and merge both results into one LLM prompt.
+
+<Warning>
+  <strong>Use the same <code>sub_tenant_id</code> on writes and reads for the same logical scope.</strong>
+  <p>Data written under one sub-tenant should not be expected to appear when recalling from another. Keep scope identifiers stable and consistent in your application.</p>
+</Warning>
+
+---
+
+## 5. Minimal working example
+
+The example below shows a common personalized-answer flow: write a user Memory, recall that user's preferences, recall shared Knowledge, and merge the two contexts in your application.
+
+<CodeGroup>
+
+```bash cURL
+# 1. Write a per-user memory under the user's sub_tenant_id.
+curl -X POST 'https://api.hydradb.com/memories/add_memory' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_123",
+    "upsert": true,
+    "memories": [
+      {
+        "text": "Prefers dark mode and short answers.",
+        "infer": true,
+        "user_name": "John"
+      }
+    ]
+  }'
+
+# 2. Recall that user's memories.
+curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_123",
+    "query": "UI and answer style preferences"
+  }'
+
+# 3. Recall shared knowledge from the default sub-tenant.
+curl -X POST 'https://api.hydradb.com/recall/full_recall' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "query": "refund policy"
+  }'
 ```
 
+```typescript TypeScript SDK
+import { HydraDBClient } from "@hydradb/sdk";
 
-**For Project-Based Sub-Tenants:**
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+});
 
+// 1. Write a per-user memory under the user's sub_tenant_id.
+await client.upload.addMemory({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_123",
+  upsert: true,
+  memories: [
+    {
+      text: "Prefers dark mode and short answers.",
+      infer: true,
+      user_name: "John",
+    },
+  ],
+});
 
-```javascript
-// Use project identifiers
-sub_tenant_id: "project_alpha"
-sub_tenant_id: "project_beta"
-sub_tenant_id: "client_acme_corp"
+// 2. Recall that user's memories using the same sub_tenant_id.
+const prefs = await client.recall.recallPreferences({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_123",
+  query: "UI and answer style preferences",
+});
+
+// 3. Recall shared knowledge from the default sub-tenant by omitting sub_tenant_id.
+const knowledge = await client.recall.fullRecall({
+  tenant_id: "acme_corp",
+  query: "refund policy",
+});
+
+// 4. Merge prefs + knowledge in your application before prompting the LLM.
 ```
 
+```python Python SDK
+import os
+from hydra_db import HydraDB
 
-**For Customer-Based Sub-Tenants (Multi-tenant SaaS):**
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
 
+# 1. Write a per-user memory under the user's sub_tenant_id.
+client.upload.add_memory(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_123",
+    upsert=True,
+    memories=[
+        {
+            "text": "Prefers dark mode and short answers.",
+            "infer": True,
+            "user_name": "John",
+        }
+    ],
+)
 
-```javascript
-// Use customer identifiers
-sub_tenant_id: "customer_12345"
-sub_tenant_id: "customer_acme_inc"
-sub_tenant_id: "customer_beta_corp"
+# 2. Recall that user's memories using the same sub_tenant_id.
+prefs = client.recall.recall_preferences(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_123",
+    query="UI and answer style preferences",
+)
+
+# 3. Recall shared knowledge from the default sub-tenant by omitting sub_tenant_id.
+knowledge = client.recall.full_recall(
+    tenant_id="acme_corp",
+    query="refund policy",
+)
+
+# 4. Merge prefs + knowledge in your application before prompting the LLM.
 ```
 
+</CodeGroup>
 
-#### **Best Practices for Sub-Tenant IDs**
+---
 
-1. **Use Consistent Naming**: Establish a clear naming convention across your application
-2. **Include Prefixes**: Use prefixes like `user_`, `dept_`, `project_` to make the purpose clear
-3. **Avoid Special Characters**: Stick to alphanumeric characters and underscores
-4. **Keep It Descriptive**: Make sub-tenant IDs self-explanatory
-5. **Consider Hierarchies**: For complex organizations, consider hierarchical naming like `dept_engineering_team_alpha`
+## 6. Common mistakes
 
-**Good Examples:**
+**Mismatched `sub_tenant_id` between write and read.**
+Data written under one sub-tenant should not be expected to surface when recalled under another. Use the same `sub_tenant_id` consistently for the same logical scope.
 
+**Sharing a `tenant_id` across environments.**
+Do not use one tenant for both production and staging. Create separate tenants for separate environments.
 
-```javascript
-sub_tenant_id: "user_12345"           // Individual user
-sub_tenant_id: "dept_engineering"     // Department
-sub_tenant_id: "project_alpha_v2"     // Project
-sub_tenant_id: "client_acme_corp"     // Client
-sub_tenant_id: "team_mobile_dev"      // Team
-```
+**Confusing `tenant_id` with `sub_tenant_id`.**
+Use `tenant_id` for primary boundaries such as customers or environments. Use `sub_tenant_id` for partitions inside a tenant, such as users or workspaces.
 
+**Assuming recall automatically merges scopes.**
+A recall call uses the scope you provide. If your application needs data from multiple scopes, make multiple calls and merge the results yourself.
 
-**Avoid These:**
+**Writing shared Knowledge under a user scope by accident.**
+If broadly shared Knowledge is written with a user-specific `sub_tenant_id`, it may not appear where other users expect it. Choose the write scope based on where the content should be recalled later.
 
+**Using metadata filters as a substitute for sub-tenants.**
+Metadata filters narrow results inside a scope. They are not a replacement for choosing the right `tenant_id` and `sub_tenant_id`.
 
-```javascript
-sub_tenant_id: "12345"                // Too generic
-sub_tenant_id: "user@company.com"     // Special characters
-sub_tenant_id: "very_long_descriptive_name_that_is_hard_to_read" // Too long
-sub_tenant_id: "temp"                 // Not descriptive
-```
+**Using unstable identifiers.**
+Avoid display names, emails that may change, or user-provided labels as long-term scope identifiers. Prefer stable internal IDs such as `user_123`, `workspace_42`, or `org_acme`.
 
+---
 
-## Multi-Tenant Architecture
+## Related
 
-**What it is:**  
-HydraDB's multi-tenant system creates completely isolated workspaces at both the tenant and sub-tenant levels. All documents, search results, embeddings, and AI memories are isolated per tenant/sub-tenant combination, ensuring zero cross-contamination of data.
-
-**Key Benefits:**
-- **Complete Data Isolation**: Zero cross-contamination between tenants and sub-tenants
-- **Scalable B2B Architecture**: Serve unlimited organizations and their subdivisions
-- **Granular Access Control**: Control data access at organization and department levels
-- **Performance Optimization**: Tenant-scoped searches for faster results
-- **Compliance Ready**: Meet enterprise security and privacy requirements
-
-## Real-World Use Cases
-
-### 1. Enterprise SaaS Platform
-
-**Scenario**: You're building an AI knowledge assistant for multiple enterprise clients.
-
-```
-
-Tenant: "acme_corp" (Acme Corporation)
-├── Sub-tenant: "engineering" (Engineering Department)
-├── Sub-tenant: "sales" (Sales Department)
-├── Sub-tenant: "hr" (Human Resources)
-└── Sub-tenant: "finance" (Finance Department)
-
-Tenant: "tech_solutions" (Tech Solutions Inc.)
-├── Sub-tenant: "product_dev" (Product Development)
-├── Sub-tenant: "customer_success" (Customer Success)
-└── Sub-tenant: "operations" (Operations)
-```
-
-
-**Implementation**:
-- Each enterprise client gets their own `tenant_id`
-- Each department within the enterprise gets their own `sub_tenant_id`
-- Documents uploaded by Acme's Engineering team are only accessible to Acme Corporation (`tenant_id: "acme_corp"`) and specifically to the Engineering department (`sub_tenant_id: "engineering"`)
-
-### 2. Consulting Firm with Multiple Clients
-
-**Scenario**: A consulting firm serving multiple clients with project-based work.
-
-```
-
-Tenant: "consulting_firm" (Your Consulting Firm)
-├── Sub-tenant: "client_alpha" (Client Alpha Project)
-├── Sub-tenant: "client_beta" (Client Beta Project)
-├── Sub-tenant: "client_gamma" (Client Gamma Project)
-└── Sub-tenant: "internal" (Internal Operations)
-```
-
-
-**Implementation**:
-- Your consulting firm is the main `tenant_id`
-- Each client project gets its own `sub_tenant_id`
-- Client Alpha's documents are completely isolated from Client Beta's data
-- Internal firm knowledge can be kept separate from client work
-
-### 3. Educational Platform
-
-**Scenario**: An AI-powered learning platform serving multiple schools.
-
-```
-
-Tenant: "stanford_university" (Stanford University)
-├── Sub-tenant: "computer_science" (CS Department)
-├── Sub-tenant: "business_school" (Business School)
-└── Sub-tenant: "medical_school" (Medical School)
-
-Tenant: "mit" (MIT)
-├── Sub-tenant: "engineering" (Engineering Department)
-├── Sub-tenant: "sloan_school" (Sloan School of Management)
-└── Sub-tenant: "media_lab" (Media Lab)
-```
-
-
-**Implementation**:
-- Each university is a separate `tenant_id`
-- Each department/school is a `sub_tenant_id`
-- Research papers and course materials are isolated by institution and department
-
-### 4. Multi-Brand E-commerce
-
-**Scenario**: A company managing multiple brands with different customer bases.
-
-```
-
-Tenant: "fashion_group" (Fashion Group Corp)
-├── Sub-tenant: "luxury_brand" (Luxury Brand)
-├── Sub-tenant: "casual_brand" (Casual Brand)
-└── Sub-tenant: "sports_brand" (Sports Brand)
-```
-
-
-**Implementation**:
-- The parent company is the `tenant_id`
-- Each brand is a `sub_tenant_id`
-- Customer data, product catalogs, and support documents are brand-specific
-
-## API Implementation
-
-When making API calls, always include both identifiers:
-
-
-```json
-{
-  "tenant_id": "acme_corp",
-  "sub_tenant_id": "engineering",
-  "query": "What are our coding standards?",
-  // other parameters...
-}
-```
-
-
-### Default Behavior
-- If `sub_tenant_id` is not provided, it automatically uses the **DEFAULT sub-tenant** created when the tenant was set up
-- This means the search/operation applies to the default sub-tenant scope (organization-wide data)
-- For tenant-wide operations, you can omit `sub_tenant_id` and your data will be stored in the default sub-tenant
-- The default sub-tenant acts as a global space where organization-wide documents and data are stored
-
-## Security and Isolation
-
-### Data Isolation Guarantees
-- **Tenant Level**: No data can ever cross tenant boundaries
-- **Sub-Tenant Level**: Data is isolated within sub-tenants unless explicitly queried at tenant level
-- **Search Scope**: All searches are automatically scoped to the specified tenant/sub-tenant
-- **Memory Isolation**: AI memories are completely isolated per tenant/sub-tenant combination
-
-### Access Patterns
-- **Tenant-Wide Access**: Use same value for both `tenant_id` and `sub_tenant_id`
-- **Sub-Tenant Specific**: Use specific `sub_tenant_id` within a `tenant_id`
-- **Cross Sub-Tenant**: Not supported - maintains strict isolation
-
-This architecture ensures your platform can scale securely while maintaining the flexibility to organize data hierarchically within each client organization.
+- [Memories](/essentials/memories) — user-scoped context
+- [Knowledge](/essentials/knowledge) — shared document context
+- [Recall](/essentials/recall) — how scoping is applied at query time
+- [How to Use API Results](/essentials/api-results) — merging recall results into a prompt
+- [Create Tenant](/api-reference/endpoint/create-tenant) — defining tenants and their metadata schema

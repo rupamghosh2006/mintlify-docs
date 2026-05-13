@@ -23,25 +23,23 @@
           {
             "group": "Get Started",
             "pages": [
-              "get-started/introduction",
-              "get-started/core-concepts",
-              "get-started/quickstart"
+              "index",
+              "concepts",
+              "quickstart"
             ]
           },
           {
             "group": "Essentials",
             "pages": [
               "essentials/architecture",
-              "essentials/memories",
-              "essentials/knowledge",
               "essentials/recall",
-              "essentials/metadata",
-              "essentials/context-graphs",
+              "essentials/semantic-search",
+              "essentials/memories",
+              "essentials/context-graph",
               "essentials/multi-tenant",
-              "essentials/api-results",
-              "essentials/semantic-search"
+              "essentials/metadata",
+              "essentials/use-api-results"
             ]
-       
           },
           {
             "group": "Plugins",
@@ -83,7 +81,6 @@
           {
             "group": "API Documentation",
             "pages": [
-              "api-reference/index",
               "api-reference/sdks",
               "api-reference/error-responses"
             ]
@@ -91,58 +88,46 @@
           {
             "group": "Tenants",
             "pages": [
-              "api-reference/tenants-overview",
-              "api-reference/create-tenant",
-              "api-reference/monitor-tenant",
-              "api-reference/infra-status",
-              "api-reference/list-sub-tenant-ids",
-              "api-reference/list-tenant-ids",
-              "api-reference/delete-tenant"
+              "api-reference/endpoint/create-tenant",
+              "api-reference/endpoint/monitor-tenant",
+              "api-reference/endpoint/list-sub-tenant-ids",
+              "api-reference/endpoint/delete-tenant"
             ]
           },
           {
-            "group": "Memories & Knowledge",
+            "group": "Memories",
             "pages": [
-              "api-reference/ingestion-overview",
-              "api-reference/upload-knowledge",
-              "api-reference/verify-processing",
-              "api-reference/memories-overview",
-              "api-reference/add-memory",
-              "api-reference/delete-memory"
+              "api-reference/endpoint/add-memories",
+              "api-reference/endpoint/add-knowledge-memories",
+              "api-reference/endpoint/add-hive-memories"
             ]
           },
           {
             "group": "Recall",
             "pages": [
-              "api-reference/recall-overview",
-              "api-reference/full-recall",
-              "api-reference/recall-preferences",
-              "api-reference/boolean-recall"
+              "api-reference/endpoint/full-recall",
+              "api-reference/endpoint/recall-preferences",
+              "api-reference/endpoint/keyword"
             ]
           },
           {
-            "group": "Manage Data",
+            "group": "Ingestion",
             "pages": [
-              "api-reference/list-overview",
-              "api-reference/list-data",
-              "api-reference/graph-relations",
-              "api-reference/fetch-content",
+              "api-reference/endpoint/verify-processing"
+            ]
+          },
+          {
+            "group": "Manage Memories",
+            "pages": [
+              "api-reference/endpoint/list",
+              "api-reference/endpoint/fetch-content",
+              "api-reference/endpoint/relations",
+              "api-reference/delete-memory",
               "api-reference/delete-knowledge"
-            ]
-          },
-          {
-            "group": "Embeddings",
-            "pages": [
-              "api-reference/embeddings-overview",
-              "api-reference/insert-raw-embeddings",
-              "api-reference/search-raw-embeddings",
-              "api-reference/filter-raw-embeddings",
-              "api-reference/delete-raw-embeddings"
             ]
           }
         ]
       }
- 
     ]
   },
   "logo": {

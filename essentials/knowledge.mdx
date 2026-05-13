@@ -1,0 +1,293 @@
+---
+title: "Knowledge"
+description: "What Knowledge is, how it differs from Memories, and how to ingest it correctly."
+---
+
+# Knowledge
+
+## 1. What it is
+
+Knowledge is shared, tenant-wide context that all users and agents in a tenant can recall — product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and any other source content.
+
+Knowledge is the counterpart to [Memories](/essentials/memories). Both are retrievable through Recall, but they live in separate stores and are retrieved through separate endpoints:
+
+| | Knowledge | Memories |
+|---|---|---|
+| **Content** | Documents, files, app-generated content | User preferences, conversations, inferred traits |
+| **Scope** | Shared across all users in a tenant | Per-user, scoped by `sub_tenant_id` |
+| **Mutability** | Versioned — replaced or deleted explicitly | Dynamic — evolves with every interaction |
+| **Recall endpoint** | `full_recall` | `recall_preferences` |
+| **`vectorstore_status`** | Index `1` | Index `0` |
+
+<Warning>
+  **Knowledge and Memories are separate stores.** `full_recall` only searches Knowledge. `recall_preferences` only searches Memories. For personalized answers grounded in shared documents, call both in parallel and merge the results. See [How to Use API Results](/essentials/api-results).
+</Warning>
+
+---
+
+## 2. What it does
+
+When you upload Knowledge, HydraDB:
+
+1. Parses the source (PDF, DOCX, Markdown, CSV, plain text, or app-source JSON).
+2. Chunks the content into semantically coherent segments.
+3. Runs entity and relationship extraction — building graph nodes and edges.
+4. Embeds chunks into the dense and sparse vector stores.
+5. Makes the content searchable through [`/recall/full_recall`](/api-reference/endpoint/full-recall).
+
+This pipeline runs **asynchronously**. Content is not searchable until `indexing_status` is `completed`. Poll [`/ingestion/verify_processing`](/api-reference/endpoint/verify-processing) with the returned `source_id`.
+
+---
+
+## 3. When to use it
+
+Use Knowledge ingestion when the content is:
+
+- Shared across all users in your tenant (product docs, policy PDFs, runbooks, wikis)
+- Static or infrequently updated (versioned by replacing the source)
+- Document-structured rather than conversational (files, threads, pages)
+
+Use [Memories](/essentials/memories) instead for:
+
+- User preferences and behavioral signals
+- Per-user conversation history
+- Content that should personalize a single user's experience
+
+| If the content is... | Store it as... |
+|---|---|
+| Shared across all users | Knowledge |
+| Specific to one user or session | Memory |
+
+---
+
+## 4. Two ingestion paths
+
+The `POST /ingestion/upload_knowledge` endpoint accepts two content formats in one request. Send either or both.
+
+### Path A — Files
+
+Binary files HydraDB should parse and chunk: PDF, DOCX, Markdown, CSV, TXT.
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -F "tenant_id=acme_corp" \
+  -F "files=@/path/to/policy.pdf" \
+  -F "files=@/path/to/runbook.pdf" \
+  -F 'file_metadata=[
+    { "file_id": "policy_v2", "metadata": { "document_type": "policy", "status": "approved" } },
+    { "file_id": "runbook_deploy", "metadata": { "document_type": "runbook" } }
+  ]'
+```
+```typescript TypeScript SDK
+import { createReadStream } from "node:fs";
+
+const result = await client.upload.knowledge({
+  tenant_id: "acme_corp",
+  files: [
+    createReadStream("/path/to/policy.pdf"),
+    createReadStream("/path/to/runbook.pdf"),
+  ],
+  file_metadata: [
+    { file_id: "policy_v2", metadata: { document_type: "policy", status: "approved" } },
+    { file_id: "runbook_deploy", metadata: { document_type: "runbook" } },
+  ],
+});
+```
+```python Python SDK
+with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb") as f2:
+    result = client.upload.knowledge(
+        tenant_id="acme_corp",
+        files=[
+            ("policy.pdf", f1, "application/pdf"),
+            ("runbook.pdf", f2, "application/pdf"),
+        ],
+        file_metadata=[
+            {"file_id": "policy_v2", "metadata": {"document_type": "policy", "status": "approved"}},
+            {"file_id": "runbook_deploy", "metadata": {"document_type": "runbook"}},
+        ],
+    )
+```
+</CodeGroup>
+
+### Path B — App sources
+
+Pre-parsed text from connected apps. You supply the text, metadata, and an optional URL.
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -F "tenant_id=acme_corp" \
+  -F 'app_sources=[
+    {
+      "source_id": "slack_thread_001",
+      "title": "Pricing discussion — Slack #product",
+      "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+      "metadata": { "channel": "product", "status": "finalized" },
+      "additional_metadata": { "slack_ts": "1715012345.000100" }
+    }
+  ]'
+```
+```typescript TypeScript SDK
+const result = await client.upload.knowledge({
+  tenant_id: "acme_corp",
+  app_sources: [
+    {
+      source_id: "slack_thread_001",
+      title: "Pricing discussion — Slack #product",
+      text: "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+      metadata: { channel: "product", status: "finalized" },
+      additional_metadata: { slack_ts: "1715012345.000100" },
+    },
+  ],
+});
+```
+```python Python SDK
+result = client.upload.knowledge(
+    tenant_id="acme_corp",
+    app_sources=[
+        {
+            "source_id": "slack_thread_001",
+            "title": "Pricing discussion — Slack #product",
+            "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+            "metadata": {"channel": "product", "status": "finalized"},
+            "additional_metadata": {"slack_ts": "1715012345.000100"},
+        }
+    ],
+)
+```
+</CodeGroup>
+
+**Response (both paths):**
+
+```json
+{
+  "success": true,
+  "message": "Knowledge uploaded successfully",
+  "results": [
+    { "source_id": "policy_v2", "filename": "policy.pdf", "status": "queued", "error": null }
+  ],
+  "success_count": 1,
+  "failed_count": 0
+}
+```
+
+---
+
+## 5. Verifying processing
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  'https://api.hydradb.com/ingestion/verify_processing?file_ids=policy_v2&tenant_id=acme_corp' \
+  -H "Authorization: Bearer $HYDRADB_API_KEY"
+```
+```typescript TypeScript SDK
+const status = await client.upload.verifyProcessing({
+  tenant_id: "acme_corp",
+  file_ids: ["policy_v2"],
+});
+```
+```python Python SDK
+status = client.upload.verify_processing(
+    tenant_id="acme_corp",
+    file_ids=["policy_v2"],
+)
+```
+</CodeGroup>
+
+```json
+{
+  "statuses": [
+    {
+      "file_id": "policy_v2",
+      "indexing_status": "completed",
+      "success": true
+    }
+  ]
+}
+```
+
+Status values: `queued` → `processing` → `graph_creation` → `completed` (or `error`).
+
+Poll every few seconds. Most documents complete in 1–5 minutes.
+
+---
+
+## 6. Key parameters
+
+### File metadata (`file_metadata` array items)
+
+| Field | Type | Description |
+|---|---|---|
+| `file_id` | string | Optional stable identifier. Used as upsert key when `upsert: true`. |
+| `metadata` | object | Filterable fields. Keys must match the tenant metadata schema. |
+| `additional_metadata` | object | Free-form fields for display and bookkeeping. Not filterable. |
+
+### App source model (`app_sources` array items)
+
+| Field | Type | Description |
+|---|---|---|
+| `source_id` | string | Optional stable identifier. Upsert key. |
+| `title` | string | Human-readable title for the source. |
+| `text` | string | Pre-parsed text content. |
+| `url` | string | Source URL (optional, for display). |
+| `metadata` | object | Filterable fields matching the tenant schema. |
+| `additional_metadata` | object | Free-form fields. Not filterable. |
+
+### Request-level fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `tenant_id` | string | — *(required)* | Target tenant. |
+| `sub_tenant_id` | string | none | Scope this knowledge to a sub-tenant. If omitted, knowledge is available to all sub-tenants. |
+| `upsert` | boolean | `true` | Replace existing items with the same `source_id` / `file_id`. |
+
+---
+
+## 7. Metadata on knowledge
+
+Attach `metadata` at ingestion to enable deterministic filtering at recall time:
+
+```json
+{
+  "metadata": { "document_type": "runbook", "environment": "production" }
+}
+```
+
+Then at recall time:
+
+```json
+{
+  "query": "How do I rotate API keys?",
+  "metadata_filters": { "document_type": "runbook", "environment": "production" }
+}
+```
+
+`metadata` keys must be defined in the tenant metadata schema with `enable_match: true` to be filterable. `additional_metadata` is stored but cannot be used in `metadata_filters`.
+
+See [Essentials → Metadata](/essentials/metadata) for schema design and filtering patterns.
+
+---
+
+## 8. Common mistakes
+
+| Mistake | What goes wrong | Fix |
+|---|---|---|
+| Querying Knowledge via `recall_preferences` | Nothing is returned — wrong store | Use `full_recall` for Knowledge |
+| Using `additional_metadata` for filterable fields | Filters are silently ignored | Move filterable fields to `metadata`, declare them in the tenant schema |
+| Not polling `verify_processing` before recall | Chunks are not yet indexed — empty recall results | Wait for `indexing_status: completed` |
+| Sending `file_metadata` as a JSON object instead of a JSON string | `multipart/form-data` validation fails | Stringify `file_metadata` before sending in the `-F` field |
+| Omitting `tenant_id` | `422` validation error | Required on every call |
+
+---
+
+## Related
+
+- [Memories](/essentials/memories) — user-scoped dynamic context
+- [Recall](/essentials/recall) — how `full_recall` retrieves Knowledge
+- [Metadata](/essentials/metadata) — designing filterable schemas
+- [Upload Knowledge API Reference](/api-reference/endpoint/upload-knowledge)
+- [Verify Processing API Reference](/api-reference/endpoint/verify-processing)

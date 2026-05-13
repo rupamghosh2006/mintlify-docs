@@ -1,45 +1,72 @@
 ---
 title: "List Sub-Tenant IDs"
-description: "Returns the list of unique sub_tenant_id values that have indexed data for the given tenant (context and memory collections)."
-openapi: "GET /tenants/sub_tenant_ids"
+description: "List all sub-tenants that have indexed data under a tenant."
 ---
 
+## When to use it
 
-Returns the list of unique `sub_tenant_id` values that have indexed data for the given tenant. Data is read from both context and memory collections, so the list reflects all sub-tenants that have been used for ingestion.
+- **Audit** – confirm which sub-tenants exist for compliance or usage reporting
+- **Bulk operations** – iterate over sub-tenants to apply the same operation to each
+- **Dynamic UI** – populate dropdowns or selectors in admin dashboards
 
-Use this to discover which sub-tenants exist under a tenant, for auditing, usage reporting, or building UIs that depend on the set of active sub-tenants.
+A sub-tenant appears in this list only if it currently has indexed data (knowledge or memories).
 
-### Examples
+## Endpoint
 
-<Tabs>
-  <Tab title="API Request">
-    ```bash wrap
-    curl -X 'GET' \
-      'https://api.hydradb.com/tenants/sub_tenant_ids?tenant_id=tenant_1234' \
-      --header 'Authorization: Bearer YOUR_API_KEY'
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python
-    # Async: use async_client and await
-    response = client.tenant.get_sub_tenant_ids(tenant_id="tenant_1234")
-    sub_tenant_ids = response.sub_tenant_ids
-    ```
-  </Tab>
-</Tabs>
+```
+GET /tenants/sub_tenant_ids
+```
 
-### Query Parameters
+- **Auth:** Bearer token
+- **Idempotency:** Read-only
+- **Async:** No
 
-- **tenant_id**: Required string – Unique identifier for the tenant/organization.
+## Example
 
-### Response
+<CodeGroup>
+```bash cURL
+curl 'https://api.hydradb.com/tenants/sub_tenant_ids?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>"
+```
+```typescript TypeScript SDK
+const response = await client.tenant.getSubTenantIds({
+  tenantId: "my_first_tenant"
+});
+const subTenantIds = response.subTenantIds;
+```
+```python Python SDK
+response = client.tenant.get_sub_tenant_ids(tenant_id="my_first_tenant")
+sub_tenant_ids = response.sub_tenant_ids
+```
+</CodeGroup>
 
-- **sub_tenant_ids**: Array of unique sub-tenant IDs that have indexed data in the tenant's collections.
-- **message**: Summary message (e.g. "Successfully retrieved sub-tenant IDs").
+## Query parameters
 
-### Use cases
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `tenant_id` | string | Yes | The tenant to list sub-tenants for. |
 
-- **Audit**: List all sub-tenants that hold data for a tenant.
-- **Monitoring**: See how many sub-tenants are actively used.
-- **Dynamic UI**: Adapt interfaces based on available sub-tenants.
-- **Bulk operations**: Operate across multiple sub-tenants by iterating over the returned IDs.
+## Response
+
+```json
+{
+  "sub_tenant_ids": ["engineering", "sales", "hr", "user_12345"],
+  "message": "Successfully retrieved sub-tenant IDs"
+}
+```
+
+| Field | Description |
+|---|---|
+| `sub_tenant_ids` | Array of unique sub-tenant IDs with indexed data. |
+| `message` | Human-readable status. |
+
+## Related endpoints
+
+- **Before this:** [Upload knowledge](/api-reference/endpoint/upload-knowledge) · [Add memory](/api-reference/endpoint/add-memory) – sub-tenants are created implicitly during ingestion
+- **Related:** [List data](/api-reference/endpoint/list-data) – browse content within a specific sub-tenant
+
+## Errors
+
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`. See [Error Responses](/api-reference/error-responses) for the full list.
+
+Read more: [Essentials → Multi-Tenant Support](/essentials/multi-tenant)

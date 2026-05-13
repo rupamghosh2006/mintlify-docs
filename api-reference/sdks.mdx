@@ -1,451 +1,483 @@
 ---
-title: "SDKs - Node and Python"
-description: "Official TypeScript/Node.js and Python SDKs for the HydraDB platform. Build powerful, context-aware AI applications."
+title: "SDKs – Node and Python"
+description: "Official TypeScript/Node.js and Python SDKs for the HydraDB platform."
 ---
 
 ## Installation
 
-<Tabs>
-  <Tab title="TypeScript / Node.js">
-    ```bash
-    npm i @hydra_db/node
-    ```
-  </Tab>
-  <Tab title="Python">
-    ```bash
-    pip install hydra-db-python
-    ```
-  </Tab>
-</Tabs>
+<CodeGroup>
+```bash TypeScript / Node.js
+npm i @hydradb/sdk
+```
+```bash Python SDK
+pip install hydradb-sdk
+```
+</CodeGroup>
 
-## Client Setup
+## Client setup
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts
-    import { HydraDBClient } from "@hydra_db/node";
-    
-    const client = new HydraDBClient({
-      token: process.env.HYDRADB_API_KEY,
-    });
-    ```
-  </Tab>
-  <Tab title="Python">
-    ```python
-    import os
-    from hydra_db import HydraDB, AsyncHydraDB
-    
-    api_key = os.environ["HYDRADB_API_KEY"]
-    
-    # Sync client
-    client = HydraDB(token=api_key)
-    
-    # Async client (for async/await usage)
-    async_client = AsyncHydraDB(token=api_key)
-    ```
-  </Tab>
-</Tabs>
+<CodeGroup>
+```typescript TypeScript SDK
+import { HydraDBClient } from "@hydradb/sdk";
+
+const client = new HydraDBClient({
+  token: process.env.HYDRADB_API_KEY,
+});
+```
+```python Python SDK
+import os
+from hydra_db import HydraDB
+
+client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+```
+```python Python (Async)
+import os
+from hydra_db import AsyncHydraDB
+
+async_client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
+```
+</CodeGroup>
 
 <Info>
-  **Python**: We provide both synchronous and asynchronous clients. Use `AsyncHydraDB` for async/await patterns and `HydraDB` for traditional synchronous operations.
+**Python:** Both synchronous (`HydraDB`) and asynchronous (`AsyncHydraDB`) clients are available. They share an identical surface – choose based on your application's concurrency model.
 </Info>
 
-## SDK Method Structure & Type Safety
+## Naming conventions
 
-Our SDKs follow a predictable pattern that mirrors the API structure while providing full type safety.
+The REST API uses **snake_case** for all request and response fields. The SDKs adapt this to native idioms:
 
-> **Method Mapping** : `client.<group>.<function_name>` mirrors  `api.hydradb.com/<group>/<function_name>` 
+| | Field naming | Example |
+|---|---|---|
+| **Raw HTTP / cURL** | snake_case | `tenant_id`, `sub_tenant_id` |
+| **TypeScript SDK** | camelCase | `tenantId`, `subTenantId` |
+| **Python SDK** | snake_case | `tenant_id`, `sub_tenant_id` |
 
-The SDKs provide exact type parity with the API specification:
+The TypeScript SDK transparently maps camelCase parameters to snake_case on the wire. You can rely on your IDE's autocomplete and type checking – if a field is optional in the API, it's optional in the SDK.
 
-- **Request Parameters**: Every field documented in the API reference (required, optional, types, validation rules) is reflected in the SDK method signatures
-- **Response Objects**: Return types match the exact JSON schema documented for each endpoint
-- **Error Types**: Exception structures mirror the error response formats from the API
-- **Nested Objects**: Complex nested parameters and responses maintain their full structure and typing
+## SDK method structure
 
-### Parameter Naming
+SDK methods are grouped by capability, not by URL path. The mapping is mostly intuitive but **a few groups span multiple URL prefixes**:
 
-The REST API uses **snake_case** for all request and response body fields (e.g. `tenant_id`, `sub_tenant_id`). The SDKs handle naming as follows:
+| URL prefix | SDK group | Why |
+|---|---|---|
+| `/tenants/*` | `client.tenant` | Tenant lifecycle |
+| `/ingestion/*` | `client.upload` | Content upload + verification |
+| `/memories/*` | `client.upload` | Memories share the upload group |
+| `/recall/*` | `client.recall` | All retrieval modes |
+| `/list/*`, `/fetch/*` | `client.fetch` | Browse and retrieve |
+| `/knowledge/*` | `client.data` | Bulk delete |
+| `/embeddings/*` | `client.embeddings` | Bring-your-own-vector workflows |
 
-- **TypeScript SDK**: Uses **camelCase** for parameter names (e.g. `tenantId`, `subTenantId`) to match JavaScript conventions. The SDK maps these to the API's snake_case when sending requests.
-- **Python SDK**: Uses **snake_case** for parameters, matching the API.
+## Method reference
 
-When calling the REST API directly (e.g. with curl), use snake_case. In TypeScript examples throughout the docs, we show the SDK's camelCase parameters. This means you can rely on your IDE's autocomplete and type checking. If a parameter is optional in the API docs, it's optional in the SDK. If a response contains a specific field, your IDE will know about it.
+Method names map to the URL by removing the leading slash and replacing path separators:
 
-## Getting Started
+### Tenants
 
-### Create a Tenant
+| Method | Endpoint |
+|---|---|
+| `client.tenant.create()` | `POST /tenants/create` |
+| `client.tenant.get_infra_status()` | `GET /tenants/infra/status` |
+| `client.tenant.monitor()` | `GET /tenants/monitor` |
+| `client.tenant.get_sub_tenant_ids()` | `GET /tenants/sub_tenant_ids` |
+| `client.tenant.get_tenant_ids()` | `GET /tenants/tenant_ids` |
+| `client.tenant.delete_tenant()` | `DELETE /tenants/delete` |
 
-You can consider a `tenant` as a single database that can have internal isolated collections called `sub-tenants`. [Know more about the concept of tenant here](https://docs.hydradb.com/essentials/multi-tenant)
+### Ingestion + Memories (under `upload`)
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts
-    async function createTenant() {
-      const tenantCreationResponse = await client.tenant.create({
-        tenant_id: "my-company"
-      });
-      return tenantCreationResponse;
-    }
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python
-    def create_tenant():
-        return client.tenant.create(tenant_id="my-company")
-    ```
-  </Tab>
-  <Tab title="Python (Async)">
-    ```python
-    async def create_tenant():
-        return await async_client.tenant.create(tenant_id="my-company")
-    ```
-  </Tab>
-</Tabs>
-
-### Ingest Your Data
-
-When you index your data, you make it ready for retrieval from HydraDB using natural language.
-
-#### Knowledge Base
-
-Upload documents, PDFs, and other content to your knowledge base for semantic search and retrieval.
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts
-    // Add to your knowledge base
-    import fs from 'fs';
-
-    const uploadResult = await client.upload.knowledge({
-      files: [
-        fs.readFileSync("a.pdf"),
-        fs.readFileSync("b.pdf")
-      ],
-      tenant_id: "tenant_123",
-      file_metadata: [
-        {
-          file_id: "doc_a",
-          metadata: { dept: "sales" },
-          additional_metadata: { author: "Alice" },
-          relations: false
-        },
-        {
-          file_id: "doc_b",
-          metadata: { dept: "marketing" },
-          additional_metadata: { author: "Bob" },
-          relations: true
-        }
-      ]
-    });
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python
-    # ingest in your knowledge base
-    with open("a.pdf", 'rb') as f1, open("b.pdf", 'rb') as f2:
-        files = [
-            ("a.pdf", f1),
-            ("b.pdf", f2)
-        ]
-        upload_result = client.upload.knowledge(
-            tenant_id="tenant_123",
-            files=files,
-            file_metadata=[
-                {
-                    "file_id": "doc_a",
-                    "metadata": {"dept": "sales"},
-                    "additional_metadata": {"author": "Alice"}
-                },
-                {
-                    "file_id": "doc_b",
-                    "metadata": {"dept": "marketing"},
-                    "additional_metadata": {"author": "Bob"}
-                }
-            ]
-        )
-    ```
-  </Tab>
-  <Tab title="Python (Async)">
-    ```python
-    # ingest in your knowledge base
-    async def upload_knowledge():
-        with open("a.pdf", 'rb') as f1, open("b.pdf", 'rb') as f2:
-            files = [
-                ("a.pdf", f1),
-                ("b.pdf", f2)
-            ]
-            return await async_client.upload.knowledge(
-                tenant_id="tenant_123",
-                files=files,
-                file_metadata=[
-                    {
-                        "file_id": "doc_a",
-                        "metadata": {"dept": "sales"},
-                        "additional_metadata": {"author": "Alice"}
-                    },
-                    {
-                        "file_id": "doc_b",
-                        "metadata": {"dept": "marketing"},
-                        "additional_metadata": {"author": "Bob"}
-                    }
-                ]
-            )
-    ```
-  </Tab>
-</Tabs>
-
-> **For a more detailed explanation** of document upload, including supported file formats, processing pipeline, metadata handling, and advanced configuration options, refer to the [Ingest Knowledge](https://docs.hydradb.com/api-reference/endpoint/add-knowledge-memories).
-
-
-#### User Memories
-
-Store user preferences, conversation history, and personalized context that evolves with every interaction.
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts expandable
-    // Simple text memory
-    const result = await client.userMemory.add({
-      memories: [
-        {
-          text: "User prefers detailed explanations and dark mode",
-          infer: true,
-          user_name: "John"
-        }
-      ],
-      tenant_id: "tenant-01",
-      sub_tenant_id: "",
-      upsert: true
-    });
-
-    // Markdown content
-    const markdownResult = await client.userMemory.add({
-      memories: [
-        {
-          text: "# Meeting Notes\n\n## Key Points\n- Budget approved\n- Launch date: Q2",
-          is_markdown: true,
-          infer: false,
-          title: "Meeting Notes"
-        }
-      ],
-      tenant_id: "tenant-01",
-      sub_tenant_id: "",
-      upsert: true
-    });
-
-    // User-assistant pairs with inference
-    const conversationResult = await client.userMemory.add({
-      memories: [
-        {
-          user_assistant_pairs: [
-            { user: "What are my preferences?", assistant: "You prefer dark mode and detailed explanations." },
-            { user: "How do I like my reports?", assistant: "You prefer weekly summary reports with charts." }
-          ],
-          infer: true,
-          user_name: "John",
-          custom_instructions: "Extract user preferences"
-        }
-      ],
-      tenant_id: "tenant-01",
-      sub_tenant_id: "",
-      upsert: true
-    });
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python expandable
-    # Simple text memory
-    result = client.user_memory.add(
-        memories=[
-            {
-                "text": "User prefers detailed explanations and dark mode",
-                "infer": True,
-                "user_name": "John"
-            }
-        ],
-        tenant_id="tenant-01",
-        sub_tenant_id="",
-        upsert=True
-    )
-
-    # Markdown content
-    markdown_result = client.user_memory.add(
-        memories=[
-            {
-                "text": "# Meeting Notes\n\n## Key Points\n- Budget approved",
-                "is_markdown": True,
-                "infer": False,
-                "title": "Meeting Notes"
-            }
-        ],
-        tenant_id="tenant-01",
-        sub_tenant_id="",
-        upsert=True
-    )
-
-    # User-assistant pairs with inference
-    conversation_result = client.user_memory.add(
-        memories=[
-            {
-                "user_assistant_pairs": [
-                    {"user": "What are my preferences?", "assistant": "You prefer dark mode."},
-                    {"user": "How do I like reports?", "assistant": "Weekly summaries with charts."}
-                ],
-                "infer": True,
-                "user_name": "John",
-                "custom_instructions": "Extract user preferences"
-            }
-        ],
-        tenant_id="tenant-01",
-        sub_tenant_id="",
-        upsert=True
-    )
-    ```
-  </Tab>
-  <Tab title="Python (Async)">
-    ```python expandable
-    # Simple text memory
-    async def add_memories():
-        return await async_client.user_memory.add(
-            memories=[
-                {
-                    "text": "User prefers detailed explanations and dark mode",
-                    "infer": True,
-                    "user_name": "John"
-                }
-            ],
-            tenant_id="tenant-01",
-            sub_tenant_id="",
-            upsert=True
-        )
-    ```
-  </Tab>
-</Tabs>
-
+| Method | Endpoint |
+|---|---|
+| `client.upload.knowledge()` | `POST /ingestion/upload_knowledge` |
+| `client.upload.verify_processing()` | `POST /ingestion/verify_processing` |
+| `client.upload.add_memory()` | `POST /memories/add_memory` |
+| `client.upload.delete_memory()` | `DELETE /memories/delete_memory` |
 
 ### Recall
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts
-    // Hybrid search over indexed sources (documents)
-    const results = await client.recall.fullRecall({
-      query: "Which mode does user prefer",
-      tenantId: "tenant_1234",
-      subTenantId: "sub_tenant_4567",
-      alpha: 0.8,
-      recencyBias: 0
-    });
+| Method | Endpoint |
+|---|---|
+| `client.recall.full_recall()` | `POST /recall/full_recall` |
+| `client.recall.recall_preferences()` | `POST /recall/recall_preferences` |
+| `client.recall.boolean_recall()` | `POST /recall/boolean_recall` |
 
-    // Hybrid search over user memories
-    const prefs = await client.recall.recallPreferences({
-      query: "Which mode does user prefer",
-      tenantId: "tenant_1234",
-      subTenantId: "sub_tenant_4567",
-      alpha: 0.8,
-      recencyBias: 0
-    });
+### List + Fetch (under `fetch`)
 
-    // List all the data (memories + knowledge base)
-    const allSources = await client.data.listData({
-      tenant_id: "tenant_1234",
-      sub_tenant_id: "sub_tenant_4567"
-    });
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python
-    # Hybrid search over indexed sources (documents)
-    results = client.recall.full_recall(
-        query="Which mode does user prefer",
-        tenant_id="tenant_1234",
-        sub_tenant_id="sub_tenant_4567",
-        alpha=0.8,
-        recency_bias=0
+| Method | Endpoint |
+|---|---|
+| `client.fetch.list_data()` | `POST /list/data` |
+| `client.fetch.graph_relations_by_source_id()` | `GET /list/graph_relations_by_id` |
+| `client.fetch.content()` | `POST /fetch/content` |
+
+### Knowledge Deletion
+
+| Method | Endpoint |
+|---|---|
+| `client.data.delete()` | `POST /knowledge/delete_knowledge` |
+
+### Embeddings
+
+| Method | Endpoint |
+|---|---|
+| `client.embeddings.insert()` | `POST /embeddings/insert_raw_embeddings` |
+| `client.embeddings.search()` | `POST /embeddings/search_raw_embeddings` |
+| `client.embeddings.filter()` | `POST /embeddings/filter_raw_embeddings` |
+| `client.embeddings.delete()` | `DELETE /embeddings/delete_raw_embeddings` |
+
+In TypeScript, snake_case method names use camelCase: `client.tenant.getInfraStatus()`, `client.recall.fullRecall()`, etc.
+
+## Getting started
+
+### Create a tenant
+
+A tenant is an isolated workspace. Most organizations create one tenant total, with sub-tenants for users or teams. See [Multi-Tenant](/essentials/multi-tenant) for the full model.
+
+<CodeGroup>
+```typescript TypeScript SDK
+const response = await client.tenant.create({
+  tenantId: "my_first_tenant"
+});
+```
+```python Python SDK
+response = client.tenant.create(tenant_id="my_first_tenant")
+```
+```python Python (Async)
+response = await async_client.tenant.create(tenant_id="my_first_tenant")
+```
+</CodeGroup>
+
+Tenant creation is asynchronous. Poll [`get_infra_status`](/api-reference/endpoint/infra-status) until provisioning completes:
+
+<CodeGroup>
+```typescript TypeScript SDK
+while (true) {
+  const status = await client.tenant.getInfraStatus({
+    tenantId: "my_first_tenant"
+  });
+  const { graphStatus, vectorstoreStatus } = status.infra;
+  if (graphStatus && vectorstoreStatus.every(Boolean)) break;
+  await new Promise(r => setTimeout(r, 2000));
+}
+```
+```python Python SDK
+import time
+
+while True:
+    status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
+    if (status.infra.graph_status
+        and all(status.infra.vectorstore_status)):
+        break
+    time.sleep(2)
+```
+</CodeGroup>
+
+### Ingest knowledge
+
+Upload documents, app sources, or both via [`upload.knowledge`](/api-reference/endpoint/upload-knowledge):
+
+<CodeGroup>
+```typescript TypeScript SDK
+import { createReadStream } from "fs";
+
+const result = await client.upload.knowledge({
+  tenantId: "my_first_tenant",
+  files: [
+    createReadStream("contract.pdf"),
+    createReadStream("policy.pdf"),
+  ],
+  fileMetadata: JSON.stringify([
+    {
+      file_id: "contract_q4",
+      metadata: { category: "legal" },
+      additional_metadata: { author: "Alice" }
+    },
+    {
+      file_id: "policy_2025",
+      metadata: { category: "legal" },
+      additional_metadata: { author: "Bob" }
+    }
+  ])
+});
+```
+```python Python SDK
+import json
+
+with open("contract.pdf", "rb") as f1, open("policy.pdf", "rb") as f2:
+    result = client.upload.knowledge(
+        tenant_id="my_first_tenant",
+        files=[f1, f2],
+        file_metadata=json.dumps([
+            {
+                "file_id": "contract_q4",
+                "metadata": {"category": "legal"},
+                "additional_metadata": {"author": "Alice"},
+            },
+            {
+                "file_id": "policy_2025",
+                "metadata": {"category": "legal"},
+                "additional_metadata": {"author": "Bob"},
+            },
+        ]),
     )
+```
+</CodeGroup>
 
-    # Hybrid search over user memories
-    prefs = client.recall.recall_preferences(
-        query="Which mode does user prefer",
-        tenant_id="tenant_1234",
-        sub_tenant_id="sub_tenant_4567",
-        alpha=0.8,
-        recency_bias=0
-    )
+For full options including app sources and forceful relations, see [Upload knowledge](/api-reference/endpoint/upload-knowledge).
 
-    # Get ingested data (memories + knowledge base)
-    all_sources = client.data.list_data(
-        tenant_id="tenant_1234",
-        sub_tenant_id="sub_tenant_4567"
-    )
-    ```
-  </Tab>
-  <Tab title="Python (Async)">
-    ```python
-    # Hybrid search over indexed sources (documents)
-    async def search_sources():
-        return await async_client.recall.full_recall(
-            query="Which mode does user prefer",
-            tenant_id="tenant_1234",
-            sub_tenant_id="sub_tenant_4567",
-            alpha=0.8,
-            recency_bias=0
-        )
+### Add user memories
 
-    # Hybrid search over user memories
-    async def search_preferences():
-        return await async_client.recall.recall_preferences(
-            query="Which mode does user prefer",
-            tenant_id="tenant_1234",
-            sub_tenant_id="sub_tenant_4567",
-            alpha=0.8,
-            recency_bias=0
-        )
+Store user preferences and conversation history via [`upload.add_memory`](/api-reference/endpoint/add-memory):
 
-    # Get ingested data (memories + knowledge base)
-    async def list_data():
-        all_sources = await async_client.data.list_data(
-            tenant_id="tenant_1234",
-            sub_tenant_id="sub_tenant_4567"
-        )
-        return all_sources
-    ```
-  </Tab>
-</Tabs>
+<CodeGroup>
+```typescript TypeScript SDK
+// Plain text memory
+const result = await client.upload.addMemory({
+  tenantId: "my_first_tenant",
+  memories: [
+    {
+      text: "User prefers detailed technical explanations and dark mode",
+      infer: true,
+      userName: "Alex",
+      metadata: { team: "engineering" },
+      additionalMetadata: { source: "onboarding" }
+    }
+  ]
+});
 
-## Additional Endpoints
+// Conversation pairs
+const conversation = await client.upload.addMemory({
+  tenantId: "my_first_tenant",
+  memories: [
+    {
+      userAssistantPairs: [
+        { user: "What are my preferences?", assistant: "You prefer dark mode." },
+        { user: "How do I like reports?", assistant: "Weekly summaries." }
+      ],
+      infer: true,
+      userName: "Alex"
+    }
+  ]
+});
+```
+```python Python SDK
+# Plain text memory
+result = client.upload.add_memory(
+    tenant_id="my_first_tenant",
+    memories=[
+        {
+            "text": "User prefers detailed technical explanations and dark mode",
+            "infer": True,
+            "user_name": "Alex",
+            "metadata": {"team": "engineering"},
+            "additional_metadata": {"source": "onboarding"},
+        }
+    ],
+)
 
-### List Sources
+# Conversation pairs
+conversation = client.upload.add_memory(
+    tenant_id="my_first_tenant",
+    memories=[
+        {
+            "user_assistant_pairs": [
+                {"user": "What are my preferences?", "assistant": "You prefer dark mode."},
+                {"user": "How do I like reports?", "assistant": "Weekly summaries."},
+            ],
+            "infer": True,
+            "user_name": "Alex",
+        }
+    ],
+)
+```
+</CodeGroup>
 
 <Info>
-  The `/list` endpoints use special naming in the SDKs for better developer experience:
-
-  - `/list/memories` → `memories.getAll()` / `memories.get_all()`
-  - `/list/knowledge` → `knowledge.getByIds()` / `knowledge.get_by_ids()`
+**`infer` defaults to `false`.** Set `infer: true` for conversational content where you want HydraDB to extract implicit preferences. Use `infer: false` for content that should be stored verbatim.
 </Info>
 
-## Type Safety
+### Recall
+
+Three retrieval modes for different use cases:
+
+<CodeGroup>
+```typescript TypeScript SDK
+// Hybrid recall over knowledge
+const knowledge = await client.recall.fullRecall({
+  tenantId: "my_first_tenant",
+  query: "What are the pricing tiers?",
+  mode: "thinking",
+  graphContext: true
+});
+
+// Hybrid recall over user memories
+const prefs = await client.recall.recallPreferences({
+  tenantId: "my_first_tenant",
+  subTenantId: "user_alex",
+  query: "What are this user's display preferences?",
+  mode: "thinking"
+});
+
+// Exact-match search
+const exact = await client.recall.booleanRecall({
+  tenantId: "my_first_tenant",
+  query: "ERROR_429 rate limit",
+  operator: "and"
+});
+```
+```python Python SDK
+# Hybrid recall over knowledge
+knowledge = client.recall.full_recall(
+    tenant_id="my_first_tenant",
+    query="What are the pricing tiers?",
+    mode="thinking",
+    graph_context=True,
+)
+
+# Hybrid recall over user memories
+prefs = client.recall.recall_preferences(
+    tenant_id="my_first_tenant",
+    sub_tenant_id="user_alex",
+    query="What are this user's display preferences?",
+    mode="thinking",
+)
+
+# Exact-match search
+exact = client.recall.boolean_recall(
+    tenant_id="my_first_tenant",
+    query="ERROR_429 rate limit",
+    operator="and",
+)
+```
+</CodeGroup>
+
+For full parameter documentation, see [Recall](/api-reference/endpoint/recall-overview).
+
+### Browse and inspect
+
+<CodeGroup>
+```typescript TypeScript SDK
+// List knowledge sources with pagination
+const sources = await client.fetch.listData({
+  tenantId: "my_first_tenant",
+  kind: "knowledge",
+  page: 1,
+  pageSize: 50
+});
+
+// Inspect graph relationships for a specific source
+const relations = await client.fetch.graphRelationsBySourceId({
+  tenantId: "my_first_tenant",
+  sourceId: "doc_12345"
+});
+
+// Fetch original file content or get a presigned URL
+const file = await client.fetch.content({
+  tenantId: "my_first_tenant",
+  sourceId: "doc_12345",
+  mode: "url"
+});
+```
+```python Python SDK
+# List knowledge sources with pagination
+sources = client.fetch.list_data(
+    tenant_id="my_first_tenant",
+    kind="knowledge",
+    page=1,
+    page_size=50,
+)
+
+# Inspect graph relationships for a specific source
+relations = client.fetch.graph_relations_by_source_id(
+    tenant_id="my_first_tenant",
+    source_id="doc_12345",
+)
+
+# Fetch original file content or get a presigned URL
+file = client.fetch.content(
+    tenant_id="my_first_tenant",
+    source_id="doc_12345",
+    mode="url",
+)
+```
+</CodeGroup>
+
+## Type safety
 
 <Check>
-  All SDKs are fully typed with TypeScript definitions and Python type hints. Your IDE will provide:
+Both SDKs are fully typed:
 
-  - **Autocomplete** for all method names and parameters
-  - **Type checking** for request and response objects
-  - **Inline documentation** for each parameter
-  - **Error prevention** through compile-time validation
+- **Autocomplete** for all method names and parameters
+- **Type checking** for request and response objects
+- **Inline documentation** for each parameter
+- **Compile-time validation** for required vs optional fields
 </Check>
 
-## Error Handling
+The SDKs provide exact type parity with the API specification:
 
-Both SDKs throw exceptions for API errors. The error objects contain the same structure as documented in our [Error Responses](/api-reference/error-responses) section.
+- **Request parameters** – every field documented in the API reference is reflected in method signatures
+- **Response objects** – return types match the JSON schema for each endpoint
+- **Error types** – exception structures mirror error response formats
+- **Nested objects** – complex parameters and responses keep their full structure
 
-### The Universal CMD+Space Approach
+## Error handling
 
-Whether you're using **TypeScript**, **Python**, **VS Code**, **PyCharm**, or **any modern IDE**, the approach is identical:
+Both SDKs throw exceptions for non-2xx responses. Error objects expose the API's `detail` payload:
 
-1. **Type the method name** → See all available methods
-2. **Open the parentheses** → See all required and optional parameters
-3. **Press Cmd+Space (Mac) or Ctrl+Space (Windows/Linux)** → Get instant documentation
+<CodeGroup>
+```typescript TypeScript SDK
+try {
+  const result = await client.recall.fullRecall({
+    tenantId: "my_first_tenant",
+    query: "..."
+  });
+} catch (error: any) {
+  const code = error.body?.detail?.error_code;
+  const status = error.statusCode;
 
-This works universally because our SDKs are fully typed with comprehensive documentation.
+  if (code === "TENANT_NOT_FOUND") {
+    // Handle missing tenant
+  } else if (status === 429) {
+    // Rate limit - retry with backoff
+  } else {
+    throw error;
+  }
+}
+```
+```python Python SDK
+try:
+    result = client.recall.full_recall(
+        tenant_id="my_first_tenant",
+        query="...",
+    )
+except Exception as e:
+    body = getattr(e, "body", {}) or {}
+    code = body.get("detail", {}).get("error_code")
+    status = getattr(e, "status_code", None)
+
+    if code == "TENANT_NOT_FOUND":
+        # Handle missing tenant
+        pass
+    elif status == 429:
+        # Rate limit - retry with backoff
+        pass
+    else:
+        raise
+```
+</CodeGroup>
+
+For the full list of error codes and retry patterns, see [Error Responses](/api-reference/error-responses).
+
+## IDE-driven discovery
+
+Whether you're using TypeScript, Python, VS Code, PyCharm, or any modern IDE, the workflow is the same:
+
+1. Type the method name → see all available methods
+2. Open the parentheses → see all required and optional parameters
+3. Press `Cmd+Space` (macOS) or `Ctrl+Space` (Windows/Linux) → get inline documentation
+
+This works because the SDKs are fully typed with comprehensive parameter docs.
+
+## Related sections
+
+- [API Reference](/api-reference) – complete endpoint documentation
+- [Error Responses](/api-reference/error-responses) – HTTP codes, error codes, retry patterns
+- [Quickstart](/quickstart) – build your first integration in five minutes

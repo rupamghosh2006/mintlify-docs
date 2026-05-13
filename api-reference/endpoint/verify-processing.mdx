@@ -1,82 +1,85 @@
 ---
 title: "Verify Processing"
-description: "Check the processing status of uploaded content. Supports single and batch lookups."
-openapi: "POST /ingestion/verify_processing"
+description: "Check the processing status of ingested content."
 ---
 
-### Sample Requests
+## When to use it
 
-<Tabs>
-  <Tab title="API Request">
-    ```bash expandable
-    # Single file
-    curl -X POST \
-      'https://api.hydradb.com/ingestion/verify_processing?file_id=file_123&tenant_id=tenant_1234' \
-      -H 'Authorization: Bearer YOUR_API_KEY'
+Both `/ingestion/upload_knowledge` and `/memories/add_memory` are asynchronous. After ingesting, use this endpoint to check whether content is fully indexed and ready to be recalled.
 
-    # Multiple files
-    curl -X POST \
-      'https://api.hydradb.com/ingestion/verify_processing?file_ids=file_123&file_ids=file_456&tenant_id=tenant_1234' \
-      -H 'Authorization: Bearer YOUR_API_KEY'
-    ```
-  </Tab>
-  <Tab title="TypeScript">
-    ```ts expandable
-    // Single file
-    const status = await client.upload.verifyProcessing({
-      file_ids: ["file_123"],
-      tenant_id: "tenant_1234",
-    });
+Common patterns:
 
-    // Multiple files
-    const statuses = await client.upload.verifyProcessing({
-      file_ids: ["file_123", "file_456", "file_789"],
-      tenant_id: "tenant_1234",
-      sub_tenant_id: "sub_tenant_4567",
-    });
-    ```
-  </Tab>
-  <Tab title="Python (Sync)">
-    ```python expandable
-    from hydra_db_python import HydraDBClient
+- **Polling after upload** – wait until status is `completed` before running recall queries
+- **Bulk progress tracking** – pass multiple IDs to check many sources in one call
+- **Error inspection** – see why a specific item failed
 
-    client = HydraDBClient(api_key="your_api_key")
+## Endpoint
 
-    # Single file
-    status = client.upload.verify_processing(
-        file_ids=["file_123"],
-        tenant_id="tenant_1234",
-    )
+```
+POST /ingestion/verify_processing
+```
 
-    # Multiple files
-    statuses = client.upload.verify_processing(
-        file_ids=["file_123", "file_456", "file_789"],
-        tenant_id="tenant_1234",
-        sub_tenant_id="sub_tenant_4567",
-    )
-    ```
-  </Tab>
-</Tabs>
+- **Auth:** Bearer token
+- **Idempotency:** Read-only
+- **Async:** No
 
-## Status Values
+## Example
 
-| Status           | Description                             |
-| ---------------- | --------------------------------------- |
-| `queued`         | Content is waiting to be processed      |
-| `processing`     | Content is being chunked and embedded   |
-| `graph_creation` | Knowledge graph is being built          |
-| `completed`      | Content is fully indexed and searchable |
-| `errored`        | Processing failed (check `error_code`)  |
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/ingestion/verify_processing?file_ids=ef3ea754019855e2b39e9ab5c2d26096&file_ids=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d&tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>"
+```
+```typescript TypeScript SDK
+const response = await client.upload.verifyProcessing({
+  tenantId: "my_first_tenant",
+  fileIds: [
+    "ef3ea754019855e2b39e9ab5c2d26096",
+    "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+  ],
+});
+```
+```python Python SDK
+response = client.upload.verify_processing(
+    tenant_id="my_first_tenant",
+    file_ids=[
+        "ef3ea754019855e2b39e9ab5c2d26096",
+        "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+    ],
+)
+```
+</CodeGroup>
 
-## Response Format
+## Query parameters
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `tenant_id` | string | Yes | The tenant the items belong to. |
+| `file_ids` | string[] | Yes | One or more `source_id` values returned at ingestion. |
+| `sub_tenant_id` | string | No | Sub-tenant scope. If omitted, the default sub-tenant is used. |
+
+<Info>
+The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both `/ingestion/upload_knowledge` and `/memories/add_memory` – not just file IDs.
+</Info>
+
+## Response
 
 ```json
 {
   "statuses": [
     {
-      "file_id": "file_123",
+      "file_id": "ef3ea754019855e2b39e9ab5c2d26096",
       "indexing_status": "completed",
       "error_code": "",
+      "error_message": "",
+      "success": true,
+      "message": "Processing status retrieved successfully"
+    },
+    {
+      "file_id": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+      "indexing_status": "graph_creation",
+      "error_code": "",
+      "error_message": "",
       "success": true,
       "message": "Processing status retrieved successfully"
     }
@@ -84,10 +87,80 @@ openapi: "POST /ingestion/verify_processing"
 }
 ```
 
-<Note>
-  The `file_id` parameter is deprecated. Use `file_ids` for both single and batch lookups.
-</Note>
+| Field | Description |
+|---|---|
+| `statuses[]` | One entry per requested ID. |
+| `statuses[].file_id` | The ID being reported on. |
+| `statuses[].indexing_status` | Current status. See [Status values](#status-values). |
+| `statuses[].error_code` | Diagnostic code if `errored`. Empty otherwise. |
+| `statuses[].error_message` | Human-readable explanation if `errored`. Empty otherwise. |
+| `statuses[].success` | `true` if the status retrieval call succeeded. Does not mean indexing succeeded – check `indexing_status` for that. |
 
-## Error Responses
+## Status values
 
-All endpoints return consistent error responses following the standard format. For detailed error information, see our [Error Responses](/api-reference/error-responses) documentation.
+```mermaid
+flowchart LR
+    Q[queued] --> P[processing]
+    P --> G[graph_creation]
+    G --> C[completed]
+    P -.failure.-> E[errored]
+    G -.failure.-> E
+
+    style C fill:#e8f8ea
+    style E fill:#ffe8e8
+```
+
+| Status | Meaning |
+|---|---|
+| `queued` | Accepted by the server, not yet picked up by a worker. |
+| `processing` | Content is being parsed, chunked, and embedded. |
+| `graph_creation` | Content is indexed; the knowledge graph is being built on top. Already searchable via vector recall, but graph context may still be incomplete. |
+| `completed` | Fully indexed and graphed. Ready for all recall modes. |
+| `errored` | Processing failed. Check `error_code` and `error_message` for details. |
+| `success` | Alias for `completed`. May appear in some legacy responses. |
+
+## Polling pattern
+
+```python
+import time
+
+source_ids = ["ef3ea754019855e2b39e9ab5c2d26096", "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"]
+
+while True:
+    response = client.upload.verify_processing(
+        tenant_id="my_first_tenant",
+        file_ids=source_ids,
+    )
+    statuses = [s.indexing_status for s in response.statuses]
+
+    if all(s == "completed" for s in statuses):
+        break
+    if any(s == "errored" for s in statuses):
+        # inspect response.statuses for which failed
+        break
+
+    time.sleep(5)
+```
+
+Typical processing time:
+
+- **Memories** (text, markdown, conversation pairs): seconds
+- **Small documents** (under 50 pages): 1–5 minutes
+- **Large documents** (50+ pages): 5–15 minutes
+
+## Behavior notes
+
+<Info>
+**`graph_creation` is searchable.** Items in the `graph_creation` state are already retrievable via `full_recall` and `recall_preferences`. Wait for `completed` only if you specifically need full graph context.
+</Info>
+
+## Related endpoints
+
+- **Before this:** [Upload knowledge](/api-reference/endpoint/upload-knowledge) · [Add memory](/api-reference/endpoint/add-memory)
+- **After completion:** [Full recall](/api-reference/endpoint/full-recall) · [Recall preferences](/api-reference/endpoint/recall-preferences)
+
+## Errors
+
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+
+Read more: [Essentials → Memories](/essentials/memories)

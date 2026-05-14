@@ -1,6 +1,7 @@
 ---
 title: "Verify Processing"
 description: "Check the processing status of ingested content."
+openapi: "POST /ingestion/verify_processing"
 ---
 
 ## When to use it
@@ -52,17 +53,22 @@ response = client.upload.verify_processing(
 
 ## Query parameters
 
-| Name | Type | Required | Description |
+Per [`api-reference/openapi.json`](/api-reference/openapi.json), **all** query parameters below are **optional** in the spec (each has a default).
+
+| Name | Type | Required (OpenAPI) | Description |
 |---|---|---|---|
-| `tenant_id` | string | Yes | The tenant the items belong to. |
-| `file_ids` | string[] | Yes | One or more `source_id` values returned at ingestion. |
-| `sub_tenant_id` | string | No | Sub-tenant scope. If omitted, the default sub-tenant is used. |
+| `file_id` | string \| null | No | **Deprecated** in OpenAPI—single ID; use `file_ids` instead. |
+| `file_ids` | string[] | No | One or more `source_id` values returned at ingestion. OpenAPI default: `[]`. |
+| `tenant_id` | string | No | Tenant the items belong to. OpenAPI default: `""`. |
+| `sub_tenant_id` | string \| null | No | Sub-tenant scope. If omitted or null, the default sub-tenant is used. |
 
 <Info>
-The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both `/ingestion/upload_knowledge` and `/memories/add_memory` – not just file IDs.
+The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both `/ingestion/upload_knowledge` and `/memories/add_memory` – not only file-backed sources.
 </Info>
 
 ## Response
+
+`200` response body matches OpenAPI schema **`BatchProcessingStatus`** (`statuses`: array of **`ProcessingStatus`**).
 
 ```json
 {
@@ -71,7 +77,6 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
       "file_id": "ef3ea754019855e2b39e9ab5c2d26096",
       "indexing_status": "completed",
       "error_code": "",
-      "error_message": "",
       "success": true,
       "message": "Processing status retrieved successfully"
     },
@@ -79,7 +84,6 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
       "file_id": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
       "indexing_status": "graph_creation",
       "error_code": "",
-      "error_message": "",
       "success": true,
       "message": "Processing status retrieved successfully"
     }
@@ -92,9 +96,9 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 | `statuses[]` | One entry per requested ID. |
 | `statuses[].file_id` | The ID being reported on. |
 | `statuses[].indexing_status` | Current status. See [Status values](#status-values). |
-| `statuses[].error_code` | Diagnostic code if `errored`. Empty otherwise. |
-| `statuses[].error_message` | Human-readable explanation if `errored`. Empty otherwise. |
-| `statuses[].success` | `true` if the status retrieval call succeeded. Does not mean indexing succeeded – check `indexing_status` for that. |
+| `statuses[].error_code` | Diagnostic code if `errored`. Empty string when absent (OpenAPI default `""`). |
+| `statuses[].success` | Whether the file was processed successfully (OpenAPI field; see spec for semantics). |
+| `statuses[].message` | Detailed status message (OpenAPI default: `Processing status retrieved successfully`). |
 
 ## Status values
 
@@ -135,7 +139,7 @@ flowchart LR
 | `processing` | Content is being parsed, chunked, and embedded. |
 | `graph_creation` | Content is indexed; the knowledge graph is being built on top. Already searchable via vector recall, but graph context may still be incomplete. |
 | `completed` | Fully indexed and graphed. Ready for all recall modes. |
-| `errored` | Processing failed. Check `error_code` and `error_message` for details. |
+| `errored` | Processing failed. Inspect `error_code` and `message` on the status object (OpenAPI `ProcessingStatus`). |
 | `success` | Alias for `completed`. May appear in some legacy responses. |
 
 ## Polling pattern

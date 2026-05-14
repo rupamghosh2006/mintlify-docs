@@ -58,6 +58,10 @@ flowchart LR
 | [`/tenants/tenant_ids`](/api-reference/endpoint/list-tenant-ids) | `GET` | List all tenants for the organization | No |
 | [`/tenants/delete`](/api-reference/endpoint/delete-tenant) | `DELETE` | Permanently remove a tenant | Yes |
 
+<Info>
+**OpenAPI scope:** [`api-reference/openapi.json`](/api-reference/openapi.json) documents `/tenants/create`, `/tenants/infra/status`, `/tenants/monitor`, `/tenants/sub_tenant_ids`, and `/tenants/delete`. The companion page [List tenant IDs](/api-reference/endpoint/list-tenant-ids) describes **`GET /tenants/tenant_ids`**, which does **not** appear in that OpenAPI file.
+</Info>
+
 ## Typical call sequence
 
 For a new tenant from scratch:

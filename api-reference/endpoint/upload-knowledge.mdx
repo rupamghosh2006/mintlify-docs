@@ -1,6 +1,7 @@
 ---
 title: "Upload Knowledge"
-description: "Ingest documents (files) and/or app-generated content (app sources) into a tenant."
+description: "Ingest documents (files) and/or app-generated content (app knowledge) into a tenant."
+openapi: "POST /ingestion/upload_knowledge"
 ---
 
 ## When to use it
@@ -8,7 +9,7 @@ description: "Ingest documents (files) and/or app-generated content (app sources
 Use this endpoint to add knowledge that your agents will recall later:
 
 - **Files** – PDFs, DOCX, Markdown, CSVs, and other documents you want HydraDB to parse and chunk
-- **App sources** – structured content from connected apps (Slack messages, Notion pages, Gmail threads, etc.) where you already have the text and metadata
+- **App knowledge** – structured content from connected apps (Slack messages, Notion pages, Gmail threads, etc.) where you already have the text and metadata, sent as the `app_knowledge` multipart field (JSON string)
 
 For user-specific context (preferences, conversations), use [`POST /memories/add_memory`](/api-reference/endpoint/add-memory) instead.
 
@@ -21,7 +22,11 @@ POST /ingestion/upload_knowledge
 - **Auth:** Bearer token
 - **Content type:** `multipart/form-data` (always – even when sending only `app_knowledge`)
 - **Idempotency:** Controlled by `upsert` (default `true` – overwrites existing items with the same ID)
-- **Async:** Yes – returns `202 Accepted` with one `source_id` per item. Use [`POST /ingestion/verify_processing`](/api-reference/endpoint/verify-processing) to check status.
+- **Async:** Yes – returns **`200`** with a JSON body (`SourceUploadResponse` in OpenAPI) including one `source_id` per queued item. Use [`POST /ingestion/verify_processing`](/api-reference/endpoint/verify-processing) to check status.
+
+<Note>
+The interactive **Try it** panel is generated from [`api-reference/openapi.json`](/api-reference/openapi.json) and uses the multipart field name **`app_knowledge`**, matching the OpenAPI spec.
+</Note>
 
 ## Two ingestion paths
 
@@ -77,7 +82,7 @@ with open("/path/to/contract.pdf", "rb") as f1, \
 ```
 </CodeGroup>
 
-## Example: Upload app sources
+## Example: Upload app knowledge
 
 <CodeGroup>
 ```bash cURL
@@ -141,6 +146,10 @@ response = client.upload.knowledge(
 ```
 </CodeGroup>
 
+<Info>
+**TODO (TypeScript SDK parameter naming):** Confirm the exact parameter name your SDK expects for this field (`app_knowledge` vs camelCase). In-repo cookbooks (for example `cookbooks/ai-travel-planner.mdx`) pass **`app_knowledge`** to `client.upload.knowledge`. If your SDK uses a different exported name, adjust the example accordingly.
+</Info>
+
 ## Form fields
 
 | Name | Type | Required | Default | Description |
@@ -166,7 +175,7 @@ Each entry in `file_metadata` corresponds to the file at the same index in `file
 | `additional_metadata` | object | Document-level metadata. Filterable in recall queries. |
 | `relations` | object | Forcefully connect this file to other sources. See [Forceful relations](/essentials/knowledge#7-forceful-relations). |
 
-## App sources
+## App knowledge
 
 Each item in the `app_knowledge` JSON array represents a single piece of pre-parsed content. **`tenant_id` and `sub_tenant_id` are required inside each item.**
 
@@ -232,7 +241,7 @@ The `content` object supports multiple content types. Use the field that matches
 | `message` | Human-readable status. |
 | `results[]` | Per-item upload result. |
 | `results[].source_id` | The ID assigned to this source. Use this for `verify_processing` and downstream operations. |
-| `results[].filename` | Original filename (for files) or `null` (for app sources). |
+| `results[].filename` | Original filename (for files) or `null` (for app knowledge payloads). |
 | `results[].status` | Initial status. Always `queued` on a successful response. |
 | `success_count` / `failed_count` | Aggregate counts across the request. |
 

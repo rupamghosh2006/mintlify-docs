@@ -46,7 +46,6 @@
             "group": "Plugins",
             "pages": [
               "plugins/claude-code",
-              "plugins/open-claw",
               "plugins/mcp",
               "plugins/cli"
             ]

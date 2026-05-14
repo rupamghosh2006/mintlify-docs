@@ -1,6 +1,7 @@
 ---
 title: "Recall Preferences"
 description: "Hybrid recall over user memories – preferences, conversation history, inline notes."
+openapi: "POST /recall/recall_preferences"
 ---
 
 ## When to use it
@@ -91,12 +92,11 @@ Without `sub_tenant_id`, the search runs against the default sub-tenant – whic
 
 ## Metadata filters on memories
 
-The `metadata_filters` parameter targets the `metadata` and `additional_metadata` fields that were attached to memories at ingestion time. Same filter syntax as `full_recall`:
+`POST /recall/recall_preferences` shares **`RecallSearchRequest`** with `POST /recall/full_recall` in OpenAPI. The canonical `metadata_filters` contract is defined on that schema in [`api-reference/openapi.json`](/api-reference/openapi.json) and summarized under [Full recall → Metadata filters](/api-reference/endpoint/full-recall#metadata-filters).
 
 ```json
 {
   "metadata_filters": {
-    "team": "engineering",
     "additional_metadata": { "source": "onboarding" }
   }
 }

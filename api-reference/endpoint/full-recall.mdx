@@ -1,6 +1,7 @@
 ---
 title: "Full Recall"
 description: "Hybrid semantic + graph + metadata recall over knowledge sources."
+openapi: "POST /recall/full_recall"
 ---
 
 ## When to use it
@@ -82,21 +83,20 @@ result = client.recall.full_recall(
 
 ## Metadata filters
 
-`metadata_filters` supports two filter scopes:
+This field matches OpenAPI schema **`RecallSearchRequest.metadata_filters`** (see [`api-reference/openapi.json`](/api-reference/openapi.json)).
 
-**Tenant-level filters** (top-level keys, matched against fields defined in `tenant_metadata_schema`):
+- Optional object for **exact-match** metadata scoping; all conditions are **AND**ed.
+- **Tenant-level:** top-level keys (except the reserved nested object below) must match tenant metadata field names declared with **`enable_match`** in `tenant_metadata_schema`; values use **plain equality** to stored tenant metadata.
+- **Document-level:** nest an object under the key **`additional_metadata`**; keys and values use **plain equality** to per-source document metadata.
+- **Not supported in this contract:** range operators, regular-expression operators, or Mongo-style operators such as `$gte`, `$lt`, `$in`, or `$regex`.
 
 ```json
 { "metadata_filters": { "category": "engineering", "department": "R&D" } }
 ```
 
-**Document-level filters** (nested under `additional_metadata`, matched against per-document metadata):
-
 ```json
 { "metadata_filters": { "additional_metadata": { "source": "account_plan" } } }
 ```
-
-Both filter scopes can be combined in the same request. All filters use exact-match AND logic – every key must match for a chunk to be returned.
 
 ## Modes
 

@@ -72,7 +72,7 @@ For user memories, see [`POST /memories/add_memory`](/api-reference/endpoint/add
 | Content | Endpoint |
 |---|---|
 | PDFs, DOCX, CSVs, and other files HydraDB should parse | [`/ingestion/upload_knowledge`](/api-reference/endpoint/upload-knowledge) (`files`) |
-| Slack messages, Notion pages, Gmail threads, webpages with pre-extracted text | [`/ingestion/upload_knowledge`](/api-reference/endpoint/upload-knowledge) (`app_sources`) |
+| Slack messages, Notion pages, Gmail threads, webpages with pre-extracted text | [`/ingestion/upload_knowledge`](/api-reference/endpoint/upload-knowledge) (`app_knowledge`) |
 | User preferences, conversation history, inline notes | [`/memories/add_memory`](/api-reference/endpoint/add-memory) |
 | Pre-computed embedding vectors | [`/embeddings/insert_raw_embeddings`](/api-reference/endpoint/insert-raw-embeddings) |
 
@@ -87,7 +87,7 @@ For user memories, see [`POST /memories/add_memory`](/api-reference/endpoint/add
 For batched uploads with mixed content:
 
 ```
-1. POST /ingestion/upload_knowledge with files=[...] AND app_sources=[...]
+1. POST /ingestion/upload_knowledge with files=[...] AND app_knowledge=[...]
    → single request, multiple source_ids in response
 2. POST /ingestion/verify_processing with all source_ids
    → check all statuses in one call
@@ -101,17 +101,17 @@ For batched uploads with mixed content:
 | `processing` | No |
 | `graph_creation` | **Yes** – via `full_recall` and `recall_preferences` |
 | `completed` | Yes – via all recall endpoints, with full graph context |
-| `errored` | No – inspect `error_code` and `error_message` |
+| `errored` | No – inspect `error_code` and `message` on the status object (OpenAPI `ProcessingStatus`) |
 
 Items in `graph_creation` are already retrievable. Wait for `completed` only when you specifically need full graph traversal.
 
 ## Key concepts
 
-**Source** – Any unit of ingested content. Files become sources, app sources become sources, memory items become sources. Each gets a unique `source_id`.
+**Source** – Any unit of ingested content. Files become sources, app knowledge payloads become sources, memory items become sources. Each gets a unique `source_id`.
 
-**Files vs app sources** – Files require parsing (HydraDB extracts text, layout, metadata). App sources arrive pre-parsed – you supply the text and structured metadata directly.
+**Files vs app knowledge** – Files require parsing (HydraDB extracts text, layout, metadata). App knowledge items arrive pre-parsed – you supply the text and structured metadata directly in the `app_knowledge` multipart field.
 
-**Multipart form data** – `/ingestion/upload_knowledge` always uses `multipart/form-data`, even when sending only `app_sources` (no actual files). Nested JSON fields (`file_metadata`, `app_sources`) must be sent as JSON-stringified form values.
+**Multipart form data** – `/ingestion/upload_knowledge` always uses `multipart/form-data`, even when sending only `app_knowledge` (no actual files). Nested JSON fields (`file_metadata`, `app_knowledge`) must be sent as JSON-stringified form values.
 
 **Upsert** – By default, ingesting a source with an existing ID overwrites the previous version. Set `upsert: false` to fail instead.
 

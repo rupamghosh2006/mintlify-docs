@@ -22,7 +22,7 @@ DELETE /memories/delete_memory
 ```
 
 - **Auth:** Bearer token
-- **Idempotency:** Re-sending for an already-deleted memory returns `404`
+- **Idempotency:** Idempotent — re-sending for an already-deleted memory returns `200` with `user_memory_deleted: false`
 - **Async:** No
 
 ## Example
@@ -33,13 +33,13 @@ curl -X DELETE 'https://api.hydradb.com/memories/delete_memory?tenant_id=my_firs
   -H "Authorization: Bearer <your_api_key>"
 ```
 ```typescript TypeScript SDK
-const response = await client.memories.delete({
-  tenantId: "my_first_tenant",
-  memoryId: "1d50e5cd7c196a2bbcc1a59b037b3a44"
+const response = await client.upload.deleteMemory({
+  tenant_id: "my_first_tenant",
+  memory_id: "1d50e5cd7c196a2bbcc1a59b037b3a44"
 });
 ```
 ```python Python SDK
-response = client.memories.delete(
+response = client.upload.delete_memory(
     tenant_id="my_first_tenant",
     memory_id="1d50e5cd7c196a2bbcc1a59b037b3a44",
 )

@@ -47,20 +47,20 @@ curl -X POST 'https://api.hydradb.com/tenants/create' \
 ```
 ```typescript TypeScript SDK
 const response = await client.tenant.create({
-  tenantId: "my_first_tenant",
-  tenantMetadataSchema: [
+  tenant_id: "my_first_tenant",
+  tenant_metadata_schema: [
     {
       name: "category",
-      dataType: "VARCHAR",
-      maxLength: 256,
-      enableMatch: true
+      data_type: "VARCHAR",
+      max_length: 256,
+      enable_match: true
     },
     {
       name: "product_description",
-      dataType: "VARCHAR",
-      maxLength: 4096,
-      enableDenseEmbedding: true,
-      enableSparseEmbedding: true
+      data_type: "VARCHAR",
+      max_length: 4096,
+      enable_dense_embedding: true,
+      enable_sparse_embedding: true
     }
   ]
 });
@@ -131,7 +131,7 @@ response = client.tenant.create(
 
 `BOOL`, `INT8`, `INT16`, `INT32`, `INT64`, `FLOAT`, `DOUBLE`, `VARCHAR`, `JSON`, `ARRAY`, `FLOAT_VECTOR`, `SPARSE_FLOAT_VECTOR`.
 
-For text fields that need to be searchable, use `VARCHAR` and enable the appropriate embedding flag.
+For text fields that need to be semantically searchable, use `VARCHAR` with `enable_dense_embedding: true`. For keyword (BM25) searchability, add `enable_sparse_embedding: true`. For fields that must be filterable via `metadata_filters`, use `enable_match: true`. These flags are independent and can be combined.
 
 <Warning>
 Schema field names are **immutable** after tenant creation. You can add new `additional_metadata` fields per document at ingestion time, but tenant-level fields cannot be renamed or removed. Plan the schema carefully before creating the tenant.
@@ -167,9 +167,9 @@ Values written under `metadata.environment` at ingestion time can then be filter
 }
 ```
 
-**Multiple filterable fields**
+**Multiple `enable_match` fields**
 
-Applications commonly define several stable fields they expect to filter on. Use `INT32`, `INT64`, `BOOL`, `FLOAT`, or other typed fields when the value is not a string. Every filterable field needs `enable_match: true`.
+Applications commonly define several stable fields they expect to filter on via `metadata_filters`. Use `INT32`, `INT64`, `BOOL`, `FLOAT`, or other typed fields when the value is not a string. Every field that must be filterable requires `enable_match: true`.
 
 ```json
 {
@@ -213,9 +213,9 @@ When multiple keys are passed in `metadata_filters`, they combine as structured 
 }
 ```
 
-**Matchable vs non-matchable fields**
+**`enable_match` vs no flag**
 
-Only fields declared with `enable_match: true` should be relied on for deterministic filtering. A field without `enable_match` can still be stored, but should not be relied on for deterministic filtering through `metadata_filters`.
+Only fields declared with `enable_match: true` are usable in `metadata_filters` for deterministic filtering. A field without `enable_match: true` can still be stored in the schema, but passing it as a `metadata_filters` key will have no effect.
 
 ```json
 {
@@ -233,13 +233,13 @@ Only fields declared with `enable_match: true` should be relied on for determini
 }
 ```
 
-- `region` can be used in `metadata_filters`.
-- `internal_notes` can be stored as tenant metadata, but should not be relied on for deterministic filtering unless match-enabled.
+- `region` has `enable_match: true` and can be used in `metadata_filters`.
+- `internal_notes` has no `enable_match`, so it cannot be used in `metadata_filters`. It is stored but not filterable.
 - For free-form display or bookkeeping fields that do not need filtering, prefer `additional_metadata` at ingestion time rather than adding them to the tenant schema.
 
-**Embeddings-enabled text field**
+**`enable_dense_embedding` and `enable_sparse_embedding` fields**
 
-Embedding flags are for retrieval over text content, not for exact-match metadata filtering. Use them when the field itself is a body of searchable text – for example, a description that you want included in semantic or keyword recall.
+`enable_dense_embedding` makes a field semantically searchable (dense vector). `enable_sparse_embedding` makes it keyword-searchable (BM25/sparse vector). Use these when the field itself is a body of text you want included in semantic or keyword recall — for example, a `product_description` that should be retrieved alongside the document.
 
 ```json
 {

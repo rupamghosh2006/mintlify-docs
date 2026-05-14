@@ -30,9 +30,9 @@ curl 'https://api.hydradb.com/tenants/sub_tenant_ids?tenant_id=my_first_tenant' 
 ```
 ```typescript TypeScript SDK
 const response = await client.tenant.getSubTenantIds({
-  tenantId: "my_first_tenant"
+  tenant_id: "my_first_tenant"
 });
-const subTenantIds = response.subTenantIds;
+const subTenantIds = response.sub_tenant_ids;
 ```
 ```python Python SDK
 response = client.tenant.get_sub_tenant_ids(tenant_id="my_first_tenant")

@@ -75,8 +75,8 @@ Typical flow:
 
 For personalized answers grounded in shared Knowledge, keep the two retrieval paths explicit:
 
-- Use `full_recall` for shared Knowledge - this hits the Knowledge vector store (`vectorstore_status` index `2`).
-- Use `recall_preferences` for user-specific Memories - this hits the Memories vector store (`vectorstore_status` index `1`).
+- Use `full_recall` for shared Knowledge - this hits the Knowledge vector store (`vectorstore_status` index `1`).
+- Use `recall_preferences` for user-specific Memories - this hits the Memories vector store (`vectorstore_status` index `0`).
 - Merge the two results in your application before prompting the LLM.
 
 This mirrors the pattern used throughout the Recall and Memories pages: shared context and personal context are retrieved separately, then combined at prompt time.

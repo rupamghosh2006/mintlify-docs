@@ -18,7 +18,7 @@ Think of memories as persistent user-specific context. That's distinct from **Kn
 | **Content** | User preferences, conversations, inferred traits | Documents, files, app-generated content |
 | **Scope** | Per-user (`sub_tenant_id`) | Shared across all users in a tenant |
 | **Recall endpoint** | `recall_preferences` | `full_recall` |
-| **`vectorstore_status`** | Index `1` (`[0]`) | Index `2` (`[1]`) |
+| **`vectorstore_status`** | Index `0` (`[0]`) | Index `1` (`[1]`) |
 
 ---
 
@@ -128,8 +128,8 @@ The trade-off: `infer: false` is faster and deterministic; `infer: true` is more
 
 Memories live in a separate vector store from Knowledge:
 
-- `recall_preferences` searches **Memories** (`vectorstore_status` index `1`).
-- `full_recall` searches **Knowledge** (`vectorstore_status` index `2`).
+- `recall_preferences` searches **Memories** (`vectorstore_status` index `0`).
+- `full_recall` searches **Knowledge** (`vectorstore_status` index `1`).
 
 <Warning>
   <strong>Memories and Knowledge are separate stores.</strong>
@@ -183,7 +183,7 @@ Set the `relations` field on any item in the `memories` array:
 ```json
 {
   "relations": {
-    "hydradb_source_ids": ["memory-id-1", "memory-id-2"]
+    "cortex_source_ids": ["memory-id-1", "memory-id-2"]
   }
 }
 ```
@@ -201,27 +201,27 @@ curl -X POST 'https://api.hydradb.com/memories/add_memory' \
         "text": "User prefers concise answers",
         "source_id": "pref-concise",
         "infer": true,
-        "relations": { "hydradb_source_ids": ["pref-tone", "pref-format"] }
+        "relations": { "cortex_source_ids": ["pref-tone", "pref-format"] }
       }
     ]
   }'
 ```
 ```typescript TypeScript SDK
-await client.memories.add({
-  tenantId: "acme_corp",
-  subTenantId: "user_alex",
+await client.upload.addMemory({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
   memories: [
     {
       text: "User prefers concise answers",
-      sourceId: "pref-concise",
+      source_id: "pref-concise",
       infer: true,
-      relations: { hydradb_source_ids: ["pref-tone", "pref-format"] },
+      relations: { cortex_source_ids: ["pref-tone", "pref-format"] },
     },
   ],
 });
 ```
 ```python Python SDK
-client.memories.add(
+client.upload.add_memory(
     tenant_id="acme_corp",
     sub_tenant_id="user_alex",
     memories=[
@@ -229,7 +229,7 @@ client.memories.add(
             "text": "User prefers concise answers",
             "source_id": "pref-concise",
             "infer": True,
-            "relations": {"hydradb_source_ids": ["pref-tone", "pref-format"]},
+            "relations": {"cortex_source_ids": ["pref-tone", "pref-format"]},
         }
     ],
 )

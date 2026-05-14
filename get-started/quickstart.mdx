@@ -62,7 +62,7 @@ export HYDRADB_API_KEY="your_api_key"
 import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({
-  token: process.env.HYDRADB_API_KEY,
+  token: process.env.HYDRADB_API_KEY
 });
 ```
 ```python Python SDK
@@ -117,7 +117,7 @@ curl 'https://api.hydradb.com/tenants/infra/status?tenant_id=my_first_tenant' \
 ```
 ```typescript TypeScript SDK
 const status = await client.tenant.getInfraStatus({
-  tenant_id: "my_first_tenant",
+  tenant_id: "my_first_tenant"
 });
 ```
 ```python Python SDK
@@ -168,14 +168,14 @@ import { createReadStream } from "node:fs";
 
 const result = await client.upload.knowledge({
   tenant_id: "my_first_tenant",
-  files: [createReadStream("/path/to/contract.pdf")],
+  files: [createReadStream("/path/to/contract.pdf")]
 });
 ```
 ```python Python SDK
 with open("/path/to/contract.pdf", "rb") as f:
     result = client.upload.knowledge(
         tenant_id="my_first_tenant",
-        files=[("contract.pdf", f, "application/pdf")],
+        files=[("contract.pdf", f, "application/pdf")]
     )
 ```
 </CodeGroup>
@@ -341,7 +341,7 @@ const result = await client.recall.fullRecall({
   query: "What are the pricing tiers?",
   max_results: 5,
   mode: "fast",
-  graph_context: true,
+  graph_context: true
 });
 ```
 ```python Python SDK
@@ -350,7 +350,7 @@ result = client.recall.full_recall(
     query="What are the pricing tiers?",
     max_results=5,
     mode="fast",
-    graph_context=True,
+    graph_context=True
 )
 ```
 </CodeGroup>

@@ -32,8 +32,8 @@ curl -X POST 'https://api.hydradb.com/ingestion/verify_processing?file_ids=ef3ea
 ```
 ```typescript TypeScript SDK
 const response = await client.upload.verifyProcessing({
-  tenantId: "my_first_tenant",
-  fileIds: [
+  tenant_id: "my_first_tenant",
+  file_ids: [
     "ef3ea754019855e2b39e9ab5c2d26096",
     "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
   ],

@@ -40,10 +40,10 @@ curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
 ```
 ```typescript TypeScript SDK
 const result = await client.recall.recallPreferences({
-  tenantId: "my_first_tenant",
-  subTenantId: "user_alex",
+  tenant_id: "my_first_tenant",
+  sub_tenant_id: "user_alex",
   query: "What are my display preferences?",
-  maxResults: 3,
+  max_results: 3,
   mode: "thinking"
 });
 ```

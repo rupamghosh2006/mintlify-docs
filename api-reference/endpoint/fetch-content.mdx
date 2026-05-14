@@ -36,10 +36,10 @@ curl -X POST 'https://api.hydradb.com/fetch/content' \
 ```
 ```typescript TypeScript SDK
 const result = await client.fetch.content({
-  tenantId: "my_first_tenant",
-  sourceId: "doc_12345",
+  tenant_id: "my_first_tenant",
+  source_id: "doc_12345",
   mode: "url",
-  expirySeconds: 3600
+  expiry_seconds: 3600
 });
 ```
 ```python Python SDK

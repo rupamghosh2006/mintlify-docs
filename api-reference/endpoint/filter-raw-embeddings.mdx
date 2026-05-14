@@ -39,9 +39,9 @@ curl -X POST 'https://api.hydradb.com/embeddings/filter_raw_embeddings' \
 ```
 ```typescript TypeScript SDK
 const results = await client.embeddings.filter({
-  tenantId: "my_embeddings_tenant",
-  subTenantId: "default",
-  sourceId: "doc_001",
+  tenant_id: "my_embeddings_tenant",
+  sub_tenant_id: "default",
+  source_id: "doc_001",
   limit: 100
 });
 ```
@@ -70,9 +70,9 @@ curl -X POST 'https://api.hydradb.com/embeddings/filter_raw_embeddings' \
 ```
 ```typescript TypeScript SDK
 const results = await client.embeddings.filter({
-  tenantId: "my_embeddings_tenant",
-  subTenantId: "default",
-  chunkIds: ["doc_001_chunk_0", "doc_002_chunk_3"]
+  tenant_id: "my_embeddings_tenant",
+  sub_tenant_id: "default",
+  chunk_ids: ["doc_001_chunk_0", "doc_002_chunk_3"]
 });
 ```
 ```python Python SDK

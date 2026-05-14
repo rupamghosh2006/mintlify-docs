@@ -19,8 +19,8 @@ HydraDB stores two kinds of context in separate vector stores:
 
 | Store | Contains | `vectorstore_status` index | Recall endpoint |
 |---|---|---|---|
-| **Memories** | User preferences, conversation history, per-user inferred content | Index `1` (`[0]`) | `recall_preferences` |
-| **Knowledge** | Ingested documents, files, and app sources | Index `2` (`[1]`) | `full_recall` |
+| **Memories** | User preferences, conversation history, per-user inferred content | Index `0` (`[0]`) | `recall_preferences` |
+| **Knowledge** | Ingested documents, files, and app sources | Index `1` (`[1]`) | `full_recall` |
 
 A single recall call hits one store. To use both in one prompt, call the matching endpoint for each and merge the results.
 

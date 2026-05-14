@@ -43,14 +43,14 @@ curl -X POST 'https://api.hydradb.com/embeddings/insert_raw_embeddings' \
 ```
 ```typescript TypeScript SDK
 const result = await client.embeddings.insert({
-  tenantId: "my_embeddings_tenant",
+  tenant_id: "my_embeddings_tenant",
   embeddings: [
     {
-      sourceId: "doc_001",
+      source_id: "doc_001",
       metadata: { category: "engineering" },
       embeddings: [
-        { chunkId: "doc_001_chunk_0", embedding: [0.123, -0.045, 0.789] },
-        { chunkId: "doc_001_chunk_1", embedding: [0.234, -0.056, 0.890] }
+        { chunk_id: "doc_001_chunk_0", embedding: [0.123, -0.045, 0.789] },
+        { chunk_id: "doc_001_chunk_1", embedding: [0.234, -0.056, 0.890] }
       ]
     }
   ],

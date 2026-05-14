@@ -89,13 +89,15 @@ const result = await client.upload.knowledge({
     createReadStream("/path/to/policy.pdf"),
     createReadStream("/path/to/runbook.pdf"),
   ],
-  file_metadata: [
+  file_metadata: JSON.stringify([
     { file_id: "policy_v2", metadata: { document_type: "policy", status: "approved" } },
     { file_id: "runbook_deploy", metadata: { document_type: "runbook" } },
-  ],
+  ]),
 });
 ```
 ```python Python SDK
+import json
+
 with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb") as f2:
     result = client.upload.knowledge(
         tenant_id="acme_corp",
@@ -103,10 +105,10 @@ with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb")
             ("policy.pdf", f1, "application/pdf"),
             ("runbook.pdf", f2, "application/pdf"),
         ],
-        file_metadata=[
+        file_metadata=json.dumps([
             {"file_id": "policy_v2", "metadata": {"document_type": "policy", "status": "approved"}},
             {"file_id": "runbook_deploy", "metadata": {"document_type": "runbook"}},
-        ],
+        ]),
     )
 ```
 </CodeGroup>
@@ -120,11 +122,14 @@ Pre-parsed text from connected apps. You supply the text, metadata, and an optio
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer $HYDRADB_API_KEY" \
   -F "tenant_id=acme_corp" \
-  -F 'app_sources=[
+  -F 'app_knowledge=[
     {
-      "source_id": "slack_thread_001",
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "default",
+      "id": "slack_thread_001",
       "title": "Pricing discussion - Slack #product",
-      "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+      "type": "slack",
+      "content": { "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199." },
       "metadata": { "channel": "product", "status": "finalized" },
       "additional_metadata": { "slack_ts": "1715012345.000100" }
     }
@@ -133,29 +138,37 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 ```typescript TypeScript SDK
 const result = await client.upload.knowledge({
   tenant_id: "acme_corp",
-  app_sources: [
+  app_knowledge: JSON.stringify([
     {
-      source_id: "slack_thread_001",
+      tenant_id: "acme_corp",
+      sub_tenant_id: "default",
+      id: "slack_thread_001",
       title: "Pricing discussion - Slack #product",
-      text: "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+      type: "slack",
+      content: { text: "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199." },
       metadata: { channel: "product", status: "finalized" },
       additional_metadata: { slack_ts: "1715012345.000100" },
     },
-  ],
+  ]),
 });
 ```
 ```python Python SDK
+import json
+
 result = client.upload.knowledge(
     tenant_id="acme_corp",
-    app_sources=[
+    app_knowledge=json.dumps([
         {
-            "source_id": "slack_thread_001",
+            "tenant_id": "acme_corp",
+            "sub_tenant_id": "default",
+            "id": "slack_thread_001",
             "title": "Pricing discussion - Slack #product",
-            "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+            "type": "slack",
+            "content": {"text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199."},
             "metadata": {"channel": "product", "status": "finalized"},
             "additional_metadata": {"slack_ts": "1715012345.000100"},
         }
-    ],
+    ]),
 )
 ```
 </CodeGroup>
@@ -226,7 +239,7 @@ Poll every few seconds. Most documents complete in 1–5 minutes.
 | `metadata` | object | Filterable fields. Keys must match the tenant metadata schema. |
 | `additional_metadata` | object | Free-form fields for display and bookkeeping. Not filterable. |
 
-### App source model (`app_sources` array items)
+### App source model (`app_knowledge` array items)
 
 | Field | Type | Description |
 |---|---|---|
@@ -252,12 +265,12 @@ Forceful relations let you explicitly link Knowledge sources to each other at in
 
 This is separate from the entity and relationship graph HydraDB builds automatically during ingestion. Graph extraction is derived from content; forceful relations are declared by you.
 
-Set the `relations` field on any item in `file_metadata` or `app_sources`:
+Set the `relations` field on any item in `file_metadata` or `app_knowledge`:
 
 ```json
 {
   "relations": {
-    "hydradb_source_ids": ["source-id-1", "source-id-2"]
+    "cortex_source_ids": ["source-id-1", "source-id-2"]
   }
 }
 ```
@@ -267,39 +280,41 @@ Set the `relations` field on any item in `file_metadata` or `app_sources`:
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer $HYDRADB_API_KEY" \
   -F "tenant_id=acme_corp" \
-  -F 'app_sources=[
+  -F 'app_knowledge=[
     {
-      "source_id": "auth-guide",
+      "id": "auth-guide",
       "title": "Authentication Guide",
-      "text": "...",
-      "relations": { "hydradb_source_ids": ["auth-troubleshooting", "auth-faq"] }
+      "content": { "text": "..." },
+      "relations": { "cortex_source_ids": ["auth-troubleshooting", "auth-faq"] }
     }
   ]'
 ```
 ```typescript TypeScript SDK
 await client.upload.knowledge({
-  tenantId: "acme_corp",
-  appSources: [
+  tenant_id: "acme_corp",
+  app_knowledge: JSON.stringify([
     {
-      source_id: "auth-guide",
+      id: "auth-guide",
       title: "Authentication Guide",
-      text: "...",
-      relations: { hydradb_source_ids: ["auth-troubleshooting", "auth-faq"] },
+      content: { text: "..." },
+      relations: { cortex_source_ids: ["auth-troubleshooting", "auth-faq"] },
     },
-  ],
+  ]),
 });
 ```
 ```python Python SDK
 client.upload.knowledge(
     tenant_id="acme_corp",
-    app_sources=[
+    app_knowledge=json.dumps([
         {
-            "source_id": "auth-guide",
+            "tenant_id": "acme_corp",
+            "sub_tenant_id": "default",
+            "id": "auth-guide",
             "title": "Authentication Guide",
-            "text": "...",
-            "relations": {"hydradb_source_ids": ["auth-troubleshooting", "auth-faq"]},
+            "content": {"text": "..."},
+            "relations": {"cortex_source_ids": ["auth-troubleshooting", "auth-faq"]},
         }
-    ],
+    ]),
 )
 ```
 </CodeGroup>

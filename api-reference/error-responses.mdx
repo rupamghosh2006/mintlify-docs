@@ -314,7 +314,7 @@ async function withRetry<T>(
 // Usage:
 const result = await withRetry(() =>
   client.recall.fullRecall({
-    tenantId: "my_tenant",
+    tenant_id: "my_tenant",
     query: "..."
   })
 );
@@ -372,7 +372,7 @@ async function retryRequest(url, options, maxRetries = 3) {
 ```typescript TypeScript (SDK)
 try {
   const result = await client.recall.fullRecall({
-    tenantId: "my_tenant",
+    tenant_id: "my_tenant",
     query: "What's our refund policy?"
   });
 } catch (error: any) {
@@ -451,7 +451,7 @@ Tenant creation is asynchronous. Poll [`GET /tenants/infra/status`](/api-referen
 Common causes:
 
 - `file_metadata` array length doesn't match `files` array length on `/ingestion/upload_knowledge`
-- Sending `app_sources` as a JSON object instead of a JSON-encoded string in multipart form data
+- Sending `app_knowledge` as a JSON object instead of a JSON-encoded string in multipart form data
 - `MemoryItem` with no `text` and no `user_assistant_pairs`
 - Embedding vector length doesn't match the tenant's `embeddings_dimension`
 

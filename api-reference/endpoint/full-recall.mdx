@@ -44,12 +44,12 @@ curl -X POST 'https://api.hydradb.com/recall/full_recall' \
 ```
 ```typescript TypeScript SDK
 const result = await client.recall.fullRecall({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   query: "What are the pricing tiers?",
-  maxResults: 5,
+  max_results: 5,
   mode: "thinking",
-  graphContext: true,
-  metadataFilters: { category: "pricing" }
+  graph_context: true,
+  metadata_filters: { category: "pricing" }
 });
 ```
 ```python Python SDK

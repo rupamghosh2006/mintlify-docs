@@ -43,7 +43,7 @@ curl -X POST 'https://api.hydradb.com/knowledge/delete_knowledge' \
 ```
 ```typescript TypeScript SDK
 const response = await client.data.delete({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   ids: ["doc_12345", "doc_67890"]
 });
 ```

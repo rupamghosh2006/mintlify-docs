@@ -30,8 +30,8 @@ curl 'https://api.hydradb.com/list/graph_relations_by_id?source_id=doc_12345&ten
 ```
 ```typescript TypeScript SDK
 const response = await client.fetch.graphRelationsBySourceId({
-  sourceId: "doc_12345",
-  tenantId: "my_first_tenant",
+  source_id: "doc_12345",
+  tenant_id: "my_first_tenant",
   limit: 100
 });
 ```

@@ -34,8 +34,8 @@ curl -X DELETE 'https://api.hydradb.com/embeddings/delete_raw_embeddings?tenant_
 ```
 ```typescript TypeScript SDK
 const response = await client.embeddings.delete({
-  tenantId: "my_embeddings_tenant",
-  sourceId: "doc_001"
+  tenant_id: "my_embeddings_tenant",
+  source_id: "doc_001"
 });
 ```
 ```python Python SDK
@@ -55,8 +55,8 @@ curl -X DELETE 'https://api.hydradb.com/embeddings/delete_raw_embeddings?tenant_
 ```
 ```typescript TypeScript SDK
 const response = await client.embeddings.delete({
-  tenantId: "my_embeddings_tenant",
-  chunkIds: ["doc_001_chunk_0", "doc_002_chunk_3"]
+  tenant_id: "my_embeddings_tenant",
+  chunk_ids: ["doc_001_chunk_0", "doc_002_chunk_3"]
 });
 ```
 ```python Python SDK

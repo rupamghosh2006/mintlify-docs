@@ -206,7 +206,10 @@ The exact tenant creation request may include additional fields depending on you
   "tenant_id": "acme_corp",
   "app_knowledge": [
     {
-      "text": "Authentication controls are reviewed quarterly for SOC2.",
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "default",
+      "id": "auth-controls-001",
+      "content": { "text": "Authentication controls are reviewed quarterly for SOC2." },
       "metadata": {
         "compliance_framework": "SOC2"
       }

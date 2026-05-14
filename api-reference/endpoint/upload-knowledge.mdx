@@ -19,7 +19,7 @@ POST /ingestion/upload_knowledge
 ```
 
 - **Auth:** Bearer token
-- **Content type:** `multipart/form-data` (always – even when sending only `app_sources`)
+- **Content type:** `multipart/form-data` (always – even when sending only `app_knowledge`)
 - **Idempotency:** Controlled by `upsert` (default `true` – overwrites existing items with the same ID)
 - **Async:** Yes – returns `202 Accepted` with one `source_id` per item. Use [`POST /ingestion/verify_processing`](/api-reference/endpoint/verify-processing) to check status.
 
@@ -30,7 +30,7 @@ This endpoint accepts two content formats in one request. Send either or both:
 | Path | Form field | Content type |
 |---|---|---|
 | **Files** | `files` (binary) + optional `file_metadata` (JSON string) | Documents to be parsed |
-| **App sources** | `app_sources` (JSON string) | Pre-parsed app content with metadata |
+| **App sources** | `app_knowledge` (JSON string) | Pre-parsed app content with metadata |
 
 ## Example: Upload files
 
@@ -50,12 +50,12 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 import { createReadStream } from "fs";
 
 const response = await client.upload.knowledge({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   files: [
     createReadStream("/path/to/contract.pdf"),
     createReadStream("/path/to/policy.pdf"),
   ],
-  fileMetadata: JSON.stringify([
+  file_metadata: JSON.stringify([
     { file_id: "contract_q4", metadata: { category: "legal" } },
     { file_id: "policy_2025", metadata: { category: "legal" } },
   ]),
@@ -84,8 +84,10 @@ with open("/path/to/contract.pdf", "rb") as f1, \
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer <your_api_key>" \
   -F "tenant_id=my_first_tenant" \
-  -F 'app_sources=[
+  -F 'app_knowledge=[
     {
+      "tenant_id": "my_first_tenant",
+      "sub_tenant_id": "default",
       "id": "slack_msg_12345",
       "title": "Q4 planning standup notes",
       "type": "slack",
@@ -99,9 +101,11 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 ```
 ```typescript TypeScript SDK
 const response = await client.upload.knowledge({
-  tenantId: "my_first_tenant",
-  appSources: JSON.stringify([
+  tenant_id: "my_first_tenant",
+  app_knowledge: JSON.stringify([
     {
+      tenant_id: "my_first_tenant",
+      sub_tenant_id: "default",
       id: "slack_msg_12345",
       title: "Q4 planning standup notes",
       type: "slack",
@@ -119,8 +123,10 @@ import json
 
 response = client.upload.knowledge(
     tenant_id="my_first_tenant",
-    app_sources=json.dumps([
+    app_knowledge=json.dumps([
         {
+            "tenant_id": "my_first_tenant",
+            "sub_tenant_id": "default",
             "id": "slack_msg_12345",
             "title": "Q4 planning standup notes",
             "type": "slack",
@@ -142,11 +148,12 @@ response = client.upload.knowledge(
 | `tenant_id` | string | Yes | – | The tenant to ingest into. |
 | `files` | binary[] | One of | `[]` | One or more files to upload. |
 | `file_metadata` | JSON string | No | – | Array of metadata objects, one per file. Length must match `files`. See [File metadata](#file-metadata). |
-| `app_sources` | JSON string | One of | – | A single app source object or an array. See [App sources](#app-sources). |
+| `app_knowledge` | JSON string | One of | – | A single app source object or an array. Each item **must include `tenant_id` and `sub_tenant_id`**. See [App sources](#app-sources). |
+| `app_sources` | JSON string | — | – | **Deprecated alias for `app_knowledge`.** Use `app_knowledge` instead. |
 | `sub_tenant_id` | string | No | default | Sub-tenant scope. |
 | `upsert` | boolean | No | `true` | If `true`, existing sources with the same ID are overwritten. |
 
-You must provide at least one of `files` or `app_sources`. You can send both in the same request.
+You must provide at least one of `files` or `app_knowledge`. You can send both in the same request.
 
 ## File metadata
 
@@ -161,10 +168,12 @@ Each entry in `file_metadata` corresponds to the file at the same index in `file
 
 ## App sources
 
-Each app source represents a single piece of pre-parsed content (a Slack message, Notion page, Gmail thread, etc.):
+Each item in the `app_knowledge` JSON array represents a single piece of pre-parsed content. **`tenant_id` and `sub_tenant_id` are required inside each item.**
 
 | Field | Type | Description |
 |---|---|---|
+| `tenant_id` | string | **Required.** The tenant to ingest into. |
+| `sub_tenant_id` | string | **Required.** Sub-tenant scope. Use `"default"` if not partitioning by user. |
 | `id` | string | Unique identifier for the source. |
 | `title` | string | Short title or subject. |
 | `type` | string | Source category (e.g., `slack`, `notion`, `gmail`, `webpage`). |
@@ -234,11 +243,11 @@ The `content` object supports multiple content types. Use the field that matches
 </Info>
 
 <Info>
-**Always use multipart form data.** Even if you're sending only `app_sources` (no files), the endpoint expects `multipart/form-data`. Sending JSON directly will return `422 VALIDATION_ERROR`.
+**Always use multipart form data.** Even if you're sending only `app_knowledge` (no files), the endpoint expects `multipart/form-data`. Sending JSON directly will return `422 VALIDATION_ERROR`.
 </Info>
 
 <Info>
-**`file_metadata` and `app_sources` are JSON strings.** Both must be serialized before being sent as form fields. Most HTTP libraries don't auto-stringify nested JSON in multipart bodies.
+**`file_metadata` and `app_knowledge` are JSON strings.** Both must be serialized before being sent as form fields. Most HTTP libraries don't auto-stringify nested JSON in multipart bodies.
 </Info>
 
 ## Related endpoints

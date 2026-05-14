@@ -41,15 +41,15 @@ curl -X POST 'https://api.hydradb.com/list/data' \
 ```
 ```typescript TypeScript SDK
 const result = await client.fetch.listData({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   kind: "knowledge",
   page: 1,
-  pageSize: 25,
+  page_size: 25,
   filters: {
-    tenantMetadata: { category: "engineering" },
-    documentMetadata: { author: "Alice Smith" }
+    tenant_metadata: { category: "engineering" },
+    document_metadata: { author: "Alice Smith" }
   },
-  includeFields: ["title", "type", "url", "timestamp"]
+  include_fields: ["title", "type", "url", "timestamp"]
 });
 ```
 ```python Python SDK
@@ -84,10 +84,14 @@ result = client.fetch.list_data(
 
 Filters narrow results using **AND logic** – every key-value pair must match.
 
-| Filter category | Targets | Example |
-|---|---|---|
-| `metadata` | Fields defined in `tenant_metadata_schema` at tenant creation | `{"category": "engineering"}` |
-| `additional_metadata` | Fields attached per-document at ingestion | `{"author": "Alice Smith", "year": 2023}` |
+| Filter category | cURL / Python key | TypeScript `ContentFilter` key | Targets |
+|---|---|---|---|
+| Tenant-level metadata | `metadata` | `tenant_metadata` | Fields defined in `tenant_metadata_schema` |
+| Document-level metadata | `additional_metadata` | `document_metadata` | Fields attached per-document at ingestion |
+
+<Info>
+**TypeScript SDK uses different filter key names.** The `ContentFilter` type exposes `tenant_metadata` and `document_metadata`. The REST API and Python SDK use `metadata` and `additional_metadata`. Both target the same underlying data.
+</Info>
 | `source_fields` | Top-level source fields | See below |
 
 **Allowed `source_fields` keys:** `description`, `timestamp`, `title`, `type`, `url`.

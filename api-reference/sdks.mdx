@@ -7,7 +7,7 @@ description: "Official TypeScript/Node.js and Python SDKs for the HydraDB platfo
 
 <CodeGroup>
 ```bash TypeScript / Node.js
-npm i @hydradb/sdk
+npm install @hydradb/sdk
 ```
 ```bash Python SDK
 pip install hydradb-sdk
@@ -46,11 +46,15 @@ async_client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
 
 The REST API uses **snake_case** for all request and response fields. The SDKs adapt this to native idioms:
 
-| | Field naming | Example |
-|---|---|---|
-| **Raw HTTP / cURL** | snake_case | `tenant_id`, `sub_tenant_id` |
-| **TypeScript SDK** | camelCase | `tenantId`, `subTenantId` |
-| **Python SDK** | snake_case | `tenant_id`, `sub_tenant_id` |
+| | Method naming | Parameter field naming | Example |
+|---|---|---|---|
+| **Raw HTTP / cURL** | — | snake_case | `tenant_id`, `sub_tenant_id` |
+| **TypeScript SDK** | camelCase | snake_case | method: `fullRecall()`, params: `tenant_id`, `sub_tenant_id` |
+| **Python SDK** | snake_case | snake_case | method: `full_recall()`, params: `tenant_id`, `sub_tenant_id` |
+
+<Info>
+**TypeScript SDK uses snake_case for all parameter field names.** Only method names are camelCase (e.g., `client.recall.fullRecall({tenant_id: "...", max_results: 5})`). This applies to every request object passed to an SDK method.
+</Info>
 
 The TypeScript SDK transparently maps camelCase parameters to snake_case on the wire. You can rely on your IDE's autocomplete and type checking – if a field is optional in the API, it's optional in the SDK.
 
@@ -62,11 +66,13 @@ SDK methods are grouped by capability, not by URL path. The mapping is mostly in
 |---|---|---|
 | `/tenants/*` | `client.tenant` | Tenant lifecycle |
 | `/ingestion/*` | `client.upload` | Content upload + verification |
-| `/memories/*` | `client.upload` | Memories share the upload group |
+| `/memories/*` | `client.upload` | Memories share the upload group (add, delete) |
 | `/recall/*` | `client.recall` | All retrieval modes |
 | `/list/*`, `/fetch/*` | `client.fetch` | Browse and retrieve |
-| `/knowledge/*` | `client.data` | Bulk delete |
+| `/knowledge/*` | `client.data` | Bulk knowledge delete |
 | `/embeddings/*` | `client.embeddings` | Bring-your-own-vector workflows |
+
+Additional clients available: `client.key` for API key management, `client.ingestionPipeline` for pipeline operations, `client.graphHealth` for health checks.
 
 ## Method reference
 
@@ -77,35 +83,35 @@ Method names map to the URL by removing the leading slash and replacing path sep
 | Method | Endpoint |
 |---|---|
 | `client.tenant.create()` | `POST /tenants/create` |
-| `client.tenant.get_infra_status()` | `GET /tenants/infra/status` |
+| `client.tenant.getInfraStatus()` | `GET /tenants/infra/status` |
 | `client.tenant.monitor()` | `GET /tenants/monitor` |
-| `client.tenant.get_sub_tenant_ids()` | `GET /tenants/sub_tenant_ids` |
-| `client.tenant.get_tenant_ids()` | `GET /tenants/tenant_ids` |
-| `client.tenant.delete_tenant()` | `DELETE /tenants/delete` |
+| `client.tenant.getSubTenantIds()` | `GET /tenants/sub_tenant_ids` |
+| `client.tenant.getTenantIds()` | `GET /tenants/tenant_ids` |
+| `client.tenant.deleteTenant()` | `DELETE /tenants/delete` |
 
 ### Ingestion + Memories (under `upload`)
 
 | Method | Endpoint |
 |---|---|
 | `client.upload.knowledge()` | `POST /ingestion/upload_knowledge` |
-| `client.upload.verify_processing()` | `POST /ingestion/verify_processing` |
-| `client.upload.add_memory()` | `POST /memories/add_memory` |
-| `client.upload.delete_memory()` | `DELETE /memories/delete_memory` |
+| `client.upload.verifyProcessing()` | `POST /ingestion/verify_processing` |
+| `client.upload.addMemory()` | `POST /memories/add_memory` |
+| `client.upload.deleteMemory()` | `DELETE /memories/delete_memory` |
 
 ### Recall
 
 | Method | Endpoint |
 |---|---|
-| `client.recall.full_recall()` | `POST /recall/full_recall` |
-| `client.recall.recall_preferences()` | `POST /recall/recall_preferences` |
-| `client.recall.boolean_recall()` | `POST /recall/boolean_recall` |
+| `client.recall.fullRecall()` | `POST /recall/full_recall` |
+| `client.recall.recallPreferences()` | `POST /recall/recall_preferences` |
+| `client.recall.booleanRecall()` | `POST /recall/boolean_recall` |
 
 ### List + Fetch (under `fetch`)
 
 | Method | Endpoint |
 |---|---|
-| `client.fetch.list_data()` | `POST /list/data` |
-| `client.fetch.graph_relations_by_source_id()` | `GET /list/graph_relations_by_id` |
+| `client.fetch.listData()` | `POST /list/data` |
+| `client.fetch.graphRelationsBySourceId()` | `GET /list/graph_relations_by_id` |
 | `client.fetch.content()` | `POST /fetch/content` |
 
 ### Knowledge Deletion
@@ -125,6 +131,8 @@ Method names map to the URL by removing the leading slash and replacing path sep
 
 In TypeScript, snake_case method names use camelCase: `client.tenant.getInfraStatus()`, `client.recall.fullRecall()`, etc.
 
+In Python, all method names use snake_case: `client.tenant.get_infra_status()`, `client.recall.full_recall()`, etc.
+
 ## Getting started
 
 ### Create a tenant
@@ -134,7 +142,7 @@ A tenant is an isolated workspace. Most organizations create one tenant total, w
 <CodeGroup>
 ```typescript TypeScript SDK
 const response = await client.tenant.create({
-  tenantId: "my_first_tenant"
+  tenant_id: "my_first_tenant"
 });
 ```
 ```python Python SDK
@@ -145,13 +153,13 @@ response = await async_client.tenant.create(tenant_id="my_first_tenant")
 ```
 </CodeGroup>
 
-Tenant creation is asynchronous. Poll [`get_infra_status`](/api-reference/endpoint/infra-status) until provisioning completes:
+Tenant creation is asynchronous. Poll [`getInfraStatus`](/api-reference/endpoint/infra-status) until provisioning completes:
 
 <CodeGroup>
 ```typescript TypeScript SDK
 while (true) {
   const status = await client.tenant.getInfraStatus({
-    tenantId: "my_first_tenant"
+    tenant_id: "my_first_tenant"
   });
   const { graphStatus, vectorstoreStatus } = status.infra;
   if (graphStatus && vectorstoreStatus.every(Boolean)) break;
@@ -179,12 +187,12 @@ Upload documents, app sources, or both via [`upload.knowledge`](/api-reference/e
 import { createReadStream } from "fs";
 
 const result = await client.upload.knowledge({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   files: [
     createReadStream("contract.pdf"),
     createReadStream("policy.pdf"),
   ],
-  fileMetadata: JSON.stringify([
+  file_metadata: JSON.stringify([
     {
       file_id: "contract_q4",
       metadata: { category: "legal" },
@@ -225,35 +233,35 @@ For full options including app sources and forceful relations, see [Upload knowl
 
 ### Add user memories
 
-Store user preferences and conversation history via [`upload.add_memory`](/api-reference/endpoint/add-memory):
+Store user preferences and conversation history via [`upload.addMemory`](/api-reference/endpoint/add-memory):
 
 <CodeGroup>
 ```typescript TypeScript SDK
 // Plain text memory
 const result = await client.upload.addMemory({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   memories: [
     {
       text: "User prefers detailed technical explanations and dark mode",
       infer: true,
-      userName: "Alex",
+      user_name: "Alex",
       metadata: { team: "engineering" },
-      additionalMetadata: { source: "onboarding" }
+      additional_metadata: { source: "onboarding" }
     }
   ]
 });
 
 // Conversation pairs
 const conversation = await client.upload.addMemory({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   memories: [
     {
-      userAssistantPairs: [
+      user_assistant_pairs: [
         { user: "What are my preferences?", assistant: "You prefer dark mode." },
         { user: "How do I like reports?", assistant: "Weekly summaries." }
       ],
       infer: true,
-      userName: "Alex"
+      user_name: "Alex"
     }
   ]
 });
@@ -302,23 +310,23 @@ Three retrieval modes for different use cases:
 ```typescript TypeScript SDK
 // Hybrid recall over knowledge
 const knowledge = await client.recall.fullRecall({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   query: "What are the pricing tiers?",
   mode: "thinking",
-  graphContext: true
+  graph_context: true
 });
 
 // Hybrid recall over user memories
 const prefs = await client.recall.recallPreferences({
-  tenantId: "my_first_tenant",
-  subTenantId: "user_alex",
+  tenant_id: "my_first_tenant",
+  sub_tenant_id: "user_alex",
   query: "What are this user's display preferences?",
   mode: "thinking"
 });
 
 // Exact-match search
 const exact = await client.recall.booleanRecall({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   query: "ERROR_429 rate limit",
   operator: "and"
 });
@@ -357,22 +365,22 @@ For full parameter documentation, see [Recall](/api-reference/endpoint/recall-ov
 ```typescript TypeScript SDK
 // List knowledge sources with pagination
 const sources = await client.fetch.listData({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   kind: "knowledge",
   page: 1,
-  pageSize: 50
+  page_size: 50
 });
 
 // Inspect graph relationships for a specific source
 const relations = await client.fetch.graphRelationsBySourceId({
-  tenantId: "my_first_tenant",
-  sourceId: "doc_12345"
+  tenant_id: "my_first_tenant",
+  source_id: "doc_12345"
 });
 
 // Fetch original file content or get a presigned URL
 const file = await client.fetch.content({
-  tenantId: "my_first_tenant",
-  sourceId: "doc_12345",
+  tenant_id: "my_first_tenant",
+  source_id: "doc_12345",
   mode: "url"
 });
 ```
@@ -426,7 +434,7 @@ Both SDKs throw exceptions for non-2xx responses. Error objects expose the API's
 ```typescript TypeScript SDK
 try {
   const result = await client.recall.fullRecall({
-    tenantId: "my_first_tenant",
+    tenant_id: "my_first_tenant",
     query: "..."
   });
 } catch (error: any) {

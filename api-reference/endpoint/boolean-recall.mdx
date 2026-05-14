@@ -40,11 +40,11 @@ curl -X POST 'https://api.hydradb.com/recall/boolean_recall' \
 ```
 ```typescript TypeScript SDK
 const result = await client.recall.booleanRecall({
-  tenantId: "my_first_tenant",
+  tenant_id: "my_first_tenant",
   query: "ERROR_429 rate limit",
   operator: "and",
-  maxResults: 10,
-  searchMode: "sources"
+  max_results: 10,
+  search_mode: "sources"
 });
 ```
 ```python Python SDK

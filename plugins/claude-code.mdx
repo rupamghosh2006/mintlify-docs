@@ -25,7 +25,7 @@ description: "HydraDB plugin for Claude Code. Persistent memory and contextual a
     <Tabs>
       <Tab title="macOS/Linux (bash)">
         ```bash
-        echo 'export HYDRADB_API_KEY="your-api-key"' >> ~/.bashrc
+        echo 'export HYDRA_DB_API_KEY="your-api-key"' >> ~/.bashrc
         echo 'export HYDRADB_TENANT_ID="your-tenant-id"' >> ~/.bashrc
         echo 'export HYDRADB_SUB_TENANT_ID=""' >> ~/.bashrc
         source ~/.bashrc
@@ -34,7 +34,7 @@ description: "HydraDB plugin for Claude Code. Persistent memory and contextual a
 
       <Tab title="macOS/Linux (zsh)">
         ```bash
-        echo 'export HYDRADB_API_KEY="your-api-key"' >> ~/.zshrc
+        echo 'export HYDRA_DB_API_KEY="your-api-key"' >> ~/.zshrc
         echo 'export HYDRADB_TENANT_ID="your-tenant-id"' >> ~/.zshrc
         echo 'export HYDRADB_SUB_TENANT_ID=""' >> ~/.zshrc
         source ~/.zshrc
@@ -43,7 +43,7 @@ description: "HydraDB plugin for Claude Code. Persistent memory and contextual a
 
       <Tab title="Windows (PowerShell)">
         ```powershell
-        [System.Environment]::SetEnvironmentVariable("HYDRADB_API_KEY", "your-api-key", "User")
+        [System.Environment]::SetEnvironmentVariable("HYDRA_DB_API_KEY", "your-api-key", "User")
         [System.Environment]::SetEnvironmentVariable("HYDRADB_TENANT_ID", "your-tenant-id", "User")
         [System.Environment]::SetEnvironmentVariable("HYDRADB_SUB_TENANT_ID", "", "User")
         ```
@@ -55,13 +55,13 @@ description: "HydraDB plugin for Claude Code. Persistent memory and contextual a
     <Tabs>
       <Tab title="macOS/Linux">
         ```bash
-        echo $HYDRADB_API_KEY
+        echo $HYDRA_DB_API_KEY
         echo $HYDRADB_TENANT_ID
         ```
       </Tab>
       <Tab title="Windows (PowerShell)">
         ```powershell
-        echo $env:HYDRADB_API_KEY
+        echo $env:HYDRA_DB_API_KEY
         echo $env:HYDRADB_TENANT_ID
         ```
       </Tab>
@@ -147,7 +147,7 @@ Once configured, the plugin runs in the background: it syncs workspace docs on s
 
 | Variable      | Env var                  | Description                                    |
 | ------------- | ------------------------ | ---------------------------------------------- |
-| `apiKey`      | `HYDRADB_API_KEY`        | Your HydraDB API key                           |
+| `apiKey`      | `HYDRA_DB_API_KEY`        | Your HydraDB API key                           |
 | `tenantId`    | `HYDRADB_TENANT_ID`      | Your HydraDB tenant ID                         |
 | `subTenantId` | `HYDRADB_SUB_TENANT_ID`  | Sub-tenant scope. Set to `""` for default      |
 
@@ -239,7 +239,7 @@ The plugin resolves config in this order (later sources override earlier ones):
 ### Minimal (env vars only)
 
 ```bash
-export HYDRADB_API_KEY="your-api-key"
+export HYDRA_DB_API_KEY="your-api-key"
 export HYDRADB_TENANT_ID="your-tenant-id"
 export HYDRADB_SUB_TENANT_ID=""
 ```
@@ -248,7 +248,7 @@ export HYDRADB_SUB_TENANT_ID=""
 
 ```json
 {
-  "apiKey": "${HYDRADB_API_KEY}",
+  "apiKey": "${HYDRA_DB_API_KEY}",
   "tenantId": "${HYDRADB_TENANT_ID}",
   "subTenantId": "claude-my-workspace",
   "autoRecall": true,

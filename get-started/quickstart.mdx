@@ -56,20 +56,20 @@ Initialize a client:
 <CodeGroup>
 ```bash cURL
 # Set your key as an environment variable
-export HYDRADB_API_KEY="your_api_key"
+export HYDRA_DB_API_KEY="your_api_key"
 ```
 ```typescript TypeScript SDK
 import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({
-  token: process.env.HYDRADB_API_KEY
+  token: process.env.HYDRA_DB_API_KEY
 });
 ```
 ```python Python SDK
 import os
 from hydra_db import HydraDB
 
-client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 ```
 </CodeGroup>
 
@@ -84,7 +84,7 @@ A tenant is your fully isolated workspace. Everything you ingest and recall live
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants/create' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"tenant_id": "my_first_tenant"}'
 ```
@@ -113,7 +113,7 @@ Tenant creation is **asynchronous**. Poll until provisioning completes before in
 <CodeGroup>
 ```bash cURL
 curl 'https://api.hydradb.com/tenants/infra/status?tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY"
 ```
 ```typescript TypeScript SDK
 const status = await client.tenant.getInfraStatus({
@@ -159,16 +159,14 @@ HydraDB has two distinct data primitives. Pick the one that matches what you're 
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -F "tenant_id=my_first_tenant" \
   -F "files=@/path/to/contract.pdf"
 ```
 ```typescript TypeScript SDK
-import { createReadStream } from "node:fs";
-
 const result = await client.upload.knowledge({
   tenant_id: "my_first_tenant",
-  files: [createReadStream("/path/to/contract.pdf")]
+  files: [{ path: "/path/to/contract.pdf", filename: "contract.pdf", contentType: "application/pdf" }]
 });
 ```
 ```python Python SDK
@@ -200,7 +198,7 @@ with open("/path/to/contract.pdf", "rb") as f:
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/memories/add_memory' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "my_first_tenant",
@@ -282,17 +280,19 @@ flowchart LR
 ```bash cURL
 curl -X POST \
   'https://api.hydradb.com/ingestion/verify_processing?file_ids=<source_id>&tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY"
 ```
 ```typescript TypeScript SDK
 const status = await client.upload.verifyProcessing({
   tenant_id: "my_first_tenant",
+  sub_tenant_id: "default",
   file_ids: ["<source_id>"],
 });
 ```
 ```python Python SDK
 status = client.upload.verify_processing(
     tenant_id="my_first_tenant",
+    sub_tenant_id="default",
     file_ids=["<source_id>"],
 )
 ```
@@ -325,7 +325,7 @@ HydraDB exposes two recall endpoints - one per store. Use the one that matches w
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/recall/full_recall' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "my_first_tenant",
@@ -360,7 +360,7 @@ result = client.recall.full_recall(
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/recall/recall_preferences' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "my_first_tenant",
@@ -481,7 +481,7 @@ const completion = await openai.chat.completions.create({
 import asyncio
 from hydra_db import AsyncHydraDB
 
-async_client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
+async_client = AsyncHydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 async def run():
     knowledge, memories = await asyncio.gather(

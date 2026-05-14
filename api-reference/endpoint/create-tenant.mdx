@@ -65,21 +65,10 @@ const response = await client.tenant.create({
 ```python Python SDK
 response = client.tenant.create(
     tenant_id="my_first_tenant",
-    tenant_metadata_schema=[
-        {
-            "name": "category",
-            "data_type": "VARCHAR",
-            "max_length": 256,
-            "enable_match": True,
-        },
-        {
-            "name": "product_description",
-            "data_type": "VARCHAR",
-            "max_length": 4096,
-            "enable_dense_embedding": True,
-            "enable_sparse_embedding": True,
-        },
-    ],
+    tenant_metadata_schema={
+        "category": "string",
+        "product_description": "string",
+    },
 )
 ```
 </CodeGroup>
@@ -89,7 +78,7 @@ response = client.tenant.create(
 | Name | Type | Required | Description |
 |---|---|---|---|
 | `tenant_id` | string | Yes | Unique identifier for the tenant. |
-| `tenant_metadata_schema` | array | No | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. |
+| `tenant_metadata_schema` | array (TypeScript) / object (Python) | No | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. |
 
 
 ## Response

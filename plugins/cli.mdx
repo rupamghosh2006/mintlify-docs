@@ -43,13 +43,13 @@ description: "Agent-friendly command line interface for HydraDB. Manage memories
 
 The CLI resolves credentials in this order (first match wins):
 
-1. Environment variables (`HYDRADB_API_KEY`, `HYDRADB_TENANT_ID`)
+1. Environment variables (`HYDRA_DB_API_KEY`, `HYDRADB_TENANT_ID`)
 2. Config file (`~/.hydradb/config.json`, written by `hydradb login`)
 
 <Tabs>
   <Tab title="macOS/Linux (bash)">
     ```bash
-    echo 'export HYDRADB_API_KEY="your-api-key"' >> ~/.bashrc
+    echo 'export HYDRA_DB_API_KEY="your-api-key"' >> ~/.bashrc
     echo 'export HYDRADB_TENANT_ID="your-tenant-id"' >> ~/.bashrc
     source ~/.bashrc
     ```
@@ -57,7 +57,7 @@ The CLI resolves credentials in this order (first match wins):
 
   <Tab title="macOS/Linux (zsh)">
     ```bash
-    echo 'export HYDRADB_API_KEY="your-api-key"' >> ~/.zshrc
+    echo 'export HYDRA_DB_API_KEY="your-api-key"' >> ~/.zshrc
     echo 'export HYDRADB_TENANT_ID="your-tenant-id"' >> ~/.zshrc
     source ~/.zshrc
     ```
@@ -65,7 +65,7 @@ The CLI resolves credentials in this order (first match wins):
 
   <Tab title="Windows (PowerShell)">
     ```powershell
-    [System.Environment]::SetEnvironmentVariable("HYDRADB_API_KEY", "your-api-key", "User")
+    [System.Environment]::SetEnvironmentVariable("HYDRA_DB_API_KEY", "your-api-key", "User")
     [System.Environment]::SetEnvironmentVariable("HYDRADB_TENANT_ID", "your-tenant-id", "User")
     ```
   </Tab>
@@ -75,7 +75,7 @@ The CLI resolves credentials in this order (first match wins):
 
 | Variable | Description | Default |
 |---|---|---|
-| `HYDRADB_API_KEY` | Your HydraDB API key | *Required* |
+| `HYDRA_DB_API_KEY` | Your HydraDB API key | *Required* |
 | `HYDRADB_TENANT_ID` | Your HydraDB tenant identifier | *Required* |
 | `HYDRADB_API_URL` | API base URL | `https://api.hydradb.com` |
 | `HYDRADB_OUTPUT` | Default output format (`human` or `json`) | `human` |

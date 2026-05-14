@@ -64,15 +64,15 @@ HydraDB publishes official SDKs for Python and TypeScript/Node. They wrap every 
 import os
 from hydra_db import HydraDB, AsyncHydraDB
 
-client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
-async_client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
+async_client = AsyncHydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 ```
 
 ```typescript TypeScript
 import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({
-  token: process.env.HYDRADB_API_KEY,
+  token: process.env.HYDRA_DB_API_KEY,
 });
 ```
 

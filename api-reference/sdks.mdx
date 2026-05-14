@@ -21,20 +21,20 @@ pip install hydradb-sdk
 import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({
-  token: process.env.HYDRADB_API_KEY,
+  token: process.env.HYDRA_DB_API_KEY,
 });
 ```
 ```python Python SDK
 import os
 from hydra_db import HydraDB
 
-client = HydraDB(token=os.environ["HYDRADB_API_KEY"])
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 ```
 ```python Python (Async)
 import os
 from hydra_db import AsyncHydraDB
 
-async_client = AsyncHydraDB(token=os.environ["HYDRADB_API_KEY"])
+async_client = AsyncHydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 ```
 </CodeGroup>
 
@@ -71,7 +71,7 @@ SDK methods are grouped by capability, not by URL path. The mapping is mostly in
 | `/list/*`, `/fetch/*` | `client.fetch` | Browse and retrieve |
 | `/knowledge/*` | `client.data` | Bulk knowledge delete |
 
-Additional clients available: `client.key` for API key management, `client.ingestionPipeline` for pipeline operations, `client.graphHealth` for health checks.
+Additional clients available: `client.key` for API key management, `client.ingestionPipeline` for pipeline operations, `client.graphHealth` for health checks, and `client.metrics` for metrics, `client.passthrough` for passthrough operations.
 
 ## Method reference
 
@@ -122,6 +122,15 @@ In TypeScript, snake_case method names use camelCase: `client.tenant.getInfraSta
 
 In Python, all method names use snake_case: `client.tenant.get_infra_status()`, `client.recall.full_recall()`, etc.
 
+### Additional clients
+
+| Method | Endpoint |
+|---|---|
+| `client.graphHealth.getSuperNodes()` | `GET /graph/super_nodes` |
+| `client.ingestionPipeline.ingestMemory()` | `POST /memories/ingestion_pipeline` |
+| `client.metrics.getMetrics()` | `GET /metrics` |
+| `client.passthrough.fetch()` | `POST /passthrough/fetch` |
+
 ## Getting started
 
 ### Create a tenant
@@ -135,7 +144,10 @@ const response = await client.tenant.create({
 });
 ```
 ```python Python SDK
-response = client.tenant.create(tenant_id="my_first_tenant")
+response = client.tenant.create(
+    tenant_id="my_first_tenant",
+    tenant_metadata_schema={"department": "string"},
+)
 ```
 ```python Python (Async)
 response = await async_client.tenant.create(tenant_id="my_first_tenant")
@@ -150,8 +162,8 @@ while (true) {
   const status = await client.tenant.getInfraStatus({
     tenant_id: "my_first_tenant"
   });
-  const { graphStatus, vectorstoreStatus } = status.infra;
-  if (graphStatus && vectorstoreStatus.every(Boolean)) break;
+  const { graph_status, vectorstore_status } = status.infra;
+  if (graph_status && vectorstore_status.every(Boolean)) break;
   await new Promise(r => setTimeout(r, 2000));
 }
 ```
@@ -173,13 +185,13 @@ Upload documents, app sources, or both via [`upload.knowledge`](/api-reference/e
 
 <CodeGroup>
 ```typescript TypeScript SDK
-import { createReadStream } from "fs";
+import { openAsBlob } from "node:fs";
 
 const result = await client.upload.knowledge({
   tenant_id: "my_first_tenant",
   files: [
-    createReadStream("contract.pdf"),
-    createReadStream("policy.pdf"),
+    { path: "contract.pdf", filename: "contract.pdf", contentType: "application/pdf" },
+    { path: "policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
   ],
   file_metadata: JSON.stringify([
     {
@@ -201,7 +213,10 @@ import json
 with open("contract.pdf", "rb") as f1, open("policy.pdf", "rb") as f2:
     result = client.upload.knowledge(
         tenant_id="my_first_tenant",
-        files=[f1, f2],
+        files=[
+            ("contract.pdf", f1, "application/pdf"),
+            ("policy.pdf", f2, "application/pdf"),
+        ],
         file_metadata=json.dumps([
             {
                 "file_id": "contract_q4",
@@ -421,34 +436,40 @@ Both SDKs throw exceptions for non-2xx responses. Error objects expose the API's
 
 <CodeGroup>
 ```typescript TypeScript SDK
+import { HydraDBError } from "@hydradb/sdk";
+
 try {
   const result = await client.recall.fullRecall({
     tenant_id: "my_first_tenant",
     query: "..."
   });
-} catch (error: any) {
-  const code = error.body?.detail?.error_code;
-  const status = error.statusCode;
+} catch (error) {
+  if (error instanceof HydraDBError) {
+    const code = error.body?.detail?.error_code;
 
-  if (code === "TENANT_NOT_FOUND") {
-    // Handle missing tenant
-  } else if (status === 429) {
-    // Rate limit - retry with backoff
+    if (code === "TENANT_NOT_FOUND") {
+      // Handle missing tenant
+    } else if (error.statusCode === 429) {
+      // Rate limit - retry with backoff
+    } else {
+      throw error;
+    }
   } else {
     throw error;
   }
 }
 ```
 ```python Python SDK
+from hydra_db import HydraDBError
+
 try:
     result = client.recall.full_recall(
         tenant_id="my_first_tenant",
         query="...",
     )
-except Exception as e:
-    body = getattr(e, "body", {}) or {}
-    code = body.get("detail", {}).get("error_code")
-    status = getattr(e, "status_code", None)
+except HydraDBError as e:
+    code = e.error_code
+    status = e.status_code
 
     if code == "TENANT_NOT_FOUND":
         # Handle missing tenant

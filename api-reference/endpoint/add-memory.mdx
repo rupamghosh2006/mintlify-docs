@@ -21,7 +21,7 @@ For documents, files, and app-generated content, use [`POST /ingestion/upload_kn
 - **Async:** Yes – memories are queued for processing. Use [`POST /ingestion/verify_processing`](/api-reference/endpoint/verify-processing) to check status.
 
 <Warning>
-For memories, `tenant_metadata` and `document_metadata` are JSON strings. JSON.stringify them before sending.
+For memories, `metadata` and `additional_metadata` are plain JSON objects. Do not pre-stringify them.
 </Warning>
 
 ## Example
@@ -38,8 +38,8 @@ curl -X POST 'https://api.hydradb.com/memories/add_memory' \
         "text": "User prefers detailed technical explanations and dark mode",
         "infer": true,
         "user_name": "Alex",
-        "tenant_metadata": "{\"team\":\"engineering\"}",
-        "document_metadata": "{\"source\":\"onboarding\"}"
+        "metadata": {"team": "engineering"},
+        "additional_metadata": {"source": "onboarding"}
       }
     ]
   }'
@@ -66,17 +66,15 @@ response = client.upload.add_memory(
             "text": "User prefers detailed technical explanations and dark mode",
             "infer": True,
             "user_name": "Alex",
-            "tenant_metadata": {"team": "engineering"},
-            "document_metadata": {"source": "onboarding"},
+            "metadata": {"team": "engineering"},
+            "additional_metadata": {"source": "onboarding"},
         }
     ],
 )
 ```
 </CodeGroup>
 
-<Info>
-**TODO (SDK):** Confirm the exact property names your TypeScript/Python SDK exposes for OpenAPI `MemoryItem.tenant_metadata` and `MemoryItem.document_metadata` (for example snake_case vs camelCase) and whether values must be pre-stringified. Examples above follow [`api-reference/openapi.json`](/api-reference/openapi.json) (`MemoryItem`).
-</Info>
+
 
 ## Request parameters
 
@@ -136,8 +134,8 @@ Each entry in the `memories` array supports three content formats. Pick one:
 | `user_name` | string | `"User"` | User's name. Useful for personalizing conversation pairs. |
 | `expiry_time` | integer | – | Optional TTL in seconds. The memory is deleted after this duration. |
 | `custom_instructions` | string | – | Custom instructions to guide inference processing. |
-| `tenant_metadata` | string | `""` | JSON string of tenant-level metadata (per OpenAPI `MemoryItem`). Use `JSON.stringify` / `json.dumps` before sending. |
-| `document_metadata` | string | `""` | JSON string of document-level metadata (per OpenAPI `MemoryItem`). Use `JSON.stringify` / `json.dumps` before sending. |
+| `metadata` | object | `{}` | Tenant-level key-value metadata (plain JSON object). |
+| `additional_metadata` | object | `{}` | Document-level key-value metadata (plain JSON object). |
 | `relations` | object | – | Forcefully connect this memory to other sources. See [Forceful relations](/essentials/memories#7-forceful-relations). |
 
 ## Inference modes

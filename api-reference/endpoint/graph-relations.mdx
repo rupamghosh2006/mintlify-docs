@@ -45,7 +45,7 @@ response = client.fetch.graph_relations_by_source_id(
 
 | Name | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `source_id` | string | Yes | – | The source to fetch relations for. |
+| `source_id` | string | No (defaults to root) | – | The source to fetch relations for. Optional - if omitted, returns top-level entity relations. |
 | `tenant_id` | string | Yes | – | The tenant the source belongs to. |
 | `sub_tenant_id` | string | No | default | Sub-tenant scope. |
 | `is_memory` | boolean | No | `false` | Set `true` to fetch relations for a memory; `false` for knowledge. |

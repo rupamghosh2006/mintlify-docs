@@ -7,11 +7,11 @@
   },
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{HYDRADB_API_KEY}}", "type": "string" }]
+    "bearer": [{ "key": "token", "value": "{{HYDRA_DB_API_KEY}}", "type": "string" }]
   },
   "variable": [
     { "key": "base_url", "value": "https://api.hydradb.com" },
-    { "key": "HYDRADB_API_KEY", "value": "YOUR_API_KEY_HERE" },
+    { "key": "HYDRA_DB_API_KEY", "value": "YOUR_API_KEY_HERE" },
     { "key": "tenant_id", "value": "my_first_tenant" },
     { "key": "sub_tenant_id", "value": "user_alex_123" },
     { "key": "source_id", "value": "" },

@@ -289,6 +289,8 @@ For transient errors (`429`, `500`, `503`), implement exponential backoff:
 
 <CodeGroup>
 ```typescript TypeScript (SDK)
+import { HydraDBError } from "@hydradb/sdk";
+
 async function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries = 3
@@ -296,16 +298,20 @@ async function withRetry<T>(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
-      const status = error.status || error.statusCode;
-      const isRetryable = [429, 500, 503].includes(status);
+    } catch (error) {
+      if (error instanceof HydraDBError) {
+        const status = error.statusCode;
+        const isRetryable = [429, 500, 503].includes(status);
 
-      if (!isRetryable || attempt === maxRetries) {
+        if (!isRetryable || attempt === maxRetries) {
+          throw error;
+        }
+
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
         throw error;
       }
-
-      const delay = Math.pow(2, attempt) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   throw new Error("unreachable");
@@ -322,12 +328,14 @@ const result = await withRetry(() =>
 ```python Python (SDK)
 import time
 
+from hydra_db import HydraDBError
+
 def with_retry(operation, max_retries=3):
     for attempt in range(1, max_retries + 1):
         try:
             return operation()
-        except Exception as e:
-            status = getattr(e, "status_code", None) or getattr(e, "status", None)
+        except HydraDBError as e:
+            status = e.status_code
             is_retryable = status in (429, 500, 503)
 
             if not is_retryable or attempt == max_retries:
@@ -370,47 +378,50 @@ async function retryRequest(url, options, maxRetries = 3) {
 
 <CodeGroup>
 ```typescript TypeScript (SDK)
+import { HydraDBError } from "@hydradb/sdk";
+
 try {
   const result = await client.recall.fullRecall({
     tenant_id: "my_tenant",
     query: "What's our refund policy?"
   });
-} catch (error: any) {
-  const code = error.body?.detail?.error_code;
-
-  switch (code) {
-    case "TENANT_NOT_FOUND":
-      // Tenant doesn't exist - prompt user to create it
-      break;
-    case "RATE_LIMITED":
-      // Back off and retry
-      break;
-    case "UNAUTHORIZED":
-      // Refresh API key
-      break;
-    default:
-      // Generic error handling
-      throw error;
+} catch (error) {
+  if (error instanceof HydraDBError) {
+    switch (error.body?.detail?.error_code) {
+      case "TENANT_NOT_FOUND":
+        // Tenant doesn't exist - prompt user to create it
+        break;
+      case "RATE_LIMITED":
+        // Back off and retry
+        break;
+      case "UNAUTHORIZED":
+        // Refresh API key
+        break;
+      default:
+        // Generic error handling
+        throw error;
+    }
+  } else {
+    throw error;
   }
 }
 ```
 ```python Python (SDK)
+from hydra_db import HydraDBError
+
 try:
     result = client.recall.full_recall(
         tenant_id="my_tenant",
         query="What's our refund policy?",
     )
-except Exception as e:
-    body = getattr(e, "body", {}) or {}
-    code = body.get("detail", {}).get("error_code")
-
-    if code == "TENANT_NOT_FOUND":
+except HydraDBError as e:
+    if e.error_code == "TENANT_NOT_FOUND":
         # Tenant doesn't exist - prompt user to create it
         pass
-    elif code == "RATE_LIMITED":
+    elif e.error_code == "RATE_LIMITED":
         # Back off and retry
         pass
-    elif code == "UNAUTHORIZED":
+    elif e.error_code == "UNAUTHORIZED":
         # Refresh API key
         pass
     else:

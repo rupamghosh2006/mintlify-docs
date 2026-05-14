@@ -15,7 +15,7 @@ npm install @hydradb/sdk ts-node typescript @types/node
 ## Run all three
 
 ```bash
-export HYDRADB_API_KEY="sk_live_..."
+export HYDRA_DB_API_KEY="sk_live_..."
 
 # 1. cURL (REST layer - most comprehensive)
 bash tests/test_curl.sh

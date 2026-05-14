@@ -149,10 +149,10 @@ Use it when the filter value is known exactly. Operators such as range, contains
 
 ### `metadata` vs `additional_metadata`
 
-HydraDB exposes two common metadata patterns:
+HydraDB exposes two metadata fields on every source object:
 
-- **`metadata`** - schema-aligned fields intended for deterministic filtering. If a field is declared in the tenant metadata schema and match-enabled, it can be used in `metadata_filters`.
-- **`additional_metadata`** - free-form fields for display, bookkeeping, or downstream application use. Do not rely on these for deterministic filtering.
+- **`metadata`** — schema-aligned fields intended for deterministic filtering. If a field is declared in the tenant metadata schema and match-enabled, it can be used in `metadata_filters`.
+- **`additional_metadata`** — free-form fields for display, bookkeeping, or downstream application use. Do not rely on these for deterministic filtering.
 
 If a field needs to be filterable at recall time, put it in `metadata` and plan it in the tenant metadata schema. Otherwise, prefer `additional_metadata`.
 
@@ -317,7 +317,7 @@ Metadata narrows results inside a scope. It should not replace `tenant_id` or `s
 If your application needs deterministic filtering on a field, plan it early and declare it in the tenant metadata schema before ingestion.
 
 **Confusing metadata fields across endpoints.**  
-Some endpoints accept metadata as objects; memory item fields such as `tenant_metadata` and `document_metadata` are JSON strings. Check the relevant endpoint reference before sending metadata.
+Metadata is always passed as plain JSON objects using the field names `metadata` and `additional_metadata`. Check the relevant endpoint reference for which fields are supported.
 
 **Over-filtering.**  
 Too many filters can remove the chunk that would have answered the question. Start with the minimum hard constraints needed, then tune.

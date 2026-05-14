@@ -141,7 +141,7 @@ Also: TypeScript `appSources` and Python `app_sources` must be JSON-serialised s
 ## Postman Collection
 
 Included as `HydraDB_Postman_Collection.json` in this folder. Import into Postman and set:
-- `HYDRADB_API_KEY` - your API key
+- `HYDRA_DB_API_KEY` - your API key
 
 - `tenant_id` - your target tenant
 

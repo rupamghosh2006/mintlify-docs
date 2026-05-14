@@ -43,8 +43,8 @@ const result = await client.fetch.listData({
   page: 1,
   page_size: 25,
   filters: {
-    tenant_metadata: { category: "engineering" },
-    document_metadata: { author: "Alice Smith" }
+    metadata: { category: "engineering" },
+    additional_metadata: { author: "Alice Smith" }
   },
   include_fields: ["title", "type", "url", "timestamp"]
 });
@@ -81,24 +81,20 @@ result = client.fetch.list_data(
 
 Filters narrow results using **AND logic** – every key-value pair must match.
 
-| Filter category | cURL / Python key | TypeScript `ContentFilter` key | Targets |
-|---|---|---|---|
-| Tenant-level metadata | `metadata` | `tenant_metadata` | Fields defined in `tenant_metadata_schema` |
-| Document-level metadata | `additional_metadata` | `document_metadata` | Fields attached per-document at ingestion |
-
-<Info>
-**TypeScript SDK uses different filter key names.** The `ContentFilter` type exposes `tenant_metadata` and `document_metadata`. The REST API and Python SDK use `metadata` and `additional_metadata`. Both target the same underlying data.
-</Info>
-| `source_fields` | Top-level source fields | See below |
+| Filter category | Key (all SDKs) | Targets |
+|---|---|---|
+| Tenant-level metadata | `metadata` | Fields defined in `tenant_metadata_schema` |
+| Document-level metadata | `additional_metadata` | Fields attached per-document at ingestion |
+| Source-level fields | `source_fields` | Top-level source fields |
 
 **Allowed `source_fields` keys:** `description`, `timestamp`, `title`, `type`, `url`.
 
 ```json
 {
   "filters": {
-    "metadata":   { "department": "Finance" },
+    "metadata":           { "department": "Finance" },
     "additional_metadata": { "author": "Alice Smith" },
-    "source_fields":     { "type": "slack", "title": "standup notes" }
+    "source_fields":      { "type": "slack", "title": "standup notes" }
   }
 }
 ```

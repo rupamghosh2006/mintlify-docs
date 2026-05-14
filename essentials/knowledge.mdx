@@ -71,7 +71,7 @@ Binary files HydraDB should parse and chunk: PDF, DOCX, Markdown, CSV, TXT.
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -F "tenant_id=acme_corp" \
   -F "files=@/path/to/policy.pdf" \
   -F "files=@/path/to/runbook.pdf" \
@@ -81,13 +81,11 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   ]'
 ```
 ```typescript TypeScript SDK
-import { createReadStream } from "node:fs";
-
 const result = await client.upload.knowledge({
   tenant_id: "acme_corp",
   files: [
-    createReadStream("/path/to/policy.pdf"),
-    createReadStream("/path/to/runbook.pdf"),
+    { path: "/path/to/policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
+    { path: "/path/to/runbook.pdf", filename: "runbook.pdf", contentType: "application/pdf" },
   ],
   file_metadata: JSON.stringify([
     { file_id: "policy_v2", metadata: { document_type: "policy", status: "approved" } },
@@ -120,7 +118,7 @@ Pre-parsed text from connected apps. You supply the text, metadata, and an optio
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -F "tenant_id=acme_corp" \
   -F 'app_knowledge=[
     {
@@ -194,18 +192,20 @@ result = client.upload.knowledge(
 <CodeGroup>
 ```bash cURL
 curl -X POST \
-  'https://api.hydradb.com/ingestion/verify_processing?file_ids=policy_v2&tenant_id=acme_corp' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  'https://api.hydradb.com/ingestion/verify_processing?file_ids=policy_v2&tenant_id=acme_corp&sub_tenant_id=default' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY"
 ```
 ```typescript TypeScript SDK
 const status = await client.upload.verifyProcessing({
   tenant_id: "acme_corp",
+  sub_tenant_id: "default",
   file_ids: ["policy_v2"],
 });
 ```
 ```python Python SDK
 status = client.upload.verify_processing(
     tenant_id="acme_corp",
+    sub_tenant_id="default",
     file_ids=["policy_v2"],
 )
 ```
@@ -243,12 +243,17 @@ Poll every few seconds. Most documents complete in 1–5 minutes.
 
 | Field | Type | Description |
 |---|---|---|
-| `source_id` | string | Optional stable identifier. Upsert key. |
-| `title` | string | Human-readable title for the source. |
-| `text` | string | Pre-parsed text content. |
-| `url` | string | Source URL (optional, for display). |
+| `id` | string | Unique identifier for the source. Upsert key. |
+| `title` | string | Short title or subject. |
+| `type` | string | Source category (e.g., `slack`, `notion`, `gmail`, `webpage`). |
+| `description` | string | Optional long-form description. |
+| `url` | string | Canonical URL or reference link. |
+| `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
+| `content` | object | Content payload. Use `{"text": "..."}` for plain text. |
 | `metadata` | object | Filterable fields matching the tenant schema. |
-| `additional_metadata` | object | Free-form fields. Not filterable. |
+| `additional_metadata` | object | Free-form fields. Not filterable at recall time. |
+| `attachments` | array | Optional related attachments. |
+| `relations` | object | Forcefully connect this source to others. |
 
 ### Request-level fields
 
@@ -278,7 +283,7 @@ Set the `relations` field on any item in `file_metadata` or `app_knowledge`:
 <CodeGroup>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -F "tenant_id=acme_corp" \
   -F 'app_knowledge=[
     {

@@ -5,7 +5,7 @@ description: "Continuously ingest competitor press releases, job postings, custo
 
 This guide walks you through building a **competitive intelligence agent with persistent temporal memory** powered by HydraDB. Unlike a static market research doc or a naive RAG pipeline, this agent continuously ingests competitor signals and answers both point-in-time questions ("What has Acme Corp announced about enterprise?") and trend questions ("How has their pricing messaging shifted since Q1?") - with full context across press releases, job postings, customer reviews, and earnings calls unified in one retrieval layer.
 
-> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`.Get your API key at [app.hydradb.com](httpsapp.hydradb.com).
 
 > **Goal**: Build an agent that ingests four signal types from competitor sources, verifies indexing, and answers competitive queries using `POST /recall/full_recall` with `recency_bias` tuned per query type - point-in-time or trend. Full round-trip under 200ms.
 
@@ -15,7 +15,7 @@ This guide walks you through building a **competitive intelligence agent with pe
 
 **Required knowledge**: Python basics, REST APIs, environment variables  
 **Required tools**:
-- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- HydraDB API key
 - Python 3.11 or 3.12 (`python --version`)
 - `pip install hydradb-sdk`
 

@@ -12,7 +12,7 @@ This guide walks you through building a production-grade **AI Financial Analyst*
 
 Standard RAG fails on these because **two earnings calls produce nearly identical embeddings** - they're the same format, the same vocabulary, the same topics. A vector search can't tell Q2 from Q4 without temporal structure. HydraDB's `recency_bias` parameter, timestamp-aware graph, and multi-stage retrieval pipeline solve this structurally.
 
-> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](httpsapp.hydradb.com).
 
 ---
 
@@ -20,7 +20,7 @@ Standard RAG fails on these because **two earnings calls produce nearly identica
 
 **Required knowledge**: Python basics, REST APIs, environment variables  
 **Required tools**:
-- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- HydraDB API key
 - Python 3.11 or 3.12 (`python --version`)
 - `pip install hydradb-sdk`
 

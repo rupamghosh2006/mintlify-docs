@@ -5,7 +5,23 @@ description: "Learn how to build a comprehensive workplace search and AI assista
 
 This guide will walk you through building an extremely powerful workplace search and AI assistant platform that rivals Glean using HydraDB APIs. You'll learn how to create a unified retrieval experience across multiple data sources and generate answers in your application layer.
 
-> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own Glean-like application with HydraDB APIs. You'll need to adapt these examples to your specific use case, technology stack, and requirements.
+> **Note**: All code in this guide uses the official HydraDB Python SDK. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key from [app.hydradb.com](app.hydradb.com)
+- Python 3.11 or 3.12 (`python --version`)
+- `pip install hydradb-sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest documents from multiple data sources (Slack, email, Google Drive, Jira) into a unified HydraDB knowledge base
+- Run natural language workplace search across all sources with a single `full_recall` call
+- Personalize search results per user by storing and retrieving AI memories
+- Generate grounded AI answers from retrieved context using any LLM
 
 ## Overview
 

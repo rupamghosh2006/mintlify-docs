@@ -5,9 +5,27 @@ description: "Ingest Slack, Gmail, Confluence, GitHub, and Linear into one Hydra
 
 This guide walks you through building a **company-wide internal search engine** powered by HydraDB. Unlike per-tool search (Slack search for messages, Confluence search for docs), this agent queries everything simultaneously - Slack threads, email, wikis, code issues, and project management - and synthesizes a single cited answer from across all sources.
 
-> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email founders@hydradb.com.
+> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
 
 > **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns - simple factual lookup, decision provenance, and cross-source synthesis - all through `POST /recall/full_recall`.
+
+---
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- Python 3.11 or 3.12 (`python --version`)
+- `pip install hydradb-sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest Slack threads, Gmail, Confluence pages, GitHub issues, and Linear tickets into a single HydraDB tenant
+- Answer cross-source questions like "Why did we move to a monorepo?" that span multiple tools and time periods
+- Use `recency_bias` and `graph_context: true` to surface the most relevant, connected context across all sources
+- Store per-user memory so answers are personalized to each employee's role and project context
 
 ---
 
@@ -249,9 +267,9 @@ def _upload_batch(batch: list, sub_tenant: str) -> list:
             sub_tenant_id=sub_tenant,
             files=[(filename, content.encode("utf-8"), "text/plain")],
         )
-        results = result.get("results", [])
-        if results:
-            source_ids.append(results[0]["source_id"])
+        items = result.results or []
+        if items:
+            source_ids.append(items[0].source_id)
         time.sleep(0.1)   # brief pause between individual uploads in a batch
     return source_ids
 ```
@@ -398,9 +416,9 @@ def ingest_gmail_threads(credentials_path: str, query: str, max_threads: int = 2
             sub_tenant_id="email",
             files=[(filename, content.encode("utf-8"), "text/plain")],
         )
-        results_data = result.get("results", [])
-        if results_data:
-            all_ids.append(results_data[0]["source_id"])
+        items = result.results or []
+        if items:
+            all_ids.append(items[0].source_id)
 
         time.sleep(0.2)
 
@@ -526,9 +544,9 @@ def ingest_confluence_space(space_key: str):
                 sub_tenant_id="docs",
                 files=[(filename, content.encode("utf-8"), "text/plain")],
             )
-            results = result.get("results", [])
-            if results:
-                all_ids.append(results[0]["source_id"])
+            items = result.results or []
+            if items:
+                all_ids.append(items[0].source_id)
             time.sleep(0.1)
 
         if data.get("_links", {}).get("next"):
@@ -655,9 +673,9 @@ def ingest_github_issues(repo_name: str, state: str = "all", limit: int = 500):
             sub_tenant_id="github",
             files=[(filename, content.encode("utf-8"), "text/plain")],
         )
-        results = result.get("results", [])
-        if results:
-            all_ids.append(results[0]["source_id"])
+        items = result.results or []
+        if items:
+            all_ids.append(items[0].source_id)
         time.sleep(0.1)
 
     print(f"GitHub {repo_name}: {len(all_ids)} issues uploaded")
@@ -893,8 +911,8 @@ def store_user_profile(user_id: str, profile_text: str) -> str:
             "user_name": user_id,
         }],
     )
-    results = result.get("results", [])
-    source_id = results[0]["source_id"] if results else None
+    items = result.results or []
+    source_id = items[0].source_id if items else None
     print(f"Profile stored for {user_id} → source_id: {source_id}")
     return source_id
 ```

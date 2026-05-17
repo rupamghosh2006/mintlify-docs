@@ -5,7 +5,23 @@ description: "Learn how to build an intelligent travel planning platform that un
 
 This guide demonstrates how to build a revolutionary AI-powered travel planning platform that transforms how travelers discover, plan, and book their trips. Instead of traditional keyword searches and manual browsing, your platform will understand natural language queries and provide intelligent, personalized travel recommendations using HydraDB's advanced AI capabilities.
 
-> **Note**: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own travel planning application with HydraDB APIs. Follow the [actual API documentation](https://docs.hydradb.com/api-reference/introduction) to adapt these examples to your specific use case, technology stack, and requirements.
+> **Note**: All code in this guide uses the official HydraDB TypeScript SDK. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+
+## Prerequisites
+
+**Required knowledge**: TypeScript/JavaScript basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- Node.js 18+ (`node --version`)
+- `npm install @hydradb/sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Upload hotel, flight, restaurant, and activity data into HydraDB with correct tenant scoping
+- Answer complex natural language travel queries like "Plan a 5-day romantic trip to Italy for $3000" using `fullRecall` with `mode: "thinking"`
+- Store per-user travel preferences and booking history as AI memories for personalized recommendations
+- Build family, business, and adventure trip planning flows using semantic search
 
 ## The Problem with Traditional Travel Planning
 
@@ -296,7 +312,9 @@ class PersonalizationEngine {
       max_results: 10
     });
 
-    return this.generateRecommendations(memories, destination);
+    // memories.chunks contains the user's past preference signals ranked by relevance.
+    // Pass these as context to your LLM to generate personalized recommendations.
+    return memories.chunks;
   }
 }
 ```
@@ -336,23 +354,20 @@ Support different types of travel queries:
 
 ```javascript
 const handleTravelQuery = async (query, context) => {
-  // Determine query type and route appropriately
-  const queryType = classifyQuery(query);
-  
-  switch (queryType) {
-    case 'accommodation':
-      return await searchAccommodation(query, context);
-    case 'transportation':
-      return await searchTransportation(query, context);
-    case 'dining':
-      return await searchDining(query, context);
-    case 'activities':
-      return await searchActivities(query, context);
-    case 'full_itinerary':
-      return await planFullItinerary(query, context);
-    default:
-      return await generalTravelSearch(query, context);
-  }
+  // HydraDB's semantic search handles all query types without manual classification.
+  // Use mode: "thinking" for complex multi-part queries (full itineraries, comparisons).
+  // Use mode: "fast" for single-category lookups (hotels only, flights only).
+  const isComplex = /itinerary|plan|trip|vacation|week|days/i.test(query);
+
+  const response = await client.recall.fullRecall({
+    query,
+    tenant_id: context.tenantId,
+    sub_tenant_id: context.subTenantId,
+    mode: isComplex ? "thinking" : "fast",
+    max_results: isComplex ? 20 : 10
+  });
+
+  return response.chunks;
 };
 ```
 
@@ -374,12 +389,13 @@ const planFamilyVacation = async (query, userProfile) => {
     max_results: 20
   });
 
-  // Process response to generate structured itinerary
+  // Filter chunks by type to build a structured itinerary.
+  // response.chunks are ranked by AI relevance — filter by metadata type to categorize.
   const itinerary = {
-    accommodation: extractHotelRecommendations(response.chunks),
-    activities: extractFamilyActivities(response.chunks),
-    dining: extractKidFriendlyRestaurants(response.chunks),
-    transportation: extractTransportationOptions(response.chunks)
+    accommodation: response.chunks.filter(c => c.metadata?.type === "accommodation"),
+    activities:    response.chunks.filter(c => c.metadata?.type === "activity"),
+    dining:        response.chunks.filter(c => c.metadata?.type === "dining"),
+    transportation: response.chunks.filter(c => c.metadata?.type === "transportation")
   };
 
   return itinerary;
@@ -402,7 +418,8 @@ const planBusinessTravel = async (query, userProfile) => {
     max_results: 10
   });
 
-  return processBusinessTravelResponse(response);
+  // Return ranked chunks directly. Filter by metadata.amenities or metadata.location as needed.
+  return response.chunks;
 };
 ```
 
@@ -422,7 +439,8 @@ const planAdventureTravel = async (query, userProfile) => {
     max_results: 15
   });
 
-  return processAdventureResponse(response);
+  // Return ranked chunks directly. Sort or filter by metadata.difficulty for hiking-specific results.
+  return response.chunks;
 };
 ```
 

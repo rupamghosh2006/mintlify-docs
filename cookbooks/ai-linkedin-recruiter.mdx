@@ -5,7 +5,23 @@ description: "Learn how to build an intelligent recruiting platform that underst
 
 This guide demonstrates how to build a revolutionary AI-powered hiring platform that transforms how recruiters and hiring managers discover candidates. Instead of traditional keyword searches, your platform will understand natural language queries and provide intelligent candidate matching using HydraDB's advanced AI capabilities.
 
-Note: All code examples in this guide are for demonstration purposes. They show the concepts and patterns you can use when building your own AI linkedin-like application with HydraDB APIs. Follow the actual API documentation to adapt these examples to your specific use case, technology stack, and requirements.
+> **Note**: All code in this guide uses the official HydraDB TypeScript SDK (`@hydradb/sdk`). Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+
+## Prerequisites
+
+**Required knowledge**: TypeScript/JavaScript basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key
+- Node.js 18+ (`node --version`)
+- `npm install @hydradb/sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Upload structured candidate profiles into HydraDB with rich metadata (experience, skills, company history, education)
+- Search candidates using natural language queries like "Find me someone who has 5+ years of ML experience and worked at Apple"
+- Rank candidates by fit score and generate personalized interview questions per candidate
+- Store recruiter memory so HydraDB personalizes future candidate suggestions based on past successful hires
 
 ## The Problem with Traditional Hiring Platforms
 
@@ -392,6 +408,57 @@ class AIRecruitingSearch {
       ...results,
       chunks: enhancedSources,
       search_insights: this.generateSearchInsights(enhancedSources, originalQuery)
+    };
+  }
+
+  extractStrengths(candidate) {
+    const strengths = [];
+    const meta = candidate.metadata || {};
+    if (meta.total_years_experience >= 5) strengths.push("Extensive experience");
+    if (meta.publications_count > 0) strengths.push("Published researcher");
+    if (meta.career_level === "senior" || meta.career_level === "staff") strengths.push("Senior-level contributor");
+    if ((meta.companies || []).some(c => c.company_size === "large_tech")) strengths.push("Big-tech background");
+    if (meta.has_management_experience) strengths.push("Proven leadership");
+    return strengths;
+  }
+
+  extractConcerns(candidate) {
+    const concerns = [];
+    const meta = candidate.metadata || {};
+    if (meta.total_years_experience < 3) concerns.push("Limited experience — verify depth of role");
+    if ((meta.companies || []).every(c => c.company_size === "large_tech")) {
+      concerns.push("No startup experience — assess adaptability");
+    }
+    if (meta.job_search_status === "passively_looking") concerns.push("Not actively searching — expect longer close cycle");
+    return concerns;
+  }
+
+  suggestInterviewQuestions(candidate, query) {
+    const questions = [];
+    const meta = candidate.metadata || {};
+    if ((meta.companies || []).length > 0) {
+      questions.push(`Walk me through your most impactful project at ${meta.companies[0].name}.`);
+    }
+    if (query.toLowerCase().includes("machine learning") || (meta.primary_skills || []).includes("machine_learning")) {
+      questions.push("Describe a model you shipped end-to-end — from data to production monitoring.");
+    }
+    if (meta.has_management_experience) {
+      questions.push("Tell me about a time you had to let someone go. How did you handle it?");
+    }
+    questions.push("What does your ideal engineering culture look like?");
+    return questions;
+  }
+
+  generateSearchInsights(candidates, query) {
+    const avgYears = candidates.reduce((sum, c) => sum + (c.metadata?.total_years_experience || 0), 0) / (candidates.length || 1);
+    const topCompanies = [...new Set(
+      candidates.flatMap(c => (c.metadata?.companies || []).map(co => co.name))
+    )].slice(0, 5);
+    return {
+      total_candidates: candidates.length,
+      average_experience_years: Math.round(avgYears * 10) / 10,
+      top_company_backgrounds: topCompanies,
+      query_summary: query.slice(0, 120)
     };
   }
 

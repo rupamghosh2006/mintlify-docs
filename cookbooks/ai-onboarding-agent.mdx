@@ -5,7 +5,7 @@ description: "Go from zero to a working onboarding agent in three phases. Upload
 
 This guide walks you through building an **AI onboarding agent with full institutional memory** powered by HydraDB. Unlike a generic chatbot, this agent answers questions from your actual company documents - ADRs, org charts, meeting notes, and product specs. New hires get real context, not hallucinated guesses.
 
-> **Note**: All code in this guide uses the official HydraDB Python SDK. Install it with `pip install hydradb-sdk`. Base URL: `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email founders@hydradb.com.
+> **Note**: All code in this guide uses the official HydraDB Python SDK. Install it with `pip install hydradb-sdk`. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
 
 > **Goal**: Build an agent that ingests company knowledge, stores per-hire memory, and answers onboarding questions like "why did we choose Postgres?" and "who owns the payments service?" with cited answers from real company documents.
 
@@ -41,6 +41,17 @@ graph LR
 
 ---
 
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest company ADRs, org charts, meeting notes, and product specs into a shared HydraDB knowledge base
+- Verify indexing before running recall queries so new hires always get answers from complete data
+- Answer onboarding questions like "why did we choose Postgres?" and "who owns the payments service?" with cited answers from real documents
+- Store per-hire memory so the agent personalizes responses as each hire progresses through onboarding
+- Build a manager dashboard that surfaces patterns across all new hires' questions
+
+---
+
 ## Phase 0 - Minimal Working System
 *10–15 minutes · Goal: upload one document and get a real answer from it*
 
@@ -48,7 +59,7 @@ graph LR
 
 ### Prerequisites
 
-1. **A HydraDB API key** - get one at hydradb.com or email founders@hydradb.com.
+1. **A HydraDB API key** - Get your API key at [app.hydradb.com](app.hydradb.com).
 2. **Python 3.11 or 3.12** - run `python --version` to check. Python 3.14 shows a Pydantic compatibility warning with the SDK; use 3.11 or 3.12 for a clean experience.
 3. **Install the SDK**:
 
@@ -114,6 +125,15 @@ if __name__ == "__main__":
 
 ```bash
 python phase0/create_tenant.py
+```
+
+Output:
+```
+Tenant created: {'tenant_id': 'onboarding', 'status': 'created'}
+Status: Tenant infrastructure is ready
+  scheduler=running
+  graph=running
+  vectorstore=running
 ```
 
 **Expected output:**

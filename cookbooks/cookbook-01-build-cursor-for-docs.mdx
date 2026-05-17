@@ -7,7 +7,26 @@ Go from zero to a production AI assistant that answers "why was this built this 
 
 > **How this guide is structured.** Each phase ends with something that works. Phase 0 is a complete minimal system in under 10 minutes. Phases 1–3 are progressive upgrades. You never need to redo what came before.
 
-> **All code in this cookbook is real.** Base URL is `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email [founders@hydradb.com](mailto:founders@hydradb.com).
+> **All code in this cookbook is real.** Base URL is `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+
+---
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- Python 3.11 or 3.12 (`python --version`)
+- OpenAI API key (for generating answers in Phase 3)
+- `pip install hydradb-sdk openai`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Upload any codebase file into HydraDB and get grounded answers to "why was this built this way?"
+- Progressively ingest GitHub files, PRs, Slack threads, and RFCs across four phases
+- Build a FastAPI backend that answers developer questions using `full_recall` + GPT-4o
+- Add a VS Code extension trigger to query HydraDB from inside your editor
 
 ---
 
@@ -385,7 +404,7 @@ def upload_batch(batch: list) -> list:
         tenant_id=TENANT_ID,
         app_knowledge=json.dumps(batch),
     )
-    ids = [r["source_id"] for r in result.get("results", []) if r.get("source_id")]
+    ids = [r.source_id for r in (result.results or []) if r.source_id]
     print(f"  Uploaded {len(ids)} items")
     return ids
 

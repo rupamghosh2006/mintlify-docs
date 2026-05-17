@@ -12,7 +12,25 @@ This guide walks you through building a production-grade **AI Financial Analyst*
 
 Standard RAG fails on these because **two earnings calls produce nearly identical embeddings** - they're the same format, the same vocabulary, the same topics. A vector search can't tell Q2 from Q4 without temporal structure. HydraDB's `recency_bias` parameter, timestamp-aware graph, and multi-stage retrieval pipeline solve this structurally.
 
-> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key by emailing [founders@hydradb.com](mailto:founders@hydradb.com) or booking a demo at [hydradb.com](https://hydradb.com).
+> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
+
+---
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- Python 3.11 or 3.12 (`python --version`)
+- `pip install hydradb-sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest earnings PDFs, internal metric series, and board memos into a per-quarter HydraDB sub-tenant
+- Answer trend questions like "How did gross margin change across the last four quarters?" using `recency_bias` and `mode: "thinking"`
+- Compare point-in-time statements across quarters ("What did the CFO say about guidance in Q2 vs Q4?")
+- Build a financial analyst interface that cites the exact source document and timestamp for every answer
 
 ---
 
@@ -653,8 +671,8 @@ def query_trend(
         metadata_filters=filters,
     )
 
-    chunks      = recall.get("chunks", [])
-    graph_ctx   = recall.get("graph_context", {})
+    chunks      = recall.chunks or []
+    graph_ctx   = recall.graph_context or {}
     query_paths = graph_ctx.get("query_paths", [])
 
     if not chunks:
@@ -663,7 +681,7 @@ def query_trend(
     # Sort chunks by timestamp so LLM sees them in chronological order
     chunks_sorted = sorted(
         chunks,
-        key=lambda c: c.get("source_upload_time", "") or "",
+        key=lambda c: c.source_upload_time or "",
     )
 
     # Build context with explicit period labels and source attribution
@@ -913,8 +931,8 @@ def track_narrative_shift(
     )
 
     chunks = sorted(
-        recall.get("chunks", []),
-        key=lambda c: c.get("additional_metadata", {}).get("period_end_date", ""),
+        recall.chunks or [],
+        key=lambda c: (c.additional_metadata or {}).get("period_end_date", ""),
     )
 
     if not chunks:

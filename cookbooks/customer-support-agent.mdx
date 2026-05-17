@@ -5,9 +5,29 @@ description: "A support agent that never forgets. Ingest help docs, past ticket 
 
 This guide walks you through building a **customer support agent with persistent memory** powered by HydraDB. Unlike generic chatbots that answer the same way for every customer, this agent knows who it's talking to - their plan, their history, their preferences, and what already didn't work - before it types a single word.
 
-> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [hydradb.com](https://hydradb.com) or email founders@hydradb.com.
+> **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](app.hydradb.com).
 
 > **Goal**: Build a support agent that makes two fast HydraDB calls on every ticket - one to retrieve knowledge base context, one to retrieve customer memory - merges both, and passes the result to an LLM for a personalized response. Full round-trip under 400ms.
+
+---
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key - Get your API key at [app.hydradb.com](app.hydradb.com)
+- Python 3.11 or 3.12 (`python --version`)
+- OpenAI API key (for generating the final support response)
+- `pip install hydradb-sdk openai`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest help docs and past ticket resolutions into a shared HydraDB knowledge base
+- Store per-customer memory so the agent knows their plan, history, and preferences before responding
+- Make the two-call recall pattern - knowledge base + customer memory - on every incoming ticket
+- Generate personalized support responses that reference the customer's specific context
+- Store every conversation turn back into HydraDB to continuously improve future responses
 
 ---
 
@@ -98,8 +118,14 @@ def customer_sub_tenant(customer_id: str) -> str:
 
 # Shared sub-tenant for knowledge base (visible to all agents, all customers)
 KB_SUB_TENANT = "knowledge-base"
+print(f"✓ Tenant '{TENANT_ID}' ready.")
 ```
 </CodeGroup>
+
+Output:
+```
+✓ Tenant 'customer-support' ready.
+```
 
 ---
 
@@ -957,6 +983,17 @@ def handle_email_ticket():
 
 if __name__ == "__main__":
     flask_app.run(port=8080)
+```
+
+**Example response** (customer on Enterprise plan who asked about a billing issue twice before):
+```
+Hi Sarah,
+
+I can see you're on the Enterprise plan and that our team is already tracking this billing issue — it was flagged in your last conversation on May 12th as a known problem with the pro-rated credit calculation for annual upgrades.
+
+Our engineering team is targeting a fix for this sprint (ending May 23rd). In the meantime, I've manually applied a $47 credit to your account to cover the discrepancy.
+
+You should see the credit reflected within 24 hours. Is there anything else I can help you with?
 ```
 
 ---

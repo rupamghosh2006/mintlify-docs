@@ -322,8 +322,8 @@ def wait_until_indexed(source_id: str, max_tries: int = 20, interval: int = 3) -
             tenant_id=TENANT_ID,
             file_ids=[source_id],
         )
-        statuses = status_result.get("statuses", [])
-        status   = statuses[0].get("indexing_status") if statuses else None
+        items  = status_result.statuses or []
+        status = items[0].indexing_status if items else None
 
         if status == "completed":
             print(f"Indexed ✓ ({source_id})")

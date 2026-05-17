@@ -147,7 +147,7 @@ def ingest_earnings_pdf(
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    file_id = getattr(result, "file_id", None) or getattr(result, "id", None) or str(result)
+    file_id = result.results[0].source_id if result.results else str(result)
     print(f"Uploaded {ticker} {period_label} {doc_type} → file_id: {file_id}")
     return file_id
 
@@ -279,7 +279,7 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
                 }
             }],
         )
-        memory_ids.append(getattr(result, "id", None) or "ok")
+        memory_ids.append(result.results[0].source_id if result.results else "ok")
         print(f"Stored metrics: {item['period_label']} ({item['ticker']})")
 
     return memory_ids
@@ -414,7 +414,7 @@ def ingest_board_memo(
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    file_id = getattr(result, "file_id", None) or getattr(result, "id", None) or str(result)
+    file_id = result.results[0].source_id if result.results else str(result)
     print(f"Uploaded memo: {ticker} {period_label} → {file_id}")
     return file_id
 ```
@@ -447,14 +447,14 @@ def verify_all_indexed(file_ids: list[str], poll_interval: int = 3, max_polls: i
                 tenant_id=TENANT_ID,
                 file_ids=[fid],
             )
-            statuses = status.get("statuses", [])
-            s = statuses[0].get("indexing_status", "unknown") if statuses else "unknown"
+            items = status.statuses or []
+            s = items[0].indexing_status if items else "unknown"
 
             if s == "completed":
                 pending.discard(fid)
                 print(f"  ✓ {fid} - indexed")
-            elif s == "failed":
-                raise RuntimeError(f"Indexing failed for {fid}: {status}")
+            elif s == "errored":
+                raise RuntimeError(f"Indexing failed for {fid}: {items[0].indexing_status if items else 'unknown'}")
             else:
                 print(f"  … {fid} - {s}")
 
@@ -1395,7 +1395,7 @@ Content-Type: multipart/form-data
 ```bash
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -F "file=@ACME_Q2_2023_transcript.pdf" \
+  -F "files=@ACME_Q2_2023_transcript.pdf" \
   -F "tenant_id=financial-analyst" \
   -F "sub_tenant_id=earnings-acme"
 ```

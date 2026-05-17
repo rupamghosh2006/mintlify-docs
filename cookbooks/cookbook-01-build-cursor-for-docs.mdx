@@ -205,9 +205,9 @@ def verify_file(file_id: str, timeout: int = 120, interval: int = 3):
         )
         print("STATUS:", status)
 
-        statuses = status.get("statuses", [])
-        if statuses:
-            s = statuses[0].get("indexing_status")
+        items = status.statuses or []
+        if items:
+            s = items[0].indexing_status
             if   s == "completed": print(f"✓ '{file_id}' ready."); return
             elif s == "errored":   print("Indexing errored."); return
             print(f"  indexing_status: {s} - waiting...")
@@ -387,7 +387,7 @@ def upload_batch(batch: list) -> list:
         tenant_id=TENANT_ID,
         app_knowledge=json.dumps(batch),
     )
-    ids = result.get("ids", [])
+    ids = [r["source_id"] for r in result.get("results", []) if r.get("source_id")]
     print(f"  Uploaded {len(ids)} items")
     return ids
 

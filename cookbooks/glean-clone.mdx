@@ -256,13 +256,15 @@ def upload_batch(sources: list, tenant_id: str, sub_tenant_id: str = None):
 def upload_with_verification(sources: list, tenant_id: str, sub_tenant_id: str = None):
     upload_result = upload_batch(sources, tenant_id, sub_tenant_id)
 
-    if upload_result.get("ids"):
-        for source_id in upload_result["ids"]:
+    if upload_result.results:
+        for item in upload_result.results:
+            source_id = item.source_id
             status = client.upload.verify_processing(
                 tenant_id=tenant_id,
                 file_ids=[source_id]
             )
-            if status.get("indexing_status") == "errored":
+            items = status.statuses or []
+            if items and items[0].indexing_status == "errored":
                 raise Exception(f"Processing failed for source {source_id}")
 
     return upload_result
@@ -290,7 +292,6 @@ interface SearchOptions {
   max_results?: number;
   mode?: string;
   metadata?: Record<string, any>;
-  additional_context?: string;
 }
 
 const search = async (query: string, tenantId: string, options: SearchOptions = {}) => {
@@ -299,7 +300,6 @@ const search = async (query: string, tenantId: string, options: SearchOptions = 
     max_results = 10,
     mode = "fast",
     metadata,
-    additional_context
   } = options;
 
   return await client.recall.fullRecall({
@@ -311,7 +311,6 @@ const search = async (query: string, tenantId: string, options: SearchOptions = 
     alpha: 0.5,         // Balance semantic vs keyword search (0.0 to 1.0)
     recency_bias: 0.3,  // Recency preference (0.0 to 1.0)
     ...(metadata && { metadata }),
-    ...(additional_context && { additional_context })
   });
 };
 
@@ -331,7 +330,7 @@ client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def search(query: str, tenant_id: str, sub_tenant_id: str = None,
            max_results: int = 10, mode: str = "fast",
-           metadata: dict = None, additional_context: str = None):
+           metadata: dict = None):
     return client.recall.full_recall(
         query=query,
         tenant_id=tenant_id,
@@ -341,7 +340,6 @@ def search(query: str, tenant_id: str, sub_tenant_id: str = None,
         alpha=0.5,        # Balance semantic vs keyword search (0.0 to 1.0)
         recency_bias=0.3, # Recency preference (0.0 to 1.0)
         **({"metadata": metadata} if metadata else {}),
-        **({"additional_context": additional_context} if additional_context else {})
     )
 
 # Filter search by source type
@@ -364,7 +362,6 @@ Implement advanced search capabilities:
 > - `mode`: Use `"thinking"` for multi-query retrieval with reranking, or `"fast"` for single-query retrieval
 > - `alpha`: Controls semantic vs keyword matching (0.0-1.0, or `"auto"`)
 > - `recency_bias`: Prioritizes recent content (0.0-1.0)
-> - `additional_context`: Provide extra context to guide retrieval
 
 
 <CodeGroup>
@@ -394,32 +391,32 @@ const searchWithFilters = async (
   });
 };
 
-// Guide retrieval with additional context
-const searchWithContext = async (query: string, tenantId: string, additional_context: string) =>
+// Guide retrieval with additional context — prepend context to the query string
+const searchWithContext = async (query: string, tenantId: string, context: string) =>
   client.recall.fullRecall({
-    query,
+    query: context ? `${context}\n\n${query}` : query,
     tenant_id: tenantId,
     max_results: 10,
     mode: "fast",
     alpha: 0.5,
     recency_bias: 0.3,
-    additional_context
   });
 
-// Conversational search — include prior conversation turns as additional context
+// Conversational search — fold prior conversation turns into the query
 const conversationalSearch = async (
   query: string,
   tenantId: string,
   conversationHistory: object[] = []
 ) =>
   client.recall.fullRecall({
-    query,
+    query: conversationHistory.length
+      ? `Previous conversation context: ${JSON.stringify(conversationHistory)}\n\n${query}`
+      : query,
     tenant_id: tenantId,
     max_results: 10,
     mode: "fast",
     alpha: 0.5,
     recency_bias: 0.3,
-    additional_context: `Previous conversation context: ${JSON.stringify(conversationHistory)}`
   });
 ```
 ```python Python SDK
@@ -447,28 +444,31 @@ def search_with_filters(query: str, tenant_id: str, source_types: str = None, so
         **({"metadata": metadata} if metadata else {})
     )
 
-# Guide retrieval with additional context
-def search_with_context(query: str, tenant_id: str, additional_context: str):
+# Guide retrieval with additional context — prepend context to the query string
+def search_with_context(query: str, tenant_id: str, context: str):
     return client.recall.full_recall(
-        query=query,
+        query=f"{context}\n\n{query}" if context else query,
         tenant_id=tenant_id,
         max_results=10,
         mode="fast",
         alpha=0.5,
         recency_bias=0.3,
-        additional_context=additional_context
     )
 
-# Conversational search — include prior conversation turns as additional context
+# Conversational search — fold prior conversation turns into the query
 def conversational_search(query: str, tenant_id: str, conversation_history: list = None):
+    history = conversation_history or []
+    enriched_query = (
+        f"Previous conversation context: {json.dumps(history)}\n\n{query}"
+        if history else query
+    )
     return client.recall.full_recall(
-        query=query,
+        query=enriched_query,
         tenant_id=tenant_id,
         max_results=10,
         mode="fast",
         alpha=0.5,
         recency_bias=0.3,
-        additional_context=f"Previous conversation context: {json.dumps(conversation_history or [])}"
     )
 ```
 </CodeGroup>
@@ -531,19 +531,19 @@ const saveUserProfile = async (userId: string, profile: any) => {
   console.log(`Saving profile for user ${userId}:`, profile);
 };
 
-// Search using personalized additional_context derived from the user's local profile
+// Search with personalized query enrichment derived from the user's local profile
 const searchWithMemory = async (query: string, tenantId: string, userId: string) => {
   const userProfile = getUserProfile(userId);
+  const enrichedQuery = `${buildPersonalizedInstructions(userProfile, query)}\n\n${query}`;
 
   const searchResults = await client.recall.fullRecall({
-    query,
+    query: enrichedQuery,
     tenant_id: tenantId,
     sub_tenant_id: userId,
     max_results: 10,
     mode: userProfile.preferredMode || "fast",
     alpha: 0.5,
     recency_bias: 0.3,
-    additional_context: buildPersonalizedInstructions(userProfile, query),
     ...(userProfile.preferredSourceTypes?.length > 0 && {
       metadata: { source_type: userProfile.preferredSourceTypes }
     })
@@ -615,19 +615,19 @@ def save_user_profile(user_id: str, profile: dict):
     # Persist to your backend database
     print(f"Saving profile for user {user_id}:", profile)
 
-# Search using personalized additional_context derived from the user's local profile
+# Search with personalized query enrichment derived from the user's local profile
 def search_with_memory(query: str, tenant_id: str, user_id: str):
     profile = get_user_profile(user_id)
+    enriched_query = f"{build_personalized_instructions(profile, query)}\n\n{query}"
 
     kwargs = dict(
-        query=query,
+        query=enriched_query,
         tenant_id=tenant_id,
         sub_tenant_id=user_id,
         max_results=10,
         mode=profile["preferred_mode"] or "fast",
         alpha=0.5,
         recency_bias=0.3,
-        additional_context=build_personalized_instructions(profile, query)
     )
     if profile["preferred_source_types"]:
         kwargs["metadata"] = {"source_type": profile["preferred_source_types"]}

@@ -295,7 +295,7 @@ def _upload_batch(batch: list, sub_tenant_id: str) -> list:
         sub_tenant_id=sub_tenant_id,
         app_knowledge=json.dumps(batch),
     )
-    return [item.get("id") for item in data.get("items", [])]
+    return [item.get("source_id") for item in data.get("results", []) if item.get("source_id")]
 
 
 # Upload all functions (all teams, scoped to "functions" sub-tenant)

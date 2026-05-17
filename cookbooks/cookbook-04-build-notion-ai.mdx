@@ -109,7 +109,7 @@ def upload_batch(sources: list, sub_tenant_id: str = None) -> list:
         tenant_id=TENANT_ID,
         app_knowledge=json.dumps(sources),
     )
-    return result.get("ids", [])
+    return [r.source_id for r in (result.results or []) if r.source_id]
 
 
 def ingest_notion_database(database_id: str, sub_tenant_id: str = None) -> list:
@@ -211,8 +211,8 @@ def verify_processing(file_id: str, timeout: int = 120, interval: int = 3):
             tenant_id=TENANT_ID,
             file_ids=file_id,
         )
-        statuses = result.get("statuses", [])
-        status   = statuses[0].get("indexing_status") if statuses else None
+        items  = result.statuses or []
+        status = items[0].indexing_status if items else None
         if status == "completed":
             return True
         if status == "errored":
@@ -496,7 +496,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 ```bash
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  -F "file=@/path/to/document.pdf" \
+  -F "files=@/path/to/document.pdf" \
   -F "tenant_id=notion-ai-workspace"
 ```
 

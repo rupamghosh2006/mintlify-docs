@@ -333,9 +333,12 @@ class AIRecruitingSearch {
   }
 
   async findCandidates(query, recruiterContext = {}) {
+    const hiringContext = this.buildHiringInstructions(recruiterContext);
+    const enrichedQuery = hiringContext ? `${hiringContext}\n\n${query}` : query;
+
     const results = await this.client.recall.fullRecall({
       tenant_id: this.tenantId,
-      query: query,
+      query: enrichedQuery,
 
       // Hiring-specific configurations
       max_results: 20, // More candidates for review
@@ -343,10 +346,7 @@ class AIRecruitingSearch {
 
       // Search tuning for candidate discovery
       alpha: 0.6, // Favor semantic understanding
-      recency_bias: 0.2, // Don't heavily favor recent profiles
-
-      // Additional context for the search
-      additional_context: this.buildHiringInstructions(recruiterContext)
+      recency_bias: 0.2 // Don't heavily favor recent profiles
     });
 
     return this.enhanceCandidateResults(results, query);

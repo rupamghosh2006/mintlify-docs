@@ -104,6 +104,10 @@ response = client.tenant.create(tenant_id="my_first_tenant")
 }
 ```
 
+<Info>
+Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
+</Info>
+
 Tenant creation is **asynchronous**. Poll until provisioning completes before ingesting:
 
 <CodeGroup>
@@ -139,7 +143,7 @@ status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
 Wait until `graph_status` is `true` and both values in `vectorstore_status` are `true`.
 
 <Note>
-  **`vectorstore_status` index mapping:** `[0]` is the **Memories** vector store; `[1]` is the **Knowledge** vector store. Both must be `true` before ingesting.
+Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
 </Note>
 
 </Step>

@@ -61,8 +61,12 @@ status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
 | `infra.graph_status` | `true` when the graph database is ready. |
 | `infra.vectorstore_status` | Array of two booleans. `vectorstore_status[0]` is the **Memories** vector store; `vectorstore_status[1]` is the **Knowledge** vector store. **Both must be `true`** before ingesting. |
 
+<Info>
+Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
+</Info>
+
 <Note>
-  **`vectorstore_status` index mapping:** Index `0` is the **Memories** vector store (user preferences, conversation history). Index `1` is the **Knowledge** vector store (documents, app sources). Both must be `true` before your first ingestion call.
+Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
 </Note>
 
 ## Polling pattern

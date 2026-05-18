@@ -3,8 +3,6 @@ title: "AI Financial Analyst with Memory"
 description: "Upload earnings PDFs, internal metrics, and board memos into HydraDB. Ask trend questions across quarters, get temporally-aware answers, and surface the exact clause, figure, or narrative shift - not a generic summary."
 ---
 
-> **Difficulty**: Intermediate · **Read time**: ~45 min · **Tags**: Finance, Temporal, Knowledge Graph
-
 This guide walks you through building a production-grade **AI Financial Analyst** powered by HydraDB. The agent ingests structured and unstructured financial data - earnings call transcripts, PDF filings, internal metric exports, and board memos - and answers questions that require reasoning across time:
 
 - _"How did our gross margin trend across the last four quarters?"_
@@ -14,7 +12,25 @@ This guide walks you through building a production-grade **AI Financial Analyst*
 
 Standard RAG fails on these because **two earnings calls produce nearly identical embeddings** - they're the same format, the same vocabulary, the same topics. A vector search can't tell Q2 from Q4 without temporal structure. HydraDB's `recency_bias` parameter, timestamp-aware graph, and multi-stage retrieval pipeline solve this structurally.
 
-> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key by emailing [hello@hydradb.com](mailto:hello@hydradb.com) or booking a demo at [hydradb.com](https://hydradb.com).
+> **Note**: All API calls in this guide are real and ready to run. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](https://app.hydradb.com).
+
+---
+
+## Prerequisites
+
+**Required knowledge**: Python basics, REST APIs, environment variables  
+**Required tools**:
+- HydraDB API key
+- Python 3.11 or 3.12 (`python --version`)
+- `pip install hydradb-sdk`
+
+## What You'll Build
+
+By the end of this cookbook, you'll be able to:
+- Ingest earnings PDFs, internal metric series, and board memos into a per-quarter HydraDB sub-tenant
+- Answer trend questions like "How did gross margin change across the last four quarters?" using `recency_bias` and `mode: "thinking"`
+- Compare point-in-time statements across quarters ("What did the CFO say about guidance in Q2 vs Q4?")
+- Build a financial analyst interface that cites the exact source document and timestamp for every answer
 
 ---
 
@@ -66,24 +82,18 @@ One tenant for the whole financial corpus. Sub-tenants isolate by company, fund,
 
 ```python
 # setup.py
-import os, requests
+import os
+from hydra_db import HydraDB
 
 API_KEY   = os.environ["HYDRA_DB_API_KEY"]
 TENANT_ID = "financial-analyst"
-BASE_URL  = "https://api.hydradb.com"
-HEADERS   = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json",
-}
+
+client = HydraDB(token=API_KEY)
 
 # Create tenant
-resp = requests.post(
-    f"{BASE_URL}/tenants/create",
-    headers=HEADERS,
-    json={"tenant_id": TENANT_ID},
-)
-print(resp.status_code, resp.json())
-# Output: 201  {'status': 'created', 'tenant_id': 'financial-analyst'}
+result = client.tenant.create(tenant_id=TENANT_ID)
+print(result)
+# Output: {'status': 'accepted', 'tenant_id': 'financial-analyst', ...}
 
 # Sub-tenant conventions used throughout this guide:
 #   "earnings-{TICKER}"        - earnings calls + SEC filings for one company
@@ -92,7 +102,7 @@ print(resp.status_code, resp.json())
 #   "analyst-{user_id}"        - per-analyst preference memory
 ```
 
-> **SDK required for PDF ingestion.** The `/ingestion/upload_knowledge` endpoint requires `multipart/form-data`. Raw `requests` with `json=` returns a 422. Install: `pip install hydra-db-python`. Import as `from hydra_db import HydraDB` (the import name differs from the package name). For all recall and memory endpoints, raw `requests` continues to work.
+> **SDK required for all API calls.** Install: `pip install hydradb-sdk`. Import as `from hydra_db import HydraDB` (the import name differs from the package name).
 
 ---
 
@@ -134,7 +144,7 @@ def ingest_earnings_pdf(
         "timestamp":    period_end_date,   # drives recency ranking - must be accurate
         "tenant_id":    TENANT_ID,
         "sub_tenant_id": sub_tenant_id,
-        "meta": {
+        "metadata": {
             "ticker":          ticker,
             "doc_type":        doc_type,
             "fiscal_year":     fiscal_year,
@@ -153,7 +163,7 @@ def ingest_earnings_pdf(
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    file_id = getattr(result, "file_id", None) or getattr(result, "id", None) or str(result)
+    file_id = result.results[0].source_id if result.results else str(result)
     print(f"Uploaded {ticker} {period_label} {doc_type} → file_id: {file_id}")
     return file_id
 
@@ -230,14 +240,11 @@ Internal financial metrics - revenue, ARR, churn, CAC, LTV, burn rate - are typi
 
 ```python
 # ingest/internal_metrics.py
-import json, time, requests, os
+import json, time, os
+from hydra_db import HydraDB
 
-BASE_URL  = "https://api.hydradb.com"
 TENANT_ID = "financial-analyst"
-HEADERS   = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def format_metrics_as_text(metrics_row: dict, period_label: str) -> str:
     """
@@ -271,30 +278,24 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
     for item in metrics_by_period:
         text_chunk = format_metrics_as_text(item["metrics"], item["period_label"])
 
-        resp = requests.post(
-            f"{BASE_URL}/memories/add_memory",
-            headers=HEADERS,
-            json={
-                "memories": [{
-                    "text":   text_chunk,
-                    "infer":  True,   # extract entities + build graph connections
-                    "meta": {
-                        "ticker":         item["ticker"],
-                        "doc_type":       "internal_metrics",
-                        "period_label":   item["period_label"],
-                        "period_end_date":item["period_end_date"],
-                        "fiscal_year":    item["fiscal_year"],
-                        "fiscal_quarter": item["fiscal_quarter"],
-                    }
-                }],
-                "tenant_id":     TENANT_ID,
-                "sub_tenant_id": "internal-metrics",
-                "upsert":        True,
-            }
+        result = client.upload.add_memory(
+            tenant_id=TENANT_ID,
+            sub_tenant_id="internal-metrics",
+            upsert=True,
+            memories=[{
+                "text":   text_chunk,
+                "infer":  True,   # extract entities + build graph connections
+                "metadata": {
+                    "ticker":         item["ticker"],
+                    "doc_type":       "internal_metrics",
+                    "period_label":   item["period_label"],
+                    "period_end_date":item["period_end_date"],
+                    "fiscal_year":    item["fiscal_year"],
+                    "fiscal_quarter": item["fiscal_quarter"],
+                }
+            }],
         )
-        resp.raise_for_status()
-        result = resp.json()
-        memory_ids.append(result.get("id", "ok"))
+        memory_ids.append(result.results[0].source_id if result.results else "ok")
         print(f"Stored metrics: {item['period_label']} ({item['ticker']})")
 
     return memory_ids
@@ -412,7 +413,7 @@ def ingest_board_memo(
         "timestamp":    meeting_date,
         "tenant_id":    TENANT_ID,
         "sub_tenant_id": sub_tenant_id,
-        "meta": {
+        "metadata": {
             "ticker":       ticker,
             "doc_type":     memo_type,
             "period_label": period_label,
@@ -429,7 +430,7 @@ def ingest_board_memo(
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    file_id = getattr(result, "file_id", None) or getattr(result, "id", None) or str(result)
+    file_id = result.results[0].source_id if result.results else str(result)
     print(f"Uploaded memo: {ticker} {period_label} → {file_id}")
     return file_id
 ```
@@ -440,18 +441,15 @@ Always verify all uploaded documents are indexed before running any queries. Unv
 
 ```python
 # ingest/verify.py
-import requests, time, os
+import time, os
+from hydra_db import HydraDB
 
-BASE_URL  = "https://api.hydradb.com"
-HEADERS   = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID = "financial-analyst"
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def verify_all_indexed(file_ids: list[str], poll_interval: int = 3, max_polls: int = 20) -> bool:
     """
-    Poll /ingestion/verify_processing until all file_ids report status 'completed'.
+    Poll verify_processing until all file_ids report status 'completed'.
     Returns True when all are ready, raises if any fail after max_polls.
     """
     pending = set(file_ids)
@@ -461,21 +459,20 @@ def verify_all_indexed(file_ids: list[str], poll_interval: int = 3, max_polls: i
             return True
 
         for fid in list(pending):
-            resp = requests.get(
-                f"{BASE_URL}/ingestion/verify_processing",
-                headers=HEADERS,
-                params={"file_ids": fid, "tenant_id": TENANT_ID},
+            status = client.upload.verify_processing(
+                tenant_id=TENANT_ID,
+                file_ids=[fid],
             )
-            data   = resp.json()
-            status = data.get("status") or data.get("processing_status", "unknown")
+            items = status.statuses or []
+            s = items[0].indexing_status if items else "unknown"
 
-            if status == "completed":
+            if s == "completed":
                 pending.discard(fid)
                 print(f"  ✓ {fid} - indexed")
-            elif status == "failed":
-                raise RuntimeError(f"Indexing failed for {fid}: {data}")
+            elif s == "errored":
+                raise RuntimeError(f"Indexing failed for {fid}: {items[0].indexing_status if items else 'unknown'}")
             else:
-                print(f"  … {fid} - {status}")
+                print(f"  … {fid} - {s}")
 
         if pending:
             time.sleep(poll_interval)
@@ -503,14 +500,11 @@ Per-analyst memory personalizes recall based on the analyst's focus area, prefer
 
 ```python
 # memory/analysts.py
-import requests, os
+import os
+from hydra_db import HydraDB
 
-BASE_URL  = "https://api.hydradb.com"
-HEADERS   = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID = "financial-analyst"
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def store_analyst_profile(user_id: str, profile_text: str) -> dict:
     """
@@ -520,21 +514,16 @@ def store_analyst_profile(user_id: str, profile_text: str) -> dict:
     profile_text: natural language - focus, companies covered, preferred depth, style
     infer: true   - HydraDB extracts signals + builds graph connections automatically
     """
-    resp = requests.post(
-        f"{BASE_URL}/memories/add_memory",
-        headers=HEADERS,
-        json={
-            "memories": [{
-                "text":  profile_text,
-                "infer": True,
-            }],
-            "tenant_id":     TENANT_ID,
-            "sub_tenant_id": f"analyst-{user_id}",
-            "upsert":        True,
-        }
+    result = client.upload.add_memory(
+        tenant_id=TENANT_ID,
+        sub_tenant_id=f"analyst-{user_id}",
+        upsert=True,
+        memories=[{
+            "text":  profile_text,
+            "infer": True,
+        }],
     )
-    resp.raise_for_status()
-    return resp.json()
+    return result
 
 
 # ── Example analyst profiles ─────────────────────────────────────────────
@@ -584,14 +573,11 @@ Use high `recency_bias` to surface the most relevant recent documents. For point
 
 ```python
 # query/point_in_time.py
-import requests, os
+import os
+from hydra_db import HydraDB
 
-BASE_URL  = "https://api.hydradb.com"
-HEADERS   = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID = "financial-analyst"
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def query_point_in_time(
     question: str,
@@ -606,25 +592,21 @@ def query_point_in_time(
     recency_bias: 0.7 - prefer the targeted period but allow adjacent context.
     mode: "thinking" - multi-query reranking, personalised recall.
     """
-    return requests.post(
-        f"{BASE_URL}/recall/full_recall",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "sub_tenant_id": f"analyst-{user_id}",
-            "query":         question,
-            "max_results":   12,
-            "graph_context": True,
-            "mode":          "thinking",
-            "alpha":         0.5,         # balanced keyword + semantic
-            "recency_bias":  0.7,
-            "metadata_filters": {
-                "ticker":         ticker,
-                "fiscal_year":    fiscal_year,
-                "fiscal_quarter": fiscal_quarter,
-            }
-        }
-    ).json()
+    return client.recall.full_recall(
+        tenant_id=TENANT_ID,
+        sub_tenant_id=f"analyst-{user_id}",
+        query=question,
+        max_results=12,
+        graph_context=True,
+        mode="thinking",
+        alpha=0.5,         # balanced keyword + semantic
+        recency_bias=0.7,
+        metadata_filters={
+            "ticker":         ticker,
+            "fiscal_year":    fiscal_year,
+            "fiscal_quarter": fiscal_quarter,
+        },
+    )
 
 
 # Usage
@@ -635,9 +617,9 @@ result = query_point_in_time(
     fiscal_year=2023,
     fiscal_quarter=2,
 )
-for chunk in result.get("chunks", [])[:3]:
-    print(f"[{chunk.get('relevancy_score', 0):.2f}] {chunk.get('source_title', '')}")
-    print(chunk.get("chunk_content", "")[:240])
+for chunk in (result.chunks or [])[:3]:
+    print(f"[{chunk.relevancy_score or 0:.2f}] {chunk.source_title or ''}")
+    print((chunk.chunk_content or "")[:240])
 # Output:
 # [0.75] Financial Metrics -- Q2 2023
 # revenue_usd: 9100000  arr_usd: 37200000  gross_margin_pct: 72.8
@@ -651,16 +633,13 @@ For trend questions, **remove the quarter filter** and lower `recency_bias` so H
 
 ```python
 # query/trend_analysis.py
-import requests, uuid, os
+import os, uuid
 from openai import OpenAI
+from hydra_db import HydraDB
 
-BASE_URL      = "https://api.hydradb.com"
-HEADERS       = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID     = "financial-analyst"
 openai_client = OpenAI()
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def query_trend(
     question: str,
@@ -681,24 +660,20 @@ def query_trend(
     if fiscal_year:
         filters["fiscal_year"] = fiscal_year
 
-    recall = requests.post(
-        f"{BASE_URL}/recall/full_recall",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "query":         question,
-            "max_results":   20,    # more results needed to cover all quarters
-            "mode":          "thinking",
-            "alpha":         0.5,
-            "recency_bias":  0.3,   # LOW - surface older documents too
-            "graph_context": True,  # get temporal entity paths
-            "metadata_filters": filters,
-        }
-    ).json()
+    recall = client.recall.full_recall(
+        tenant_id=TENANT_ID,
+        query=question,
+        max_results=20,    # more results needed to cover all quarters
+        mode="thinking",
+        alpha=0.5,
+        recency_bias=0.3,   # LOW - surface older documents too
+        graph_context=True,  # get temporal entity paths
+        metadata_filters=filters,
+    )
 
-    chunks      = recall.get("chunks", [])
-    graph_ctx   = recall.get("graph_context", {})
-    query_paths = graph_ctx.get("query_paths", [])
+    chunks      = recall.chunks or []
+    graph_ctx   = recall.graph_context
+    query_paths = graph_ctx.query_paths if graph_ctx else []
 
     if not chunks:
         return "No relevant context found - verify documents are uploaded and indexed."
@@ -706,18 +681,18 @@ def query_trend(
     # Sort chunks by timestamp so LLM sees them in chronological order
     chunks_sorted = sorted(
         chunks,
-        key=lambda c: c.get("source_upload_time", "") or "",
+        key=lambda c: c.source_upload_time or "",
     )
 
     # Build context with explicit period labels and source attribution
     context_parts = []
     for c in chunks_sorted:
-        meta        = c.get("additional_metadata", {})
+        meta        = c.additional_metadata or {}
         period      = meta.get("period_label", "unknown period")
         doc_type    = meta.get("doc_type", "unknown source")
-        score       = c.get("relevancy_score", 0)
+        score       = c.relevancy_score or 0
         context_parts.append(
-            f"[{period} | {doc_type} | relevance:{score:.2f}]\n{c['chunk_content']}"
+            f"[{period} | {doc_type} | relevance:{score:.2f}]\n{c.chunk_content or ''}"
         )
 
     # Append graph paths - temporal entity relationships
@@ -725,16 +700,12 @@ def query_trend(
         context_parts.append(f"[Graph path - temporal]: {str(path)}")
 
     # Retrieve analyst profile for answer personalization
-    analyst_prefs = requests.post(
-        f"{BASE_URL}/recall/recall_preferences",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "sub_tenant_id": f"analyst-{user_id}",
-            "mode":          "thinking",
-            "query":         "focus area metrics preferences output format",
-        }
-    ).json()
+    analyst_prefs = client.recall.recall_preferences(
+        tenant_id=TENANT_ID,
+        sub_tenant_id=f"analyst-{user_id}",
+        mode="thinking",
+        query="focus area metrics preferences output format",
+    )
 
     context_text = "\n\n".join(context_parts)
 
@@ -798,16 +769,13 @@ This is Priya's use case - reconciling what the CEO said on the earnings call ag
 
 ```python
 # query/cross_source.py
-import requests, uuid, os
+import os, uuid
 from openai import OpenAI
+from hydra_db import HydraDB
 
-BASE_URL      = "https://api.hydradb.com"
-HEADERS       = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID     = "financial-analyst"
 openai_client = OpenAI()
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def cross_source_reconciliation(
     ticker: str,
@@ -824,26 +792,22 @@ def cross_source_reconciliation(
     """
 
     def recall(sub_tenant_id: str, doc_type_filter: str) -> list[dict]:
-        resp = requests.post(
-            f"{BASE_URL}/recall/full_recall",
-            headers=HEADERS,
-            json={
-                "tenant_id":     TENANT_ID,
-                "query":         f"{ticker} {period_label} financial performance",
-                "max_results":   8,
-                "mode":          "thinking",
-                "alpha":         0.5,
-                "recency_bias":  0.7,
-                "graph_context": True,
-                "metadata_filters": {
-                    "ticker":         ticker,
-                    "fiscal_year":    fiscal_year,
-                    "fiscal_quarter": fiscal_quarter,
-                    "doc_type":       doc_type_filter,
-                },
-            }
-        ).json()
-        return resp.get("chunks", [])
+        resp = client.recall.full_recall(
+            tenant_id=TENANT_ID,
+            query=f"{ticker} {period_label} financial performance",
+            max_results=8,
+            mode="thinking",
+            alpha=0.5,
+            recency_bias=0.7,
+            graph_context=True,
+            metadata_filters={
+                "ticker":         ticker,
+                "fiscal_year":    fiscal_year,
+                "fiscal_quarter": fiscal_quarter,
+                "doc_type":       doc_type_filter,
+            },
+        )
+        return resp.chunks or []
 
     transcript_chunks = recall(f"earnings-{ticker.lower()}", "earnings_transcript")
     metrics_chunks    = recall("internal-metrics",            "internal_metrics")
@@ -853,7 +817,7 @@ def cross_source_reconciliation(
         if not chunks:
             return f"[{label}]: No data found for this period."
         return f"[{label}]:\n" + "\n---\n".join(
-            c["chunk_content"] for c in chunks
+            c.chunk_content or "" for c in chunks
         )
 
     context_text = "\n\n".join([
@@ -931,16 +895,13 @@ Track how management's language around a specific topic (e.g. guidance, macro ri
 
 ```python
 # query/guidance_tracking.py
-import requests, os
+import os
 from openai import OpenAI
+from hydra_db import HydraDB
 
-BASE_URL      = "https://api.hydradb.com"
-HEADERS       = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID     = "financial-analyst"
 openai_client = OpenAI()
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def track_narrative_shift(
     ticker: str,
@@ -955,27 +916,23 @@ def track_narrative_shift(
     recency_bias: 0.2 - want even spread across all quarters, oldest to newest.
     alpha: 0.3 - lean keyword for topic-specific terms like "churn", "guidance".
     """
-    recall = requests.post(
-        f"{BASE_URL}/recall/full_recall",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "query":         f"{ticker} management commentary {topic}",
-            "max_results":   n_quarters * 4,   # 4 chunks per quarter
-            "mode":          "thinking",
-            "alpha":         0.3,   # lean keyword for topic specificity
-            "recency_bias":  0.2,   # very even - want full timeline
-            "graph_context": False, # narrative question; graph context less useful here
-            "metadata_filters": {
-                "ticker":   ticker,
-                "doc_type": "earnings_transcript",
-            },
-        }
-    ).json()
+    recall = client.recall.full_recall(
+        tenant_id=TENANT_ID,
+        query=f"{ticker} management commentary {topic}",
+        max_results=n_quarters * 4,   # 4 chunks per quarter
+        mode="thinking",
+        alpha=0.3,   # lean keyword for topic specificity
+        recency_bias=0.2,   # very even - want full timeline
+        graph_context=False, # narrative question; graph context less useful here
+        metadata_filters={
+            "ticker":   ticker,
+            "doc_type": "earnings_transcript",
+        },
+    )
 
     chunks = sorted(
-        recall.get("chunks", []),
-        key=lambda c: c.get("additional_metadata", {}).get("period_end_date", ""),
+        recall.chunks or [],
+        key=lambda c: (c.additional_metadata or {}).get("period_end_date", ""),
     )
 
     if not chunks:
@@ -1045,15 +1002,12 @@ For analyst chat interfaces, use `POST /recall/full_recall` to retrieve chunks, 
 
 ```python
 # query/financial_recall.py
-import requests, uuid, os
+import uuid, os
 from typing import Optional   # Python 3.9 compatible
+from hydra_db import HydraDB
 
-BASE_URL  = "https://api.hydradb.com"
-HEADERS   = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID = "financial-analyst"
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 # Keep app-level sessions for your chat UI or LLM prompt history.
 analyst_sessions: dict[str, str] = {}
@@ -1096,19 +1050,15 @@ def financial_recall(
     if filters:
         payload["metadata_filters"] = filters
 
-    resp = requests.post(
-        f"{BASE_URL}/recall/full_recall", headers=HEADERS, json=payload
-    )
-    resp.raise_for_status()
-    result = resp.json()
+    result = client.recall.full_recall(**payload)
     result["session_id"] = analyst_sessions[user_id]
     return result
 
 
-def context_for_llm(result: dict) -> str:
+def context_for_llm(result) -> str:
     return "\n\n".join(
-        chunk.get("chunk_content", "")
-        for chunk in result.get("chunks", [])
+        chunk.chunk_content or ""
+        for chunk in (result.chunks or [])
     )
 
 
@@ -1133,7 +1083,7 @@ r2 = financial_recall(
     fiscal_year=2023,
     recency_bias=0.3,   # spread across all quarters
 )
-print(f"Chunks: {len(r2.get('chunks', []))}")
+print(f"Chunks: {len(r2.chunks or [])}")
 
 # Cross-doc question - no source filter, let HydraDB find relevant sources
 r3 = financial_recall(
@@ -1181,18 +1131,15 @@ Using sys.path is the simplest fix for a script-based workflow.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import requests, uuid
+import uuid
 from openai import OpenAI
+from hydra_db import HydraDB
 from query.trend_analysis import query_trend
 from query.cross_source import cross_source_reconciliation
 
-BASE_URL      = "https://api.hydradb.com"
-HEADERS       = {
-    "Authorization": f"Bearer {os.environ['HYDRA_DB_API_KEY']}",
-    "Content-Type": "application/json",
-}
 TENANT_ID     = "financial-analyst"
 openai_client = OpenAI()
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def generate_quarterly_briefing(
     ticker: str,
@@ -1214,25 +1161,21 @@ def generate_quarterly_briefing(
 
     # ── 1. This quarter - all sources ────────────────────────────────────
     print("[1/4] Recalling current quarter...")
-    current_q = requests.post(
-        f"{BASE_URL}/recall/full_recall",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "query":         f"{ticker} {period_label} performance revenue margin guidance",
-            "max_results":   15,
-            "mode":          "thinking",
-            "alpha":         0.5,
-            "recency_bias":  0.8,
-            "graph_context": True,
-            "metadata_filters": {
-                "ticker":         ticker,
-                "fiscal_year":    fiscal_year,
-                "fiscal_quarter": fiscal_quarter,
-            },
-        }
-    ).json()
-    current_chunks = current_q.get("chunks", [])
+    current_q = client.recall.full_recall(
+        tenant_id=TENANT_ID,
+        query=f"{ticker} {period_label} performance revenue margin guidance",
+        max_results=15,
+        mode="thinking",
+        alpha=0.5,
+        recency_bias=0.8,
+        graph_context=True,
+        metadata_filters={
+            "ticker":         ticker,
+            "fiscal_year":    fiscal_year,
+            "fiscal_quarter": fiscal_quarter,
+        },
+    )
+    current_chunks = current_q.chunks or []
 
     # ── 2. Prior quarters for trend context ──────────────────────────────
     print("[2/4] Recalling trend data...")
@@ -1262,16 +1205,12 @@ def generate_quarterly_briefing(
     )
 
     # Recall analyst profile
-    analyst_prefs = requests.post(
-        f"{BASE_URL}/recall/recall_preferences",
-        headers=HEADERS,
-        json={
-            "tenant_id":     TENANT_ID,
-            "sub_tenant_id": f"analyst-{analyst_user_id}",
-            "mode":          "thinking",
-            "query":         "coverage focus metrics preferences format",
-        }
-    ).json()
+    analyst_prefs = client.recall.recall_preferences(
+        tenant_id=TENANT_ID,
+        sub_tenant_id=f"analyst-{analyst_user_id}",
+        mode="thinking",
+        query="coverage focus metrics preferences format",
+    )
 
     resp = openai_client.chat.completions.create(
         model="gpt-4o",
@@ -1309,20 +1248,15 @@ def generate_quarterly_briefing(
     briefing_text = resp.choices[0].message.content
 
     # ── 5. Store briefing back to HydraDB ────────────────────────────────
-    store_resp = requests.post(
-        f"{BASE_URL}/memories/add_memory",
-        headers=HEADERS,
-        json={
-            "memories": [{
-                "text":  f"QUARTERLY BRIEFING [{ticker}] [{period_label}] [run:{run_id}]:\n{briefing_text}",
-                "infer": False,   # store verbatim - this is the canonical output
-            }],
-            "tenant_id":     TENANT_ID,
-            "sub_tenant_id": f"analyst-{analyst_user_id}",
-            "upsert":        True,
-        }
+    store_resp = client.upload.add_memory(
+        tenant_id=TENANT_ID,
+        sub_tenant_id=f"analyst-{analyst_user_id}",
+        upsert=True,
+        memories=[{
+            "text":  f"QUARTERLY BRIEFING [{ticker}] [{period_label}] [run:{run_id}]:\n{briefing_text}",
+            "infer": False,   # store verbatim - this is the canonical output
+        }],
     )
-    store_resp.raise_for_status()
 
     print(f"=== Briefing complete [run:{run_id}] ===")
     return briefing_text
@@ -1459,7 +1393,7 @@ Content-Type: multipart/form-data
   "timestamp":    "2023-06-30T00:00:00Z",
   "tenant_id":    "financial-analyst",
   "sub_tenant_id":"earnings-acme",
-  "meta": {
+  "metadata": {
     "ticker":          "ACME",
     "doc_type":        "earnings_transcript",
     "fiscal_year":     2023,
@@ -1477,7 +1411,7 @@ Content-Type: multipart/form-data
 ```bash
 curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -F "file=@ACME_Q2_2023_transcript.pdf" \
+  -F "files=@ACME_Q2_2023_transcript.pdf" \
   -F "tenant_id=financial-analyst" \
   -F "sub_tenant_id=earnings-acme"
 ```
@@ -1485,7 +1419,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
 ### Verify Indexing
 
 ```http
-GET /ingestion/verify_processing?file_ids=FILE_ID&tenant_id=financial-analyst
+POST /ingestion/verify_processing?file_ids=FILE_ID&tenant_id=financial-analyst
 ```
 
 ### Store Metrics / Analyst Memory
@@ -1662,7 +1596,7 @@ Tested across 3 company corpora (4 quarters of earnings transcripts + internal m
 | Too high `recency_bias` for trend queries | Only Q4 results returned for "how did X trend?" | Use `recency_bias: 0.3` for trend questions |
 | Missing `fiscal_quarter` in metadata | "Q2" filter returns all quarters | Add `fiscal_quarter: 2` to `meta` on upload |
 | `file=f` instead of `files=[f]` in SDK | `TypeError` on `upload.knowledge()` | SDK expects a **list**: `files=[f]` not `file=f` |
-| Raw `requests` for PDF upload | 422 error on `/ingestion/upload_knowledge` | Use the SDK: `pip install hydra-db-python` |
+| Raw `requests` for PDF upload | 422 error on `/ingestion/upload_knowledge` | Use the SDK: `pip install hydradb-sdk` |
 | No `verify_processing` call | Queries return empty results silently | Always verify before querying |
 | `infer: false` on analyst profiles | No personalization applied | Leave `infer: true` (the default) for profiles |
 | Empty `chunks` passed to LLM | Confident hallucinations about quarters | Add guard: `if not chunks: return "No data found"` |

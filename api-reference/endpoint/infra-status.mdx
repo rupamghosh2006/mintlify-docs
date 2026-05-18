@@ -65,8 +65,12 @@ status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
 Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
 </Info>
 
+<Info>
+Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
+</Info>
+
 <Note>
-Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
+  Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
 </Note>
 
 ## Polling pattern

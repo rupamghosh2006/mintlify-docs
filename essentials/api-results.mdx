@@ -145,9 +145,15 @@ Then pass the response into the helper below to build a context string:
 <CodeGroup>
 
 ```bash cURL
-# build_context_string is a client-side utility that transforms the JSON
-# returned by /recall/full_recall or /recall/recall_preferences.
-# See the other tabs for the SDK version of this logic.
+# build_context_string is a client-side utility that converts the data
+# returned by /recall/full_recall or /recall/recall_preferences into a
+# formatted context string.
+#
+# The logic remains the same, except that recall objects are now dictionaries
+# instead of JSON objects.
+#
+# SDKs access values using dot notation (result.xyz), whereas API responses
+# use dictionary access (result.get("xyz")).
 ```
 
 ```typescript TypeScript SDK

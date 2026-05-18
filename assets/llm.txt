@@ -39,9 +39,9 @@
 | Find exact phrase | `POST /recall/boolean_recall` (operator: phrase) | [1] Knowledge |
 | Check tenant ready | `GET /tenants/infra/status` | N/A |
 | Verify processing done | `POST /ingestion/verify_processing` | N/A |
-| List all sources | `POST /knowledge/fetch_sources` | N/A |
-| Get source content | `POST /knowledge/fetch_content` | N/A |
-| Delete memories | `POST /memories/delete_memory` | [0] Memories |
+| List all sources | `POST /list/data` (kind: knowledge) | N/A |
+| Get source content | `POST /fetch/content` | N/A |
+| Delete memories | `DELETE /memories/delete_memory` | [0] Memories |
 | Delete knowledge | `POST /knowledge/delete_knowledge` | [1] Knowledge |
 
 ---
@@ -157,20 +157,22 @@ Create isolated workspace (async operation).
 ```json
 {
   "tenant_id": "acme_corp",
-  "tenant_metadata_schema": {
-    "category": {
-      "enabled": true,
-      "type": "str",
+  "tenant_metadata_schema": [
+    {
+      "name": "category",
+      "data_type": "VARCHAR",
       "enable_match": true,
-      "enable_embed": false
+      "enable_dense_embedding": false,
+      "enable_sparse_embedding": false
     },
-    "timestamp": {
-      "enabled": true,
-      "type": "str",
+    {
+      "name": "timestamp",
+      "data_type": "VARCHAR",
       "enable_match": true,
-      "enable_embed": false
+      "enable_dense_embedding": false,
+      "enable_sparse_embedding": false
     }
-  }
+  ]
 }
 ```
 
@@ -254,13 +256,11 @@ GET /tenants/sub_tenant_ids?tenant_id=acme_corp
 
 #### DELETE /tenants/delete
 
-Permanently delete tenant (async operation).
+Permanently delete tenant and all its data. Irreversible.
 
-**Request:**
-```json
-{
-  "tenant_id": "acme_corp"
-}
+**Request (query param):**
+```
+DELETE /tenants/delete?tenant_id=acme_corp
 ```
 
 **Response:**
@@ -376,7 +376,9 @@ Poll indexing status until completed.
 **Status values:**
 - `queued` — Waiting to process
 - `processing` — Currently parsing/chunking/embedding
+- `graph_creation` — Vector indexing done, graph creation still running
 - `completed` — Ready for recall
+- `success` — Alias for completed
 - `errored` — Processing failed
 
 **Typical indexing time:** 30-90 seconds per document
@@ -404,8 +406,8 @@ Store user preferences, conversation history, behavioral traits.
     {
       "user_assistant_pairs": [
         {
-          "user_message": "What's my coffee order?",
-          "assistant_message": "Large oat milk latte with one shot of vanilla"
+          "user": "What's my coffee order?",
+          "assistant": "Large oat milk latte with one shot of vanilla"
         }
       ],
       "infer": true,
@@ -435,56 +437,54 @@ Store user preferences, conversation history, behavioral traits.
 }
 ```
 
-#### POST /memories/list_memories
+#### POST /list/data (kind: "memories")
 
-List all memories for sub-tenant.
-
-**Request:**
-```json
-{
-  "tenant_id": "acme_corp",
-  "sub_tenant_id": "user_alice"
-}
-```
-
-**Response:**
-```json
-{
-  "memories": [
-    {
-      "id": "mem_001",
-      "text": "User prefers dark mode UI setting",
-      "timestamp": "2024-03-15T10:30:00Z",
-      "metadata": { "category": "preference" }
-    }
-  ]
-}
-```
-
-#### POST /memories/delete_memory
-
-Delete specific memories by ID.
+List all memories for a sub-tenant, with pagination.
 
 **Request:**
 ```json
 {
   "tenant_id": "acme_corp",
   "sub_tenant_id": "user_alice",
-  "memory_ids": ["mem_001", "mem_002"]
+  "kind": "memories",
+  "page": 1,
+  "page_size": 50
 }
 ```
 
 **Response:**
 ```json
 {
-  "results": [
-    { "id": "mem_001", "deleted": true },
-    { "id": "mem_002", "deleted": false, "error": "Memory not found" }
-  ]
+  "user_memories": [
+    {
+      "id": "mem_001",
+      "text": "User prefers dark mode UI setting",
+      "timestamp": "2024-03-15T10:30:00Z",
+      "metadata": { "category": "preference" }
+    }
+  ],
+  "pagination": { "page": 1, "page_size": 50, "total": 1, "total_pages": 1, "has_next": false, "has_previous": false }
 }
 ```
 
-**Critical:** Always inspect `results[].deleted` per item — bulk operations can have partial failures.
+#### DELETE /memories/delete_memory
+
+Delete a single memory by ID. Uses query parameters, not a request body.
+
+**Request:**
+```
+DELETE /memories/delete_memory?tenant_id=acme_corp&sub_tenant_id=user_alice&memory_id=mem_001
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "user_memory_deleted": true
+}
+```
+
+**Note:** Deletes one memory per call. Loop over IDs to delete multiple.
 
 ---
 
@@ -515,7 +515,7 @@ Retrieve knowledge (documents) with hybrid semantic + graph + keyword.
 
 - `query` (required) — Natural language query
 - `max_results` (default: 5) — Number of chunks to return
-- `alpha` (default: 0.8, range: 0-1) — Semantic vs keyword balance (1.0 = pure semantic, 0.0 = pure keyword)
+- `alpha` (default: 0.8, range: 0-1 or `"auto"`) — Semantic vs keyword balance (1.0 = pure semantic, 0.0 = pure keyword, `"auto"` = backend chooses)
 - `recency_bias` (default: 0.0, range: 0-1) — Boost recent content (0 = no bias, 1.0 = heavy recency)
 - `mode` (default: "fast") — `"fast"` for speed, `"thinking"` for graph context + forceful relations
 - `graph_context` (default: false) — Include entity relationships in response
@@ -594,8 +594,10 @@ Exact phrase or boolean keyword search.
 ```json
 {
   "tenant_id": "acme_corp",
+  "sub_tenant_id": "team_eng",
   "query": "mechanical engineer",
   "operator": "phrase",
+  "search_mode": "sources",
   "max_results": 10
 }
 ```
@@ -604,6 +606,10 @@ Exact phrase or boolean keyword search.
 - `"phrase"` — Exact phrase match
 - `"and"` — All terms must appear
 - `"or"` — Any term can appear
+
+**`search_mode`:**
+- `"sources"` — Search knowledge sources (default)
+- `"memories"` — Search memories
 
 **Critical:** Do NOT send `alpha`, `mode`, or `graph_context` to boolean_recall — these parameters are invalid for this endpoint.
 
@@ -625,87 +631,77 @@ Exact phrase or boolean keyword search.
 
 ### Knowledge Management
 
-#### POST /knowledge/fetch_sources
+#### POST /list/data (kind: "knowledge")
 
-List all ingested sources with metadata.
+List all ingested sources with metadata and pagination.
 
 **Request:**
 ```json
 {
   "tenant_id": "acme_corp",
-  "sub_tenant_id": "team_eng"
+  "sub_tenant_id": "team_eng",
+  "kind": "knowledge",
+  "page": 1,
+  "page_size": 50
 }
 ```
 
 **Response:**
 ```json
 {
-  "sources": [
+  "data": [
     {
-      "source_id": "doc_001",
-      "source_name": "Deployment Guide.pdf",
-      "chunks_count": 47,
+      "id": "doc_001",
+      "title": "Deployment Guide.pdf",
       "metadata": { "category": "deployment" },
-      "created_at": "2024-03-15T10:30:00Z"
+      "timestamp": "2024-03-15T10:30:00Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
 }
 ```
 
-#### POST /knowledge/fetch_content
+**Optional filters:**
+```json
+{
+  "filters": {
+    "tenant_metadata": { "department": "sales" },
+    "document_metadata": { "author": "Alice" }
+  },
+  "include_fields": ["title", "timestamp", "document_metadata"]
+}
+```
 
-Retrieve raw text chunks from a source.
+#### POST /fetch/content
+
+Retrieve content for a source — raw text, presigned URL, or both.
 
 **Request:**
 ```json
 {
   "tenant_id": "acme_corp",
-  "source_ids": ["doc_001"]
+  "sub_tenant_id": "team_eng",
+  "source_id": "doc_001",
+  "mode": "content"
 }
 ```
 
-**Response:**
-```json
-{
-  "results": [
-    {
-      "source_id": "doc_001",
-      "chunks": [
-        {
-          "chunk_uuid": "chunk_001",
-          "text": "Q4 deployment requires approval...",
-          "metadata": { "category": "deployment" }
-        }
-      ]
-    }
-  ]
-}
+**`mode` values:** `"content"`, `"url"`, `"both"`
+
+#### GET /list/graph_relations_by_id
+
+Get graph relationships for a source (or across the sub-tenant if `source_id` is omitted).
+
+**Request (query params):**
 ```
-
-#### POST /knowledge/fetch_relations
-
-Get graph relationships for entities.
-
-**Request:**
-```json
-{
-  "tenant_id": "acme_corp",
-  "entity_names": ["Security Review", "Tech Lead"]
-}
-```
-
-**Response:**
-```json
-{
-  "relationships": [
-    {
-      "source": "Deployment",
-      "target": "Security Review",
-      "type": "REQUIRES",
-      "chunk_uuids": ["chunk_001", "chunk_002"]
-    }
-  ]
-}
+GET /list/graph_relations_by_id?tenant_id=acme_corp&sub_tenant_id=team_eng&source_id=doc_001&is_memory=false&limit=5000
 ```
 
 #### POST /knowledge/delete_knowledge
@@ -776,59 +772,63 @@ npm install @hydradb/sdk
 import { HydraDBClient } from '@hydradb/sdk';
 
 const client = new HydraDBClient({
-  apiKey: process.env.HYDRA_DB_API_KEY,
-  baseURL: 'https://api.hydradb.com' // optional
+  token: process.env.HYDRA_DB_API_KEY,
+  baseUrl: 'https://api.hydradb.com' // optional
 });
 ```
 
 **Tenants:**
 ```typescript
 // Create tenant
-await client.tenants.create({
+await client.tenant.create({
   tenant_id: 'acme_corp',
-  tenant_metadata_schema: {
-    category: { enabled: true, type: 'str', enable_match: true }
-  }
+  tenant_metadata_schema: [
+    { name: 'category', data_type: 'VARCHAR', enable_match: true, enable_dense_embedding: false, enable_sparse_embedding: false }
+  ]
 });
 
 // Poll status
-const status = await client.tenants.status({ tenant_id: 'acme_corp' });
+const status = await client.tenant.getInfraStatus({ tenant_id: 'acme_corp' });
 
 // Monitor
-const stats = await client.tenants.monitor({ tenant_id: 'acme_corp' });
+const stats = await client.tenant.monitor({ tenant_id: 'acme_corp' });
 
 // Delete
-await client.tenants.delete({ tenant_id: 'acme_corp' });
+await client.tenant.deleteTenant({ tenant_id: 'acme_corp' });
 ```
 
 **Ingestion:**
 ```typescript
 // Upload files
-await client.data.ingest({
+await client.upload.knowledge({
   tenant_id: 'acme_corp',
-  files: [fs.createReadStream('./doc.pdf')],
-  file_metadata: [
+  sub_tenant_id: 'team_eng',
+  files: [{ path: './doc.pdf', filename: 'doc.pdf', contentType: 'application/pdf' }],
+  file_metadata: JSON.stringify([
     { file_id: 'doc_001', metadata: { category: 'legal' } }
-  ]
+  ]),
+  upsert: true,
 });
 
 // Upload app sources
-await client.data.ingest({
+await client.upload.knowledge({
   tenant_id: 'acme_corp',
-  app_knowledge: [
+  sub_tenant_id: 'team_eng',
+  app_knowledge: JSON.stringify([
     {
-      source_id: 'slack_001',
-      source_name: 'Slack: #engineering',
-      knowledge_items: [
-        { text: 'Deployment completed', metadata: { category: 'deployment' } }
-      ]
+      id: 'slack_001',
+      title: 'Slack: #engineering',
+      content: 'Deployment completed',
+      metadata: { category: 'deployment' }
     }
-  ]
+  ]),
+  upsert: true,
 });
 
 // Verify processing
-const status = await client.data.verifyProcessing({
+const status = await client.upload.verifyProcessing({
   tenant_id: 'acme_corp',
+  sub_tenant_id: 'team_eng',
   file_ids: ['doc_001']
 });
 ```
@@ -836,25 +836,27 @@ const status = await client.data.verifyProcessing({
 **Memories:**
 ```typescript
 // Add memories
-await client.memory.add({
+await client.upload.addMemory({
   tenant_id: 'acme_corp',
   sub_tenant_id: 'user_alice',
+  upsert: true,
   memories: [
-    { text: 'Prefers dark mode', infer: true }
+    { source_id: 'mem_001', text: 'Prefers dark mode', infer: true }
   ]
 });
 
 // List memories
-const memories = await client.memory.list({
-  tenant_id: 'acme_corp',
-  sub_tenant_id: 'user_alice'
-});
-
-// Delete memories
-await client.memory.delete({
+const memories = await client.fetch.listData({
   tenant_id: 'acme_corp',
   sub_tenant_id: 'user_alice',
-  memory_ids: ['mem_001']
+  kind: 'memories'
+});
+
+// Delete memory
+await client.upload.deleteMemory({
+  tenant_id: 'acme_corp',
+  sub_tenant_id: 'user_alice',
+  memory_id: 'mem_001'
 });
 ```
 
@@ -863,6 +865,7 @@ await client.memory.delete({
 // Full recall (knowledge)
 const results = await client.recall.fullRecall({
   tenant_id: 'acme_corp',
+  sub_tenant_id: 'team_eng',
   query: 'deployment procedures',
   max_results: 10,
   alpha: 0.8,
@@ -873,7 +876,7 @@ const results = await client.recall.fullRecall({
 });
 
 // Preferences recall (memories)
-const prefs = await client.recall.preferences({
+const prefs = await client.recall.recallPreferences({
   tenant_id: 'acme_corp',
   sub_tenant_id: 'user_alice',
   query: 'communication preferences',
@@ -881,31 +884,39 @@ const prefs = await client.recall.preferences({
 });
 
 // Boolean recall
-const exact = await client.recall.boolean({
+const exact = await client.recall.booleanRecall({
   tenant_id: 'acme_corp',
+  sub_tenant_id: 'team_eng',
   query: 'mechanical engineer',
   operator: 'phrase',
+  search_mode: 'sources',
   max_results: 10
 });
 ```
 
 **Knowledge:**
 ```typescript
-// Fetch sources
-const sources = await client.data.sources({
+// List knowledge sources
+const sources = await client.fetch.listData({
   tenant_id: 'acme_corp',
-  sub_tenant_id: 'team_eng'
+  sub_tenant_id: 'team_eng',
+  kind: 'knowledge',
+  page: 1,
+  page_size: 50
 });
 
 // Fetch content
-const content = await client.data.content({
+const content = await client.fetch.content({
   tenant_id: 'acme_corp',
-  source_ids: ['doc_001']
+  sub_tenant_id: 'team_eng',
+  source_id: 'doc_001',
+  mode: 'content'
 });
 
 // Delete knowledge
 const result = await client.data.delete({
   tenant_id: 'acme_corp',
+  sub_tenant_id: 'team_eng',
   ids: ['doc_001', 'doc_002']
 });
 ```
@@ -919,10 +930,10 @@ pip install hydradb-sdk
 
 **Initialization:**
 ```python
-from hydradb import HydraDBClient
+from hydra_db import HydraDB
 
-client = HydraDBClient(
-    api_key=os.environ['HYDRA_DB_API_KEY'],
+client = HydraDB(
+    token=os.environ['HYDRA_DB_API_KEY'],
     base_url='https://api.hydradb.com'  # optional
 )
 ```
@@ -930,52 +941,59 @@ client = HydraDBClient(
 **Tenants:**
 ```python
 # Create tenant
-client.tenants.create(
+client.tenant.create(
     tenant_id='acme_corp',
     tenant_metadata_schema={
-        'category': {'enabled': True, 'type': 'str', 'enable_match': True}
+        'category': 'string',
+        'timestamp': 'string',
     }
 )
 
 # Poll status
-status = client.tenants.status(tenant_id='acme_corp')
+status = client.tenant.get_infra_status(tenant_id='acme_corp')
 
 # Monitor
-stats = client.tenants.monitor(tenant_id='acme_corp')
+stats = client.tenant.monitor(tenant_id='acme_corp')
 
 # Delete
-client.tenants.delete(tenant_id='acme_corp')
+client.tenant.delete_tenant(tenant_id='acme_corp')
 ```
 
 **Ingestion:**
 ```python
 # Upload files
+import json
+
 with open('doc.pdf', 'rb') as f:
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='acme_corp',
-        files=[f],
-        file_metadata=[
+        sub_tenant_id='team_eng',
+        files=[('doc.pdf', f, 'application/pdf')],
+        file_metadata=json.dumps([
             {'file_id': 'doc_001', 'metadata': {'category': 'legal'}}
-        ]
+        ]),
+        upsert=True,
     )
 
 # Upload app sources
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='acme_corp',
-    app_knowledge=[
+    sub_tenant_id='team_eng',
+    app_knowledge=json.dumps([
         {
-            'source_id': 'slack_001',
-            'source_name': 'Slack: #engineering',
-            'knowledge_items': [
-                {'text': 'Deployment completed', 'metadata': {'category': 'deployment'}}
-            ]
+            'id': 'slack_001',
+            'title': 'Slack: #engineering',
+            'content': 'Deployment completed',
+            'metadata': {'category': 'deployment'},
         }
-    ]
+    ]),
+    upsert=True,
 )
 
 # Verify processing
-status = client.data.verify_processing(
+status = client.upload.verify_processing(
     tenant_id='acme_corp',
+    sub_tenant_id='team_eng',
     file_ids=['doc_001']
 )
 ```
@@ -983,25 +1001,27 @@ status = client.data.verify_processing(
 **Memories:**
 ```python
 # Add memories
-client.memory.add(
+client.upload.add_memory(
     tenant_id='acme_corp',
     sub_tenant_id='user_alice',
+    upsert=True,
     memories=[
-        {'text': 'Prefers dark mode', 'infer': True}
+        {'source_id': 'mem_001', 'text': 'Prefers dark mode', 'infer': True}
     ]
 )
 
 # List memories
-memories = client.memory.list(
-    tenant_id='acme_corp',
-    sub_tenant_id='user_alice'
-)
-
-# Delete memories
-client.memory.delete(
+memories = client.fetch.list_data(
     tenant_id='acme_corp',
     sub_tenant_id='user_alice',
-    memory_ids=['mem_001']
+    kind='memories'
+)
+
+# Delete memory
+client.upload.delete_memory(
+    tenant_id='acme_corp',
+    sub_tenant_id='user_alice',
+    memory_id='mem_001'
 )
 ```
 
@@ -1010,6 +1030,7 @@ client.memory.delete(
 # Full recall (knowledge)
 results = client.recall.full_recall(
     tenant_id='acme_corp',
+    sub_tenant_id='team_eng',
     query='deployment procedures',
     max_results=10,
     alpha=0.8,
@@ -1020,7 +1041,7 @@ results = client.recall.full_recall(
 )
 
 # Preferences recall (memories)
-prefs = client.recall.preferences(
+prefs = client.recall.recall_preferences(
     tenant_id='acme_corp',
     sub_tenant_id='user_alice',
     query='communication preferences',
@@ -1028,38 +1049,194 @@ prefs = client.recall.preferences(
 )
 
 # Boolean recall
-exact = client.recall.boolean(
+exact = client.recall.boolean_recall(
     tenant_id='acme_corp',
+    sub_tenant_id='team_eng',
     query='mechanical engineer',
     operator='phrase',
+    search_mode='sources',
     max_results=10
 )
 ```
 
 **Knowledge:**
 ```python
-# Fetch sources
-sources = client.data.sources(
+# List knowledge sources
+sources = client.fetch.list_data(
     tenant_id='acme_corp',
-    sub_tenant_id='team_eng'
+    sub_tenant_id='team_eng',
+    kind='knowledge',
+    page=1,
+    page_size=50
 )
 
 # Fetch content
-content = client.data.content(
+content = client.fetch.content(
     tenant_id='acme_corp',
-    source_ids=['doc_001']
+    sub_tenant_id='team_eng',
+    source_id='doc_001',
+    mode='content'
 )
 
 # Delete knowledge
 result = client.data.delete(
     tenant_id='acme_corp',
+    sub_tenant_id='team_eng',
     ids=['doc_001', 'doc_002']
 )
 ```
 
 ---
 
-## Plugins
+### SDK Method Reference
+
+#### TypeScript
+
+| SDK method | API path | Description |
+|---|---|---|
+| `client.tenant.create()` | `POST /tenants/create` | Create a standard or embeddings tenant |
+| `client.tenant.getSubTenantIds()` | `GET /tenants/sub_tenant_ids` | List sub-tenant IDs |
+| `client.tenant.getTenantIds()` | `GET /tenants/tenant_ids` | List tenant IDs |
+| `client.tenant.getInfraStatus()` | `GET /tenants/infra/status` | Check tenant infrastructure |
+| `client.tenant.monitor()` | `GET /tenants/monitor` | Get tenant stats |
+| `client.tenant.deleteTenant()` | `DELETE /tenants/delete` | Delete a tenant |
+| `client.upload.knowledge()` | `POST /ingestion/upload_knowledge` | Upload files or app knowledge |
+| `client.upload.verifyProcessing()` | `POST /ingestion/verify_processing` | Check ingestion status |
+| `client.upload.addMemory()` | `POST /memories/add_memory` | Add memories |
+| `client.upload.deleteMemory()` | `DELETE /memories/delete_memory` | Delete one memory |
+| `client.recall.fullRecall()` | `POST /recall/full_recall` | Hybrid semantic and keyword recall |
+| `client.recall.recallPreferences()` | `POST /recall/recall_preferences` | Search preferences/memories |
+| `client.recall.booleanRecall()` | `POST /recall/boolean_recall` | Boolean/BM25 recall |
+| `client.fetch.listData()` | `POST /list/data` | List knowledge or memories |
+| `client.fetch.content()` | `POST /fetch/content` | Fetch source content or URL |
+| `client.fetch.graphRelationsBySourceId()` | `GET /list/graph_relations_by_id` | Fetch graph relations |
+| `client.data.delete()` | `POST /knowledge/delete_knowledge` | Delete sources |
+| `client.graphHealth.getSuperNodes()` | `GET /graph-health/super-nodes` | Fetch high-degree graph nodes |
+| `client.embeddings.insert()` | `POST /embeddings/insert_raw_embeddings` | Insert raw embeddings |
+| `client.embeddings.search()` | `POST /embeddings/search_raw_embeddings` | Search raw embeddings |
+| `client.embeddings.filter()` | `POST /embeddings/filter_raw_embeddings` | Filter raw embeddings |
+| `client.embeddings.delete()` | `DELETE /embeddings/delete_raw_embeddings` | Delete raw embeddings |
+| `client.key.createApiKey()` | `POST /api-keys/create_api_key` | Create API key |
+| `client.passthroughFetch()` | any path | Authenticated passthrough request |
+
+#### Python
+
+| Group | Method | Description |
+|---|---|---|
+| Tenant | `client.tenant.create` | Create a standard or embeddings tenant |
+| Tenant | `client.tenant.get_tenant_ids` | List tenant IDs |
+| Tenant | `client.tenant.get_sub_tenant_ids` | List sub-tenant IDs |
+| Tenant | `client.tenant.get_infra_status` | Check tenant infrastructure status |
+| Tenant | `client.tenant.monitor` | Get tenant stats |
+| Tenant | `client.tenant.delete_tenant` | Delete a tenant |
+| Upload | `client.upload.knowledge` | Upload files or app-generated knowledge |
+| Upload | `client.upload.verify_processing` | Check ingestion status |
+| Upload | `client.upload.add_memory` | Add text, markdown, or conversation memories |
+| Upload | `client.upload.delete_memory` | Delete a single memory by ID |
+| Recall | `client.recall.full_recall` | Search knowledge sources |
+| Recall | `client.recall.recall_preferences` | Search memories/preferences |
+| Recall | `client.recall.boolean_recall` | Keyword/BM25 search |
+| Fetch | `client.fetch.list_data` | List knowledge or memories |
+| Fetch | `client.fetch.content` | Fetch source content or URL |
+| Fetch | `client.fetch.graph_relations_by_source_id` | Fetch source graph relations |
+| Data | `client.data.delete` | Delete one or more source IDs |
+| Embeddings | `client.embeddings.insert` | Insert raw embedding vectors |
+| Embeddings | `client.embeddings.search` | Search raw embedding vectors |
+| Embeddings | `client.embeddings.filter` | Filter raw embeddings by source/chunk IDs |
+| Embeddings | `client.embeddings.delete` | Delete raw embeddings |
+| Graph health | `client.graph_health.get_super_nodes` | Fetch graph super nodes |
+| Pipeline | `client.ingestion_pipeline.ingest_memory` | Direct ingestion pipeline memory helper |
+| Key | `client.key.create_api_key` | Create an API key |
+
+### Raw Embeddings (BYO Vectors)
+
+Requires a tenant created with `is_embeddings_tenant: true` and a fixed `embeddings_dimension`.
+
+**TypeScript:**
+```typescript
+// Insert
+await client.embeddings.insert({
+  tenant_id: 'my-embeddings-tenant',
+  sub_tenant_id: SUB_TENANT_ID,
+  upsert: true,
+  embeddings: [
+    {
+      source_id: 'doc_001',
+      metadata: { category: 'finance' },
+      embeddings: [{ chunk_id: 'doc_001_chunk_0', embedding: [0.1, 0.2, 0.3] }]
+    }
+  ]
+});
+
+// Search
+const results = await client.embeddings.search({
+  tenant_id: 'my-embeddings-tenant',
+  sub_tenant_id: SUB_TENANT_ID,
+  query_embedding: [0.1, 0.2, 0.3],
+  limit: 10
+});
+
+// Delete
+await client.embeddings.delete({
+  tenant_id: 'my-embeddings-tenant',
+  sub_tenant_id: SUB_TENANT_ID,
+  source_id: 'doc_001'
+});
+```
+
+**Python:**
+```python
+# Insert
+client.embeddings.insert(
+    tenant_id='my-embeddings-tenant',
+    sub_tenant_id=SUB_TENANT_ID,
+    upsert=True,
+    embeddings=[
+        {
+            'source_id': 'raw-doc-001',
+            'metadata': {'category': 'finance'},
+            'embeddings': [
+                {'chunk_id': 'raw-doc-001-chunk-0', 'embedding': [0.1, 0.2, 0.3]}
+            ]
+        }
+    ]
+)
+
+# Search
+results = client.embeddings.search(
+    tenant_id='my-embeddings-tenant',
+    sub_tenant_id=SUB_TENANT_ID,
+    query_embedding=[0.1, 0.2, 0.3],
+    limit=10
+)
+
+# Delete
+client.embeddings.delete(
+    tenant_id='my-embeddings-tenant',
+    sub_tenant_id=SUB_TENANT_ID,
+    source_id='raw-doc-001'
+)
+```
+
+### Async Python Client
+
+```python
+import asyncio
+from hydra_db import AsyncHydraDB
+
+async def main():
+    client = AsyncHydraDB(token=os.environ['HYDRA_DB_API_KEY'])
+    results = await client.recall.full_recall(
+        tenant_id='acme_corp',
+        sub_tenant_id='user_alice',
+        query='deployment procedures',
+        max_results=10,
+        alpha='auto'
+    )
+    print(results.chunks)
+
+asyncio.run(main())
+```
 
 ### HydraDB CLI
 
@@ -1296,10 +1473,10 @@ npx -y @hydradb/mcp@0.0.1  # Requires Node 18+
 | `hydra_db_search` | Query memories | `POST /recall/recall_preferences` |
 | `hydra_db_store` | Add memory with inference/upsert | `POST /memories/add_memory` |
 | `hydra_db_ingest_conversation` | Store user-assistant pairs | `POST /memories/add_memory` |
-| `hydra_db_list_memories` | List all memories | `POST /memories/list_memories` |
-| `hydra_db_list_sources` | List knowledge sources | `POST /knowledge/fetch_sources` |
-| `hydra_db_delete_memory` | Delete memory by ID | `POST /memories/delete_memory` |
-| `hydra_db_fetch_content` | Get source content | `POST /knowledge/fetch_content` |
+| `hydra_db_list_memories` | List all memories | `POST /list/data (kind: memories)` |
+| `hydra_db_list_sources` | List knowledge sources | `POST /list/data (kind: knowledge)` |
+| `hydra_db_delete_memory` | Delete memory by ID | `DELETE /memories/delete_memory` |
+| `hydra_db_fetch_content` | Get source content | `POST /fetch/content` |
 
 **Environment Variables:**
 - `HYDRA_DB_API_KEY` (required)
@@ -1420,7 +1597,7 @@ Graph relationships:
 ### Hybrid Boolean + Semantic
 ```python
 # Run both in parallel
-boolean_results = client.recall.boolean(
+boolean_results = client.recall.boolean_recall(
     tenant_id='acme_corp',
     query='senior software engineer',
     operator='phrase'
@@ -1516,7 +1693,7 @@ sources = {
 }
 
 for source_type, items in sources.items():
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='enterprise',
         app_knowledge=[{
             'source_id': f'{source_type}_{item.id}',
@@ -1567,7 +1744,7 @@ for result in results:
 ```python
 # Ingest candidate profiles
 for candidate in candidates:
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='recruiting',
         app_knowledge=[{
             'source_id': f'candidate_{candidate.id}',
@@ -1613,7 +1790,7 @@ qualified = [r for r in results if int(r['metadata']['years_experience']) >= 5]
 **Implementation:**
 ```python
 # Store user context
-client.memory.add(
+client.upload.add_memory(
     tenant_id='support',
     sub_tenant_id=f'user_{user.id}',
     memories=[
@@ -1624,7 +1801,7 @@ client.memory.add(
 )
 
 # Store conversation with inference
-client.memory.add(
+client.upload.add_memory(
     tenant_id='support',
     sub_tenant_id=f'user_{user.id}',
     memories=[{
@@ -1637,7 +1814,7 @@ client.memory.add(
 )
 
 # Recall user context + knowledge base
-user_context = client.recall.preferences(
+user_context = client.recall.recall_preferences(
     tenant_id='support',
     sub_tenant_id=f'user_{user.id}',
     query=user_message,
@@ -1672,7 +1849,7 @@ context = user_context['results'] + knowledge['results']
 # Ingest codebase
 for file_path in codebase_files:
     with open(file_path, 'r') as f:
-        client.data.ingest(
+        client.upload.knowledge(
             tenant_id='codebase',
             app_knowledge=[{
                 'source_id': file_path,
@@ -1690,7 +1867,7 @@ for file_path in codebase_files:
 
 # Ingest PRs
 for pr in pull_requests:
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='codebase',
         app_knowledge=[{
             'source_id': f'pr_{pr.number}',
@@ -1738,7 +1915,7 @@ results = client.recall.full_recall(
 ```python
 # Ingest quarterly reports
 for quarter in quarters:
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='finance',
         app_knowledge=[{
             'source_id': f'earnings_{quarter.year}_q{quarter.quarter}',
@@ -1822,19 +1999,19 @@ curl -H "Authorization: Bearer $API_KEY" https://api.hydradb.com/tenants/monitor
 **Fix:**
 ```python
 # Create tenant
-client.tenants.create(tenant_id='acme_corp')
+client.tenant.create(tenant_id='acme_corp')
 
 # Poll until ready
 import time
 while True:
-    status = client.tenants.status(tenant_id='acme_corp')
+    status = client.tenant.get_infra_status(tenant_id='acme_corp')
     if (status['graph_status'] and 
         status['vectorstore_status'] == [True, True]):
         break
     time.sleep(2)
 
 # Now safe to ingest
-client.data.ingest(...)
+client.upload.knowledge(...)
 ```
 
 ### 422 on Ingestion
@@ -1879,7 +2056,7 @@ app_knowledge = json.dumps([{'source_id': 'slack_001', ...}])
 
 1. **Content still processing:**
 ```python
-status = client.data.verify_processing(
+status = client.upload.verify_processing(
     tenant_id='acme_corp',
     file_ids=['doc_001']
 )
@@ -1892,13 +2069,13 @@ status = client.data.verify_processing(
 client.recall.full_recall(sub_tenant_id='user_alice', query='preferences')
 
 # CORRECT: Use recall_preferences for memories
-client.recall.preferences(sub_tenant_id='user_alice', query='preferences')
+client.recall.recall_preferences(sub_tenant_id='user_alice', query='preferences')
 ```
 
 3. **Wrong sub_tenant_id:**
 ```python
 # Write with sub_tenant_id
-client.data.ingest(sub_tenant_id='team_eng', ...)
+client.upload.knowledge(sub_tenant_id='team_eng', ...)
 
 # Read with SAME sub_tenant_id
 client.recall.full_recall(sub_tenant_id='team_eng', ...)
@@ -1926,10 +2103,10 @@ results = client.recall.full_recall(
 ```python
 # INEFFICIENT: Loop with individual calls
 for memory in memories:
-    client.memory.add(memories=[memory])
+    client.upload.add_memory(memories=[memory])
 
 # EFFICIENT: Single bulk call
-client.memory.add(memories=memories)
+client.upload.add_memory(memories=memories)
 ```
 
 2. **Implement exponential backoff:**
@@ -1972,21 +2149,21 @@ def cached_recall(query):
 tenant_id = 'acme_corp'
 
 # Shared company knowledge (no sub_tenant_id)
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='acme_corp',
     # sub_tenant_id omitted
     files=[company_handbook]
 )
 
 # Team-specific data
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='acme_corp',
     sub_tenant_id='team_engineering',
     files=[tech_docs]
 )
 
 # User-specific memories
-client.memory.add(
+client.upload.add_memory(
     tenant_id='acme_corp',
     sub_tenant_id='user_alice',
     memories=[{'text': 'Prefers TypeScript'}]
@@ -2007,7 +2184,7 @@ client.memory.add(
 tenant_id = 'my_app'
 
 # Shared knowledge for all users
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='my_app',
     app_knowledge=[{
         'source_id': 'faq',
@@ -2018,7 +2195,7 @@ client.data.ingest(
 
 # User-specific memories
 for user in users:
-    client.memory.add(
+    client.upload.add_memory(
         tenant_id='my_app',
         sub_tenant_id=f'user_{user.id}',
         memories=[
@@ -2041,13 +2218,13 @@ for user in users:
 tenant_id = 'internal'
 
 # Department-specific data
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='internal',
     sub_tenant_id='dept_engineering',
     files=[tech_specs]
 )
 
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='internal',
     sub_tenant_id='dept_finance',
     files=[financial_reports]
@@ -2109,14 +2286,14 @@ results = client.recall.full_recall(
 **Setup:**
 ```python
 # Create embeddings tenant
-client.tenants.create(
+client.tenant.create(
     tenant_id='byo_embeddings',
     is_embeddings_tenant=True,
     embeddings_dimension=1536  # Match your model dimension
 )
 
 # Ingest with pre-computed vectors
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='byo_embeddings',
     app_knowledge=[{
         'source_id': 'doc_001',
@@ -2149,7 +2326,7 @@ def custom_chunk(document):
 chunks = custom_chunk(document)
 
 # Ingest pre-chunked content
-client.data.ingest(
+client.upload.knowledge(
     tenant_id='custom_chunks',
     app_knowledge=[{
         'source_id': 'doc_001',
@@ -2171,7 +2348,7 @@ client.data.ingest(
 import asyncio
 
 async def multi_index_recall(tenant_id, sub_tenant_id, query):
-    memories = await client.recall.preferences(
+    memories = await client.recall.recall_preferences(
         tenant_id=tenant_id,
         sub_tenant_id=sub_tenant_id,
         query=query,
@@ -2204,7 +2381,7 @@ batch_size = 50
 for i in range(0, len(files), batch_size):
     batch = files[i:i+batch_size]
     
-    client.data.ingest(
+    client.upload.knowledge(
         tenant_id='batch_ingest',
         files=batch,
         file_metadata=[
@@ -2227,7 +2404,7 @@ for i in range(0, len(files), batch_size):
 **Pattern:**
 ```python
 # Add timestamp to metadata schema
-client.tenants.create(
+client.tenant.create(
     tenant_id='temporal',
     tenant_metadata_schema={
         'timestamp': {

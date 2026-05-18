@@ -332,18 +332,18 @@ def _format_path_chain(path: Any) -> str:
     return "\n  ↳ ".join(parts)
 
 
-def build_context_string(result: dict[str, Any]) -> str:
+def build_context_string(result) -> str:
     """
-    Build a formatted context string from a HydraDB full_recall response dict.
+    Build a formatted context string from a HydraDB full_recall response.
 
     Combines entity paths, chunk content, graph relations, and extra context
     into a single readable string ready to pass into an LLM prompt.
     """
     lines: list[str] = []
-    gc: dict[str, Any] = result.get("graph_context") or {}
+    gc = result.graph_context
 
     # --- Entity paths -----------------------------------------------------------
-    query_paths = gc.get("query_paths") or []
+    query_paths = gc.query_paths if gc else []
     if query_paths:
         lines.append("=== ENTITY PATHS ===")
         for path in query_paths:
@@ -351,22 +351,22 @@ def build_context_string(result: dict[str, Any]) -> str:
         lines.append("")
 
     # --- Chunks -----------------------------------------------------------------
-    chunks: list[dict[str, Any]] = result.get("chunks") or []
-    additional_context: dict[str, Any] = result.get("additional_context") or {}
-    chunk_id_to_group_ids: dict[str, list[str]] = gc.get("chunk_id_to_group_ids") or {}
-    chunk_relations: list[dict[str, Any]] = gc.get("chunk_relations") or []
+    chunks = result.chunks or []
+    additional_context = result.additional_context or {}
+    chunk_id_to_group_ids = gc.chunk_id_to_group_ids if gc else {}
+    chunk_relations = gc.chunk_relations if gc else []
 
     if chunks:
         lines.append("=== CONTEXT ===")
         for i, chunk in enumerate(chunks):
             lines.append(f"Chunk {i + 1}")
-            source = chunk.get("source_title") or chunk.get("source") or ""
+            source = chunk.source_title or ""
             if source:
                 lines.append(f"Source: {source}")
-            lines.append(chunk.get("chunk_content") or chunk.get("content") or "")
+            lines.append(chunk.chunk_content or "")
 
             # Graph relations for this chunk
-            chunk_uuid = chunk.get("chunk_uuid") or chunk.get("id") or ""
+            chunk_uuid = chunk.chunk_uuid or ""
             if chunk_uuid and chunk_id_to_group_ids and chunk_relations:
                 group_ids = chunk_id_to_group_ids.get(chunk_uuid, [])
                 relevant_relations = [
@@ -376,20 +376,19 @@ def build_context_string(result: dict[str, Any]) -> str:
                 if relevant_relations:
                     lines.append("Graph Relations:")
                     for rel in relevant_relations:
-                        for triplet in rel.get("triplets") or []:
-                            src  = (triplet.get("source") or {}).get("name", "")
-                            tgt  = (triplet.get("target") or {}).get("name", "")
-                            rel_ = triplet.get("relation") or {}
-                            pred = rel_.get("canonical_predicate", "")
-                            ctx  = rel_.get("context", "")
+                        for triplet in (rel.triplets or []):
+                            src  = triplet.source.name if triplet.source else ""
+                            tgt  = triplet.target.name if triplet.target else ""
+                            pred = triplet.relation.canonical_predicate if triplet.relation else ""
+                            ctx  = triplet.relation.context if triplet.relation else ""
                             line = f"  [{src}] -> {pred} -> [{tgt}]: {ctx}"
-                            temporal = rel_.get("temporal_details")
+                            temporal = triplet.relation.temporal_details if triplet.relation else None
                             if temporal:
                                 line += f" [Time: {temporal}]"
                             lines.append(line)
 
             # Extra context
-            extra_ids = chunk.get("extra_context_ids") or []
+            extra_ids = getattr(chunk, "extra_context_ids", None) or []
             if extra_ids and additional_context:
                 extras = [
                     additional_context[eid]
@@ -399,8 +398,8 @@ def build_context_string(result: dict[str, Any]) -> str:
                 if extras:
                     lines.append("Extra Context:")
                     for extra in extras:
-                        extra_source = extra.get("source_title", "")
-                        extra_content = extra.get("chunk_content") or extra.get("content", "")
+                        extra_source = extra.source_title or ""
+                        extra_content = extra.chunk_content or ""
                         lines.append(f"  Related Context ({extra_source}): {extra_content}")
 
             lines.append("---")

@@ -654,16 +654,16 @@ def search_with_memory(query: str, tenant_id: str, user_id: str):
     profile["search_history"].append({
         "query": query,
         "timestamp": datetime.utcnow().isoformat(),
-        "result_count": len(search_results.get("chunks", []))
+        "result_count": len(search_results.chunks or [])
     })
     profile["search_history"] = profile["search_history"][-50:]
 
     if not any(query.lower() in q.lower() for q in profile["frequent_queries"]):
         profile["frequent_queries"] = ([query] + profile["frequent_queries"])[:10]
 
-    for chunk in search_results.get("chunks", []):
-        if chunk.get("source") and chunk["source"] not in profile["favorite_sources"]:
-            profile["favorite_sources"].append(chunk["source"])
+    for chunk in (search_results.chunks or []):
+        if chunk.source_title and chunk.source_title not in profile["favorite_sources"]:
+            profile["favorite_sources"].append(chunk.source_title)
     profile["favorite_sources"] = profile["favorite_sources"][:5]
 
     profile["last_interaction"] = datetime.utcnow().isoformat()

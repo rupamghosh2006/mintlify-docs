@@ -712,17 +712,17 @@ def handle_ticket(
     """
     # Step 1: Recall
     context_data = recall_customer_context(customer_id, customer_msg)
-    chunks       = context_data.get("chunks", [])
-    graph_ctx    = context_data.get("graph_context", {})
+    chunks       = context_data.chunks or []
+    graph_ctx    = context_data.graph_context
 
     # Build context string for the LLM - ranked chunks, most useful first
     context_text = "\n\n".join(
-        f"[{c['source_title']} | score:{c.get('relevancy_score', 0):.2f}]\n{c['chunk_content']}"
+        f"[{c.source_title or ''} | score:{c.relevancy_score or 0:.2f}]\n{c.chunk_content or ''}"
         for c in chunks
     )
 
     # Include entity relationship paths if available
-    entity_paths = graph_ctx.get("query_paths", [])
+    entity_paths = graph_ctx.query_paths if graph_ctx else []
     entity_text  = "\n".join(str(p) for p in entity_paths[:3])
 
     # Step 2: Generate response
@@ -862,9 +862,9 @@ def escalate_to_human(
         "customer_profile": customer_profile,
         "similar_resolutions": [
             {
-                "source":     t["source_title"],
-                "resolution": t["chunk_content"][:500],
-                "score":      t.get("relevancy_score", 0),
+                "source":     t.source_title or "",
+                "resolution": (t.chunk_content or "")[:500],
+                "score":      t.relevancy_score or 0,
             }
             for t in similar_tickets
         ],

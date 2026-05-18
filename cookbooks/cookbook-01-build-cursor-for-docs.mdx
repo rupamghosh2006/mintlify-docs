@@ -101,10 +101,10 @@ def _poll_until_ready(timeout=180, interval=4):
     deadline = time.time() + timeout
     while time.time() < deadline:
         status = client.tenant.get_infra_status(tenant_id=TENANT_ID)
-        s = status.infra
-        if   s == "ready":  print("✓ Tenant ready."); return
-        elif s == "failed": raise RuntimeError(f"Provisioning failed: {status}")
-        print(f"  status={s} - retrying in {interval}s")
+        infra = status.infra
+        if infra.scheduler_status and infra.graph_status and all(infra.vectorstore_status):
+            print("✓ Tenant ready."); return
+        print(f"  scheduler={infra.scheduler_status} graph={infra.graph_status} vectorstore={infra.vectorstore_status} - retrying in {interval}s")
         time.sleep(interval)
     raise TimeoutError("Tenant not ready within 180s")
 
@@ -120,7 +120,7 @@ python3 phase0/create_tenant.py
 ```
 Accepted: {'tenant_id': 'engineering-docs', 'status': 'accepted', 'message': 'Tenant accepted. Poll /tenants/infra/status for readiness.'}
 Polling for readiness...
-  status=provisioning - retrying in 4s
+  scheduler=False graph=False vectorstore=[False, False] - retrying in 4s
 ✓ Tenant ready.
 ```
 
@@ -514,8 +514,8 @@ def build_context(chunks: list, min_score: float = 0.5) -> tuple[str, list]:
         if not chunk_content or uid in seen: continue
         seen.add(uid)
         addl = chunk.additional_metadata
-        doc_type = addl.doc_type if addl is not None else "doc"
-        title    = chunk.title or "untitled"
+        doc_type = (addl or {}).get("doc_type", "doc")
+        title    = chunk.source_title or "untitled"
         parts.append(f"[{doc_type.upper()}] {title}\n{chunk_content}")
         sources.append({"title": title, "url": chunk.url,
                          "relevancy_score": chunk.relevancy_score,
@@ -956,7 +956,7 @@ def recall_context(query: str, max_results: int = 10):
     )
 
 
-def build_context_block(recall_payload: dict) -> str:
+def build_context_block(recall_payload) -> str:
     """
     Extract chunk_content from each chunk and assemble the LLM context string.
 
@@ -1115,7 +1115,8 @@ async def chat(body: dict):
 
     async def stream():
         # Emit sources first so the client can render citations immediately
-        yield json.dumps({"sources": recall_payload.sources or []}) + "\n"
+        sources_list = [{"title": s.title, "source_id": s.id} for s in (recall_payload.sources or [])]
+        yield json.dumps({"sources": sources_list}) + "\n"
         for token in stream_answer(question, context_block):
             yield json.dumps({"text": token}) + "\n"
 
@@ -1139,9 +1140,10 @@ def ask(body: dict):
 
     return {
         "answer":        full_answer,
-        "sources":       recall_payload.sources or [],
-        "chunks":        recall_payload.chunks or [],
-        "graph_context": recall_payload.graph_context or {},
+        "sources":       [{"title": s.title, "source_id": s.id} for s in (recall_payload.sources or [])],
+        "chunks":        [{"chunk_content": c.chunk_content, "relevancy_score": c.relevancy_score,
+                           "source_title": c.source_title} for c in (recall_payload.chunks or [])],
+        "graph_context": None,
     }
 ```
 

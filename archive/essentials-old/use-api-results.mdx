@@ -124,7 +124,7 @@ def build_context_string(result: dict[str, Any]) -> str:
     into a single readable string ready to pass into an LLM prompt.
     """
     lines: list[str] = []
-    gc: dict[str, Any] = result.get("graph_context") or {}
+    gc: dict[str, Any] = result.graph_context or {}
 
     # --- Entity paths -----------------------------------------------------------
     query_paths = gc.get("query_paths") or []
@@ -135,8 +135,8 @@ def build_context_string(result: dict[str, Any]) -> str:
         lines.append("")
 
     # --- Chunks -----------------------------------------------------------------
-    chunks: list[dict[str, Any]] = result.get("chunks") or []
-    additional_context: dict[str, Any] = result.get("additional_context") or {}
+    chunks: list[dict[str, Any]] = result.chunks or []
+    additional_context: dict[str, Any] = result.additional_context or {}
     chunk_id_to_group_ids: dict[str, list[str]] = gc.get("chunk_id_to_group_ids") or {}
     chunk_relations: list[dict[str, Any]] = gc.get("chunk_relations") or []
 

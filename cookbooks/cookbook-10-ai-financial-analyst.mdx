@@ -617,9 +617,9 @@ result = query_point_in_time(
     fiscal_year=2023,
     fiscal_quarter=2,
 )
-for chunk in result.get("chunks", [])[:3]:
-    print(f"[{chunk.get('relevancy_score', 0):.2f}] {chunk.get('source_title', '')}")
-    print(chunk.get("chunk_content", "")[:240])
+for chunk in (result.chunks or [])[:3]:
+    print(f"[{chunk.relevancy_score or 0:.2f}] {chunk.source_title or ''}")
+    print((chunk.chunk_content or "")[:240])
 # Output:
 # [0.75] Financial Metrics -- Q2 2023
 # revenue_usd: 9100000  arr_usd: 37200000  gross_margin_pct: 72.8
@@ -672,8 +672,8 @@ def query_trend(
     )
 
     chunks      = recall.chunks or []
-    graph_ctx   = recall.graph_context or {}
-    query_paths = graph_ctx.get("query_paths", [])
+    graph_ctx   = recall.graph_context
+    query_paths = graph_ctx.query_paths if graph_ctx else []
 
     if not chunks:
         return "No relevant context found - verify documents are uploaded and indexed."
@@ -687,12 +687,12 @@ def query_trend(
     # Build context with explicit period labels and source attribution
     context_parts = []
     for c in chunks_sorted:
-        meta        = c.get("additional_metadata", {})
+        meta        = c.additional_metadata or {}
         period      = meta.get("period_label", "unknown period")
         doc_type    = meta.get("doc_type", "unknown source")
-        score       = c.get("relevancy_score", 0)
+        score       = c.relevancy_score or 0
         context_parts.append(
-            f"[{period} | {doc_type} | relevance:{score:.2f}]\n{c['chunk_content']}"
+            f"[{period} | {doc_type} | relevance:{score:.2f}]\n{c.chunk_content or ''}"
         )
 
     # Append graph paths - temporal entity relationships
@@ -817,7 +817,7 @@ def cross_source_reconciliation(
         if not chunks:
             return f"[{label}]: No data found for this period."
         return f"[{label}]:\n" + "\n---\n".join(
-            c["chunk_content"] for c in chunks
+            c.chunk_content or "" for c in chunks
         )
 
     context_text = "\n\n".join([
@@ -1055,10 +1055,10 @@ def financial_recall(
     return result
 
 
-def context_for_llm(result: dict) -> str:
+def context_for_llm(result) -> str:
     return "\n\n".join(
-        chunk.get("chunk_content", "")
-        for chunk in result.get("chunks", [])
+        chunk.chunk_content or ""
+        for chunk in (result.chunks or [])
     )
 
 
@@ -1083,7 +1083,7 @@ r2 = financial_recall(
     fiscal_year=2023,
     recency_bias=0.3,   # spread across all quarters
 )
-print(f"Chunks: {len(r2.get('chunks', []))}")
+print(f"Chunks: {len(r2.chunks or [])}")
 
 # Cross-doc question - no source filter, let HydraDB find relevant sources
 r3 = financial_recall(

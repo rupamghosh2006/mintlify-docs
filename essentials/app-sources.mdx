@@ -15,7 +15,7 @@ Use app sources when you already know the item's text and structured fields. Hyd
 
 - [Ingest app sources](#ingest-app-sources): what to send, which fields to use, and how to model IDs.
 - [How app sources affect search](#how-app-sources-affect-search): what HydraDB does with those fields during Recall.
-- [TL;DR field reference](#tldr-field-reference): all allowed app-source fields, when to use them, and how they affect ingestion/search.
+- [TLDR field reference](#tldr-field-reference): all allowed app-source fields, when to use them, and how they affect ingestion and search.
 
 ## The mental model
 
@@ -511,7 +511,7 @@ At ingestion time, HydraDB derives:
 
 At search time, `search_apps: true` lets queries like "what is blocking the release?", "children of AUTH-100", or "tickets linked to AUTH-123" use those graph edges and IDs instead of relying only on text similarity.
 
-## TL;DR field reference {#tldr-field-reference}
+## TLDR field reference
 
 Use this as the compact contract for app-source ingestion. The `fields.kind` value must match the top-level `kind` when you provide typed fields.
 

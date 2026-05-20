@@ -9,7 +9,7 @@ openapi: "POST /ingestion/upload_knowledge"
 Use this endpoint to add knowledge that your agents will recall later:
 
 - **Files** – PDFs, DOCX, Markdown, CSVs, and other documents you want HydraDB to parse and chunk
-- **App knowledge** – structured content from connected apps (Slack messages, Notion pages, Gmail threads, etc.) where you already have the text and metadata, sent as the `app_knowledge` multipart field (JSON string)
+- **App knowledge** – structured content from connected apps (Slack messages, Notion pages, Gmail threads, tickets, CRM records, etc.) where you already have the text, IDs, metadata, and relations, sent as the `app_knowledge` multipart field (JSON string)
 
 For user-specific context (preferences, conversations), use [`POST /memories/add_memory`](/api-reference/endpoint/add-memory) instead.
 
@@ -96,8 +96,22 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
       "url": "https://acme.slack.com/archives/C01/p1234567890",
       "timestamp": "2025-10-15T14:30:00Z",
       "content": { "text": "Today we discussed the Q4 roadmap..." },
-      "metadata": { "category": "engineering" },
-      "additional_metadata": { "channel": "#planning", "author": "alex" }
+      "kind": "message",
+      "provider": "slack",
+      "external_id": "1234567890.000100",
+      "fields": {
+        "kind": "message",
+        "body": "Today we discussed the Q4 roadmap...",
+        "author": "alex",
+        "thread_id": "1234567890.000100",
+        "url": "https://acme.slack.com/archives/C01/p1234567890"
+      },
+      "metadata": {
+        "container_type": "channel",
+        "container_id": "C01",
+        "container_name": "planning",
+        "category": "engineering"
+      }
     }
   ]'
 ```
@@ -114,8 +128,22 @@ const response = await client.upload.knowledge({
       url: "https://acme.slack.com/archives/C01/p1234567890",
       timestamp: "2025-10-15T14:30:00Z",
       content: { text: "Today we discussed the Q4 roadmap..." },
-      metadata: { category: "engineering" },
-      additional_metadata: { channel: "#planning", author: "alex" },
+      kind: "message",
+      provider: "slack",
+      external_id: "1234567890.000100",
+      fields: {
+        kind: "message",
+        body: "Today we discussed the Q4 roadmap...",
+        author: "alex",
+        thread_id: "1234567890.000100",
+        url: "https://acme.slack.com/archives/C01/p1234567890",
+      },
+      metadata: {
+        container_type: "channel",
+        container_id: "C01",
+        container_name: "planning",
+        category: "engineering",
+      },
     },
   ]),
 });
@@ -135,8 +163,22 @@ response = client.upload.knowledge(
             "url": "https://acme.slack.com/archives/C01/p1234567890",
             "timestamp": "2025-10-15T14:30:00Z",
             "content": {"text": "Today we discussed the Q4 roadmap..."},
-            "metadata": {"category": "engineering"},
-            "additional_metadata": {"channel": "#planning", "author": "alex"},
+            "kind": "message",
+            "provider": "slack",
+            "external_id": "1234567890.000100",
+            "fields": {
+                "kind": "message",
+                "body": "Today we discussed the Q4 roadmap...",
+                "author": "alex",
+                "thread_id": "1234567890.000100",
+                "url": "https://acme.slack.com/archives/C01/p1234567890",
+            },
+            "metadata": {
+                "container_type": "channel",
+                "container_id": "C01",
+                "container_name": "planning",
+                "category": "engineering",
+            },
         }
     ]),
 )
@@ -172,6 +214,8 @@ Each entry in `file_metadata` corresponds to the file at the same index in `file
 
 Each item in the `app_knowledge` JSON array represents a single piece of pre-parsed content. **`tenant_id` and `sub_tenant_id` are required inside each item.**
 
+For app-aware retrieval, include the typed app-source fields below. See [App Sources](/essentials/app-sources) for field-by-field guidance, relation examples, and search behavior.
+
 | Field | Type | Description |
 |---|---|---|
 | `tenant_id` | string | **Required.** The tenant to ingest into. |
@@ -183,13 +227,19 @@ Each item in the `app_knowledge` JSON array represents a single piece of pre-par
 | `url` | string | Canonical URL or reference link. |
 | `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
 | `content` | object | Content payload. See [Content formats](#content-formats). |
-| `metadata` | object | Tenant-level metadata. Filterable at recall time. |
+| `metadata` | object | Tenant-level or app-specific metadata. Use this for category, channel, project, space, workspace, or other provider context. |
 | `additional_metadata` | object | Document-level metadata. Stored per-source; not filterable at recall time. |
 | `attachments` | array | Optional related attachments (images, PDFs, etc.). |
-| `relations` | object | Forcefully connect this source to others. |
+| `relations` | array | Typed app-source relations such as `reply_to`, `child_of`, `linked_to`, or `blocks`. |
+| `kind` | string | App object kind: `email`, `message`, `ticket`, `knowledge_base`, or `custom`. |
+| `provider` | string | Provider namespace such as `slack`, `gmail`, `jira`, `notion`, or `salesforce`. |
+| `external_id` | string | Stable provider ID for this source. Used for exact ID search and relation resolution. |
+| `fields` | object | Kind-specific structured fields. Include `kind` inside this object. |
+| `attachments` | array | Attachments connected to this app source. |
+| `comments` | array | Comments connected to this app source. |
 
 <Info>
-Though app_knowledge is an available option. We *recommend* storing the content as a markdown file and using file upload through `upload_knowledge` for better results.
+If your data comes from an app, prefer the typed app-source fields over flattening everything into Markdown. Structured IDs and relations let `search_apps: true` use graph expansion and exact provider IDs during Recall.
 </Info>
 
 ### Content formats

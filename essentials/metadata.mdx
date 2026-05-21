@@ -149,8 +149,8 @@ Use it when the filter value is known exactly. Operators such as range, contains
 
 HydraDB exposes two metadata fields on every source object:
 
-- **`metadata`** — schema-aligned fields intended for deterministic filtering. If a field is declared in the tenant metadata schema and match-enabled, it can be used in `metadata_filters`.
-- **`additional_metadata`** — free-form fields for display, bookkeeping, or downstream application use. Do not rely on these for deterministic filtering.
+- **`metadata`** - schema-aligned fields intended for deterministic filtering. If a field is declared in the tenant metadata schema and match-enabled, it can be used in `metadata_filters`.
+- **`additional_metadata`** - free-form fields for display, bookkeeping, or downstream application use. Do not rely on these for deterministic filtering.
 
 If a field needs to be filterable at recall time, put it in `metadata` and plan it in the tenant metadata schema. Otherwise, prefer `additional_metadata`.
 

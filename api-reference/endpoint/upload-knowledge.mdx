@@ -150,7 +150,7 @@ response = client.upload.knowledge(
 | `tenant_id` | string | Yes | – | The tenant to ingest into. |
 | `files` | binary[] | One of | `[]` | One or more files to upload. |
 | `file_metadata` | JSON string | No | – | Array of metadata objects, one per file. Length must match `files`. See [File metadata](#file-metadata). |
-| `app_knowledge` | JSON string | One of | – | A single app source object or an array. Each item **must include `tenant_id` and `sub_tenant_id`**. See [App sources](#app-sources). |
+| `app_knowledge` | JSON string | One of | – | A single app source object or an array. Each item **must include `tenant_id` and `sub_tenant_id`**. See [App knowledge](#app-knowledge). |
 | `app_sources` | JSON string | - | – | **Deprecated alias for `app_knowledge`.** Use `app_knowledge` instead. |
 | `sub_tenant_id` | string | No | default | Sub-tenant scope. |
 | `upsert` | boolean | No | `true` | If `true`, existing sources with the same ID are overwritten. |

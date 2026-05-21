@@ -40,7 +40,8 @@
               "essentials/metadata",
               "essentials/context-graphs",
               "essentials/api-results",
-              "essentials/semantic-search"
+              "essentials/semantic-search",
+              "continuity-assurance"
             ]
           },
           {
@@ -96,6 +97,7 @@
               "api-reference/endpoint/monitor-tenant",
               "api-reference/endpoint/infra-status",
               "api-reference/endpoint/list-sub-tenant-ids",
+              "api-reference/endpoint/list-tenant-ids",
               "api-reference/endpoint/delete-tenant"
             ]
           },

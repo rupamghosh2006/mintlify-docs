@@ -111,7 +111,7 @@ with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb")
 
 ### Path B - App sources
 
-Pre-parsed text from connected apps. You supply the text, metadata, and an optional URL.
+Pre-parsed records from connected apps. Put the app item's searchable text in `fields` so app-aware recall can use IDs, actors, threads, and relations.
 
 <CodeGroup>
 ```bash cURL
@@ -125,7 +125,15 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
       "id": "slack_thread_001",
       "title": "Pricing discussion - Slack #product",
       "type": "slack",
-      "content": { "text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199." },
+      "kind": "message",
+      "provider": "slack",
+      "external_id": "1715012345.000100",
+      "fields": {
+        "kind": "message",
+        "body": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+        "author": "alex",
+        "thread_id": "1715012345.000100"
+      },
       "metadata": { "channel": "product", "status": "finalized" },
       "additional_metadata": { "slack_ts": "1715012345.000100" }
     }
@@ -141,7 +149,15 @@ const result = await client.upload.knowledge({
       id: "slack_thread_001",
       title: "Pricing discussion - Slack #product",
       type: "slack",
-      content: { text: "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199." },
+      kind: "message",
+      provider: "slack",
+      external_id: "1715012345.000100",
+      fields: {
+        kind: "message",
+        body: "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+        author: "alex",
+        thread_id: "1715012345.000100",
+      },
       metadata: { channel: "product", status: "finalized" },
       additional_metadata: { slack_ts: "1715012345.000100" },
     },
@@ -160,7 +176,15 @@ result = client.upload.knowledge(
             "id": "slack_thread_001",
             "title": "Pricing discussion - Slack #product",
             "type": "slack",
-            "content": {"text": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199."},
+            "kind": "message",
+            "provider": "slack",
+            "external_id": "1715012345.000100",
+            "fields": {
+                "kind": "message",
+                "body": "We agreed on three tiers: Starter at $29, Pro at $79, Enterprise at $199.",
+                "author": "alex",
+                "thread_id": "1715012345.000100",
+            },
             "metadata": {"channel": "product", "status": "finalized"},
             "additional_metadata": {"slack_ts": "1715012345.000100"},
         }
@@ -245,16 +269,22 @@ Poll every few seconds. Most documents complete in 1–5 minutes.
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | string | Unique identifier for the source. Upsert key. |
+| `id` | string | Required unique identifier for the source. Upsert key. |
+| `tenant_id` | string | Required tenant that owns the source. |
+| `sub_tenant_id` | string | Required sub-tenant scope. Use `"default"` if you do not partition knowledge. |
 | `title` | string | Short title or subject. |
 | `type` | string | Source category (e.g., `slack`, `notion`, `gmail`, `webpage`). |
 | `description` | string | Optional long-form description. |
 | `url` | string | Canonical URL or reference link. |
 | `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
-| `content` | object | Content payload. Use `{"text": "..."}` for plain text. |
+| `kind` | string | App object kind: `email`, `message`, `ticket`, `knowledge_base`, or `custom`. |
+| `provider` | string | Provider namespace such as `slack`, `gmail`, `jira`, or `notion`. |
+| `external_id` | string | Stable provider ID for this exact item. |
+| `fields` | object | Primary app-source content and structure, such as message `body` or ticket `description`. |
+| `content` | object | Legacy/generic content payload. Prefer `fields` for typed app sources. |
 | `metadata` | object | Filterable fields matching the tenant schema. |
 | `additional_metadata` | object | Free-form fields. Not filterable at recall time. |
-| `attachments` | array | Optional related attachments. |
+| `attachments` | array | Optional related attachments. Include `content.text` or `content.markdown` for extracted attachment text. |
 | `relations` | object | Forcefully connect this source to others. |
 
 ### Request-level fields

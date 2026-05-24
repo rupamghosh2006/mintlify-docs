@@ -24,10 +24,21 @@
     overflow: hidden !important;
 }
 
-#content-side-layout {
-    max-width: 18rem !important;
-}
+@media (min-width: 1280px) {
+    #content-container {
+        overflow-x: clip;
+    }
 
-#content-area {
-    width: calc(100% - 20rem) !important;
+    #content-side-layout {
+        flex: 0 0 18rem !important;
+        width: 18rem !important;
+        max-width: 18rem !important;
+        min-width: 0;
+    }
+
+    #content-area {
+        flex: 1 1 0% !important;
+        width: auto !important;
+        min-width: 0;
+    }
 }

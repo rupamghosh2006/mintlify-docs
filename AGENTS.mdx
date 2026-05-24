@@ -43,6 +43,7 @@ If you read nothing else, read this section.
 8. **`app_knowledge` must be a string** -- When sent via multipart form, JSON-stringify it. Sending a raw object yields 422.
 9. **`file_metadata` array length MUST equal `files` count** -- otherwise 422.
 10. **Deletions are per-item** -- Always inspect `results[].deleted` per item rather than trusting a top-level `success`.
+11. **App sources use typed `fields`** -- Each `app_knowledge` item needs `id`, `tenant_id`, `sub_tenant_id`, `kind`, `provider`, `external_id`, and searchable content in `fields`. Set `search_apps: true` on `full_recall` for app-aware search. See [App Sources](/essentials/app-sources).
 
 ---
 
@@ -56,6 +57,7 @@ If you read nothing else, read this section.
 | Ingest Slack / Notion / Gmail | `/ingestion/upload_knowledge` (`app_knowledge`) | POST | [1] |
 | Search user memories | `/recall/recall_preferences` | POST | [0] |
 | Search documents | `/recall/full_recall` | POST | [1] |
+| Search app sources (Slack, Jira, …) | `/recall/full_recall` + `search_apps: true` | POST | [1] |
 | Exact phrase match | `/recall/boolean_recall` (`operator: "phrase"`) | POST | [1] |
 | Check tenant is ready | `/tenants/infra/status` | GET | -- |
 | Verify processing finished | `/ingestion/verify_processing` | POST | -- |
@@ -102,10 +104,11 @@ User-scoped context -- preferences, conversation history, inferred traits. Each 
 
 Shared, tenant-wide context from documents and app sources.
 
-- **Sources:** PDF, DOCX, PPTX, Markdown, CSV, TXT, HTML, Slack, Notion, Gmail, Linear, GitHub
+- **Files:** PDF, DOCX, PPTX, Markdown, CSV, TXT, HTML via `files` on `upload_knowledge`
+- **App sources:** Slack, Gmail, Jira, Notion, Linear, CRM, etc. via `app_knowledge` — see [App Sources](/essentials/app-sources)
 - **Processing:** Parsed → Chunked → Embedded → Graph-linked at write time
 - **Mutability:** Versioned -- replaced or deleted explicitly
-- **Recall endpoint:** `POST /recall/full_recall`
+- **Recall endpoint:** `POST /recall/full_recall` (set `search_apps: true` when querying ingested app data)
 - **Vectorstore index:** `[1]`
 
 ### 3.4 Recall Pipeline
@@ -141,7 +144,21 @@ Controls the semantic-vs-keyword balance on `full_recall`:
 | Mode | Behavior | Latency | Best for |
 |---|---|---|---|
 | `fast` | Single semantic query | Lower | Simple lookups, real-time UIs |
-| `thinking` | Multi-query + graph traversal + forceful relations | Higher | Complex / multi-hop queries |
+| `thinking` | Multi-query + graph traversal + forceful relations | Higher | Complex / multi-hop queries; best for app-source ID/thread/relation expansion |
+
+### 3.8 App sources (summary)
+
+Pre-parsed records from business apps. One `app_knowledge` item = one HydraDB source.
+
+| Layer | Fields | Purpose |
+|---|---|---|
+| Envelope | `id`, `tenant_id`, `sub_tenant_id` | Required on every item |
+| Identity | `kind`, `provider`, `external_id` | `email`, `message`, `ticket`, `knowledge_base`, `custom` |
+| Content | `fields` | Searchable body/title/status/thread IDs — match `fields.kind` to top-level `kind` |
+| Scope | `metadata` | Channel, project, space, pipeline (`container_type`, `container_id`, …) |
+| Structure | `relations`, `comments`, `attachments` | Cross-source links, discussion, extracted file text |
+
+Full field reference, scenarios, and mistakes: [App Sources](/essentials/app-sources).
 
 ---
 
@@ -619,6 +636,7 @@ curl -X POST https://api.hydradb.com/ingestion/upload_knowledge \
 - Each app item needs `id`, `tenant_id`, `sub_tenant_id`; put searchable content in `fields` with `kind`, `provider`, and `external_id`
 - Put channel/project/space scope in `metadata`; `external_id` is the item ID, not the container
 - At recall, set `search_apps: true` on `full_recall` (`mode: "thinking"` for thread/relation expansion)
+- Full contract: [App Sources](/essentials/app-sources)
 
 **Response:**
 
@@ -746,6 +764,7 @@ Knowledge search (index `[1]`) with hybrid semantic + graph + keyword.
   "recency_bias": 0.3,
   "mode": "fast",
   "graph_context": true,
+  "search_apps": true,
   "metadata_filters": {"category": "deployment"}
 }
 ```
@@ -758,6 +777,7 @@ Knowledge search (index `[1]`) with hybrid semantic + graph + keyword.
 - `recency_bias` (default `0.0`, range `0`–`1`) -- boost recent content
 - `mode` (default `"fast"`) -- `"fast"` or `"thinking"`
 - `graph_context` (default `false`) -- include entity relationships
+- `search_apps` (default `false`) -- app-aware lane: IDs, actors, threads, `parent_id`, `relations` (best with `mode: "thinking"`)
 - `metadata_filters` -- deterministic filtering by schema fields
 - `forceful_relations` -- array of entity names to include explicitly (requires `mode: "thinking"`)
 
@@ -973,7 +993,7 @@ await client.upload.knowledge({
 const status = await client.upload.verifyProcessing({
   tenant_id: "acme_corp",
   sub_tenant_id: "team_eng",
-  file_ids: ["doc_001"],
+  file_ids: ["doc_001", "slack_msg_1234567890_000100"],
 });
 ```
 
@@ -1008,6 +1028,7 @@ const results = await client.recall.fullRecall({
   recency_bias: 0.3,
   mode: "fast",
   graph_context: true,
+  search_apps: true,
   metadata_filters: { category: "deployment" },
 });
 
@@ -1117,7 +1138,7 @@ client.upload.knowledge(
 status = client.upload.verify_processing(
     tenant_id="acme_corp",
     sub_tenant_id="team_eng",
-    file_ids=["doc_001"],
+    file_ids=["doc_001", "slack_msg_1234567890_000100"],
 )
 ```
 
@@ -1152,6 +1173,7 @@ results = client.recall.full_recall(
     recency_bias=0.3,
     mode="fast",
     graph_context=True,
+    search_apps=True,
     metadata_filters={"category": "deployment"},
 )
 
@@ -1292,32 +1314,55 @@ for r in boolean_results["results"] + semantic_results["results"]:
 
 ### 9.1 Unified Enterprise Search ("Glean clone")
 
-Ingest Slack, Notion, Gmail, Linear, GitHub into one tenant; recall with `alpha=0.9` and citations.
+Ingest Slack, Notion, Gmail, Linear, GitHub into one tenant; recall with `search_apps: true`, `alpha=0.9`, and citations. Map each connector to a `kind` — see [App Sources](/essentials/app-sources).
 
 ```python
-sources = {"slack": slack_channels, "notion": notion_pages, "gmail": emails, "linear": issues}
+KIND_BY_PROVIDER = {
+    "slack": "message",
+    "gmail": "email",
+    "notion": "knowledge_base",
+    "linear": "ticket",
+    "github": "ticket",
+}
 
-for source_type, items in sources.items():
+def app_item(provider: str, item, tenant_id: str, sub_tenant_id: str = "default"):
+    kind = KIND_BY_PROVIDER[provider]
+    fields = {"kind": kind}
+    if kind == "message":
+        fields |= {"body": item.content, "author": item.author, "thread_id": str(item.id), "url": item.url}
+    elif kind == "email":
+        fields |= {"subject": item.title, "body": item.content, "from": item.author, "thread_id": str(item.id), "url": item.url}
+    elif kind == "knowledge_base":
+        fields |= {"title": item.title, "body": item.content, "url": item.url}
+    else:  # ticket
+        fields |= {"title": item.title, "description": item.content, "reporter": item.author, "url": item.url}
+    return {
+        "id": f"{provider}_{item.id}",
+        "tenant_id": tenant_id,
+        "sub_tenant_id": sub_tenant_id,
+        "kind": kind,
+        "provider": provider,
+        "external_id": str(item.id),
+        "fields": fields,
+        "metadata": {"container_name": getattr(item, "container", None)},
+    }
+
+sources = {"slack": slack_messages, "notion": notion_pages, "gmail": emails, "linear": issues, "github": issues}
+
+for provider, items in sources.items():
     client.upload.knowledge(
         tenant_id="enterprise",
-        app_knowledge=json.dumps([{
-            "source_id": f"{source_type}_{item.id}",
-            "source_name": item.title,
-            "knowledge_items": [{
-                "text": item.content,
-                "metadata": {
-                    "source_type": source_type,
-                    "timestamp": item.created_at,
-                    "author": item.author,
-                },
-                "additional_metadata": {"url": item.url},
-            }],
-        } for item in items]),
+        app_knowledge=json.dumps([app_item(provider, item, "enterprise") for item in items]),
     )
 
 results = client.recall.full_recall(
-    tenant_id="enterprise", query="Q4 OKRs",
-    max_results=10, alpha=0.9, graph_context=True,
+    tenant_id="enterprise",
+    query="Q4 OKRs",
+    max_results=10,
+    alpha=0.9,
+    mode="thinking",
+    graph_context=True,
+    search_apps=True,
 )
 ```
 
@@ -1348,7 +1393,7 @@ context = user_context["results"] + knowledge["results"]
 
 ### 9.3 "Cursor for Docs"
 
-Ingest codebase, PRs, ADRs, and Slack engineering discussions. Use `mode: "thinking"` + `graph_context: true` to follow code → PRs → discussions.
+Ingest codebase (files), PRs/tickets (`kind: "ticket"`), ADRs (`kind: "knowledge_base"`), and Slack threads (`kind: "message"`). Use `mode: "thinking"` + `graph_context: true` + `search_apps: true` to follow code → PRs → discussions.
 
 ```python
 results = client.recall.full_recall(
@@ -1357,6 +1402,7 @@ results = client.recall.full_recall(
     max_results=15,
     mode="thinking",
     graph_context=True,
+    search_apps=True,
     recency_bias=0.3,
 )
 ```
@@ -1385,6 +1431,9 @@ Ingest earnings transcripts with `quarter` / `year` in metadata. Use high `recen
 | 422 on upload | `file_metadata` length mismatch | Match array length to file count |
 | Schema field can't be changed | Tenant schema is immutable | Plan up-front; use `additional_metadata` for flex |
 | 422 on `app_knowledge` | Sent as object, not JSON-encoded string | `json.dumps(...)` / `JSON.stringify(...)` |
+| App recall misses threads/IDs | `search_apps` defaults to `false` | `search_apps: true` and `mode: "thinking"` for app data |
+| Slack/Jira scoped wrong | Channel/project in `external_id` | Item ID in `external_id`; container in `metadata` |
+| Legacy `knowledge_items` payload | Old app shape | Use `fields` per [App Sources](/essentials/app-sources) |
 | `boolean_recall` 400 | Sent `alpha`, `mode`, or `graph_context` | Drop those params |
 | Re-create tenant fails | Previous deletion still in progress | Use a different `tenant_id` or wait |
 | `infer` not running | Default is `false` | Explicitly set `infer: true` |
@@ -1436,9 +1485,17 @@ file_metadata = [{"file_id": "doc_001"}]
 file_metadata = [{"file_id": "doc_001"}, {"file_id": "doc_002"}]
 
 # WRONG: app_knowledge as object
-app_knowledge = [{"source_id": "slack_001"}]
-# CORRECT: JSON-encoded string
-app_knowledge = json.dumps([{"source_id": "slack_001"}])
+app_knowledge = [{"id": "slack_001", "knowledge_items": [{"text": "..."}]}]
+# CORRECT: JSON-encoded string with typed app-source shape
+app_knowledge = json.dumps([{
+    "id": "slack_msg_1234567890_000100",
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "default",
+    "kind": "message",
+    "provider": "slack",
+    "external_id": "1234567890.000100",
+    "fields": {"kind": "message", "body": "Deployment completed", "author": "alice"},
+}])
 
 # WRONG: MemoryItem with no content
 {"infer": True}
@@ -1454,6 +1511,7 @@ Walk this list in order:
 2. **Wrong endpoint?** Use `recall_preferences` for memories, `full_recall` for knowledge.
 3. **Wrong `sub_tenant_id`?** Match the scope from write time.
 4. **Filters too tight?** Re-run without `metadata_filters`.
+5. **App data ingested but recall is text-only?** Set `search_apps: true` (and `mode: "thinking"` for threads/relations). See [App Sources](/essentials/app-sources).
 
 ### 11.5 Rate limiting (429)
 
@@ -1499,18 +1557,33 @@ results = client.embeddings.search(
 
 ### 12.2 Custom Chunking
 
-Pre-chunk before ingestion and send each chunk as a `knowledge_items` entry:
+Prefer **file upload** when you have a document file — HydraDB chunks internally. If you must pre-chunk, ingest **one app source per chunk** (each needs its own `id` / `external_id`; link with `fields.parent_id`):
 
 ```python
-chunks = custom_chunk(document)   # returns [{"text": ..., "metadata": ...}, ...]
+chunks = custom_chunk(document)   # [{"text": "...", "metadata": {...}}, ...]
+parent_id = "doc_001"
 
 client.upload.knowledge(
     tenant_id="custom_chunks",
-    app_knowledge=json.dumps([{
-        "source_id": "doc_001",
-        "source_name": "Custom Chunked Doc",
-        "knowledge_items": chunks,
-    }]),
+    sub_tenant_id="default",
+    app_knowledge=json.dumps([
+        {
+            "id": f"{parent_id}_chunk_{i}",
+            "tenant_id": "custom_chunks",
+            "sub_tenant_id": "default",
+            "kind": "knowledge_base",
+            "provider": "custom",
+            "external_id": f"{parent_id}_chunk_{i}",
+            "fields": {
+                "kind": "knowledge_base",
+                "title": f"Custom doc (part {i + 1})",
+                "body": chunk["text"],
+                "parent_id": parent_id,
+            },
+            "metadata": chunk.get("metadata", {}),
+        }
+        for i, chunk in enumerate(chunks)
+    ]),
 )
 ```
 

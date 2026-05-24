@@ -35,10 +35,6 @@
 #content-area {
     width: calc(100% - 20rem) !important;
 }
-
-#chat-assistant-sheet {
-    display: none !important;   
-}
     
 #navbar {
     position: fixed

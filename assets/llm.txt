@@ -11,7 +11,6 @@
 - Python: Check PyPI for `hydradb-sdk` latest version
 - MCP Server: `@hydradb/mcp@0.0.1` (verify latest on npm)
 - CLI: `hydradb-cli` on PyPI
-- **Always verify breaking changes at https://hydradb.com/changelog before upgrading**
 
 ---
 

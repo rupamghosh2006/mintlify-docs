@@ -5491,7 +5491,7 @@
           "tenant_id"
         ],
         "title": "TenantCreateRequest",
-        "description": "Request model for creating a tenant with optional metadata schema.\n\nThe tenant_metadata_schema allows you to define custom fields that will be indexed\nin Milvus with configurable search capabilities:\n\nExample:\n    {\n        \"tenant_id\": \"my-tenant\",\n        \"tenant_metadata_schema\": [\n            {\n                \"name\": \"category\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 256,\n                \"enable_match\": true\n            },\n            {\n                \"name\": \"product_description\",\n                \"data_type\": \"VARCHAR\",\n                \"max_length\": 4096,\n                \"enable_dense_embedding\": true,\n                \"enable_sparse_embedding\": true\n            }\n        ]\n    }"
+        "description": "Request model for creating a tenant with optional metadata schema.\n\nThe `tenant_metadata_schema` allows you to define custom fields that will be indexed in Milvus with configurable search capabilities.\n\nExample:\n\n```json\n{\n  \"tenant_id\": \"my-tenant\",\n  \"tenant_metadata_schema\": [\n    {\n      \"name\": \"category\",\n      \"data_type\": \"VARCHAR\",\n      \"max_length\": 256,\n      \"enable_match\": true\n    },\n    {\n      \"name\": \"product_description\",\n      \"data_type\": \"VARCHAR\",\n      \"max_length\": 4096,\n      \"enable_dense_embedding\": true,\n      \"enable_sparse_embedding\": true\n    }\n  ]\n}\n```"
       },
       "TenantDeleteResponse": {
         "properties": {

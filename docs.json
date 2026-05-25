@@ -168,5 +168,17 @@
       "label": "Website",
       "href": "https://hydradb.com"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/llms.txt",
+      "destination": "/AGENTS.md",
+      "permanent": true
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/AGENTS.md",
+      "permanent": true
+    }
+  ]
 }

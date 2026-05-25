@@ -227,8 +227,8 @@ Each entry in `file_metadata` corresponds to the file at the same index in `file
 | Field | Type | Description |
 |---|---|---|
 | `file_id` | string | Optional. Server-generated if omitted. Use this to reference the file later (e.g., for `verify_processing`). |
-| `metadata` | object | Tenant-level metadata. Filterable in recall queries. |
-| `additional_metadata` | object | Document-level metadata. Filterable in recall queries. |
+| `metadata` | object | **Tenant-level** metadata. Pre-filterable in recall via top-level keys in `metadata_filters` (fast). Each key must be declared in `tenant_metadata_schema` with `enable_match: true`. |
+| `additional_metadata` | object | **Document-level** metadata. Filterable in recall by nesting under `"additional_metadata"` (canonical) or `"document_metadata"` (legacy alias) inside `metadata_filters`. Post-retrieval, so slower than tenant-level filters (engine over-fetches ~3x to compensate). See [Full recall → Metadata filters](/api-reference/endpoint/full-recall#metadata-filters). |
 | `relations` | object | Forcefully connect this file to other sources. See [Forceful relations](/essentials/knowledge#7-forceful-relations). |
 
 ## App knowledge
@@ -248,8 +248,8 @@ For app-aware retrieval, include the typed app-source fields below. See [App Sou
 | `url` | string | Canonical URL or reference link. |
 | `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
 | `content` | object | Legacy/generic content payload. For typed app sources, prefer `fields` for item text. See [Content formats](#content-formats). |
-| `metadata` | object | Tenant-level or app-specific metadata. Use this for category, channel, project, space, workspace, or other provider context. |
-| `additional_metadata` | object | Document-level metadata. Stored per-source; not filterable at recall time. |
+| `metadata` | object | Tenant-level or app-specific metadata. Use this for category, channel, project, space, workspace, or other provider context. Filterable at recall via top-level keys in `metadata_filters`. |
+| `additional_metadata` | object | Document-level metadata. Stored per-source. Filterable at recall by nesting under `"additional_metadata"` (canonical) or `"document_metadata"` (legacy alias) in `metadata_filters`. Post-retrieval (the engine over-fetches and filters). See [Full recall → Metadata filters](/api-reference/endpoint/full-recall#metadata-filters). |
 | `relations` | array | Typed app-source relations such as `reply_to`, `child_of`, `linked_to`, or `blocks`. |
 | `kind` | string | App object kind: `email`, `message`, `ticket`, `knowledge_base`, or `custom`. |
 | `provider` | string | Provider namespace such as `slack`, `gmail`, `jira`, `notion`, or `salesforce`. |

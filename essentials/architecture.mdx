@@ -169,8 +169,8 @@ The response is retrieved context, not a final LLM answer. Pass the relevant chu
 | `tenant_id` | All core APIs | Selects the isolated workspace |
 | `sub_tenant_id` | Ingestion and recall | Narrows data to a user, team, or workspace |
 | `metadata` | Ingestion | Tenant-level metadata; matching keys are validated and indexed when `tenant_metadata_schema` is configured |
-| `additional_metadata` | Ingestion | Flexible source-level metadata attached to a source; not matchable at recall time |
-| `metadata_filters` | Recall | Deterministically scopes candidates before ranking |
+| `additional_metadata` | Ingestion | Flexible source-level metadata attached to a source. Matchable at recall by nesting under `additional_metadata` (canonical) or `document_metadata` (legacy alias) inside `metadata_filters`. Post-retrieval, not pre-filtered like tenant metadata. |
+| `metadata_filters` | Recall | Deterministically scopes candidates. Top-level keys pre-filter against tenant metadata; nested `additional_metadata: {...}` post-filters against per-source `additional_metadata`. |
 | `alpha` | Recall | Blends semantic and lexical scores (`1.0` = semantic-heavy, `0.0` = lexical-heavy) |
 | `graph_context` | Recall | Requests graph paths and chunk relations in the response |
 

@@ -84,7 +84,7 @@ Authentication required or invalid.
 
 **Common scenarios:**
 
-- Missing `Authorization: Bearer <api_key>` header
+- Missing `Authorization: Bearer $HYDRA_DB_API_KEY` header (or any `Authorization` header at all)
 - Invalid API key
 - Expired API key
 
@@ -449,13 +449,13 @@ for item in response.results:
 
 ### Authentication failures
 
-1. **Header format:** `Authorization: Bearer <api_key>` – note the space after `Bearer`
+1. **Header format:** `Authorization: Bearer $HYDRA_DB_API_KEY` – exactly one space between `Bearer` and the key value
 2. **Key validity:** Verify in [app.hydradb.com](https://app.hydradb.com)
 3. **Key permissions:** Confirm scopes match your operation
 
 ### Tenant not found after creation
 
-Tenant creation is asynchronous. Poll [`GET /tenants/infra/status`](/api-reference/endpoint/infra-status) until both `vectorstore_status` values and `graph_status` are `true` before ingesting.
+Tenant creation is asynchronous. Poll [`GET /tenants/infra/status`](/api-reference/endpoint/infra-status) until `infra.scheduler_status`, `infra.graph_status`, and **both** elements of `infra.vectorstore_status` are `true` before ingesting. Allow up to 5 minutes (Enterprise plans take longer than Free/Ship).
 
 ### 422 Validation Error on ingestion
 

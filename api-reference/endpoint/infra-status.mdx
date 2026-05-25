@@ -62,35 +62,32 @@ status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
 | `infra.vectorstore_status` | Array of two booleans. `vectorstore_status[0]` is the **Memories** vector store; `vectorstore_status[1]` is the **Knowledge** vector store. **Both must be `true`** before ingesting. |
 
 <Info>
-Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
-</Info>
-
-<Info>
-Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
+Receiving a `"status": "accepted"` response from `POST /tenants/create` indicates that the creation process has successfully started -- it does **not** mean the tenant is fully provisioned. Poll this endpoint until all readiness flags are `true` before ingesting.
 </Info>
 
 <Note>
-  Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
+**Typical provisioning time depends on plan:** 1–2 minutes for Free and Ship plans, and 4–5 minutes for Enterprise plans (which provision physically-isolated infrastructure). Allow up to ~5 minutes in any polling loop you write.
 </Note>
 
 ## Polling pattern
 
-After creating a tenant, poll this endpoint every few seconds until all statuses are `true`:
+After creating a tenant, poll this endpoint every few seconds until all statuses are `true`. Bound the loop at ~5 minutes so it survives Enterprise provisioning without hanging forever:
 
 ```python
 import time
 
-while True:
+deadline = time.time() + 300  # 5-minute cap
+while time.time() < deadline:
     status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
     infra = status.infra
     if (infra.scheduler_status
         and infra.graph_status
         and all(infra.vectorstore_status)):
         break
-    time.sleep(2)
+    time.sleep(5)
+else:
+    raise TimeoutError("Tenant infra not ready after 5 min")
 ```
-
-Typical provisioning time: 10–30 seconds.
 
 ## Related endpoints
 

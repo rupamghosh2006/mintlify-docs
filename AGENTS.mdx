@@ -31,19 +31,48 @@ Always verify the latest version on the relevant registry before installing. Pin
 
 ## 1. Critical Rules for LLMs
 
-If you read nothing else, read this section.
+If you read nothing else, read this section. These are the failure modes that bite agents most often.
 
-1. **Always poll status endpoints** -- Tenant creation and ingestion are asynchronous. Never write or read immediately after `create`.
-2. **Vectorstore index mapping** -- Index `[0]` = Memories (use `recall_preferences`); index `[1]` = Knowledge (use `full_recall`).
-3. **Endpoint selection** -- Use `recall_preferences` for user state, `full_recall` for documents. Mixing them returns nothing.
-4. **Scope consistency** -- Write and read must use the *same* `sub_tenant_id`. Mismatch returns empty results, not an error.
-5. **Schema immutability** -- Tenant metadata schema cannot be changed after creation. Plan up-front.
-6. **Verify versions** -- Don't assume SDK version numbers; check PyPI / npm before pinning.
-7. **`boolean_recall` is special** -- Do NOT send `alpha`, `mode`, or `graph_context` to it. It will 400.
-8. **`app_knowledge` must be a string** -- When sent via multipart form, JSON-stringify it. Sending a raw object yields 422.
-9. **`file_metadata` array length MUST equal `files` count** -- otherwise 422.
-10. **Deletions are per-item** -- Always inspect `results[].deleted` per item rather than trusting a top-level `success`.
-11. **App sources use typed `fields`** -- Each `app_knowledge` item needs `id`, `tenant_id`, `sub_tenant_id`, `kind`, `provider`, `external_id`, and searchable content in `fields`. Set `search_apps: true` on `full_recall` for app-aware search. See [App Sources](/essentials/app-sources).
+### Endpoint & response shape (read before parsing any response)
+
+1. **`full_recall` / `recall_preferences` return `chunks[]`, not `results[]`.** Field names are `chunk_content`, `source_title`, `relevancy_score` -- not `text`, `source_name`, `score`. A separate top-level `sources[]` array holds deduplicated source records; join on `chunk.source_id == source.id`.
+2. **`infra/status` is nested.** Readiness fields live under `infra.{scheduler_status, graph_status, vectorstore_status}`. There is no top-level `infra_status: "ready"` flag.
+3. **`monitor` returns collections, not totals.** Counts come from `normal_collection.row_count` (Knowledge) and `memory_collection.row_count` (Memories).
+4. **`upload_knowledge` returns `results[].source_id`, not `source_ids[]`.** Each item also carries its own `status` and `error`.
+5. **Deletions are per-item.** Always inspect `results[].deleted` -- a request can return top-level `success: true` while individual items fail.
+
+### Endpoint selection
+
+6. **Vectorstore index mapping** -- Index `[0]` = Memories (use `recall_preferences`); index `[1]` = Knowledge (use `full_recall`). Mixing endpoints returns empty.
+7. **Scope consistency** -- Write and read must use the *same* `sub_tenant_id`. Mismatch returns empty results, not an error.
+8. **`boolean_recall` is restricted** -- Do NOT send `alpha`, `mode`, `recency_bias`, `graph_context`, `metadata_filters`, or `additional_context`. Any of those returns 400.
+
+### Async lifecycle
+
+9. **Tenant creation is async.** After `POST /tenants/create`, poll `GET /tenants/infra/status` until all three booleans (`scheduler_status`, `graph_status`, both elements of `vectorstore_status`) are `true`.
+10. **Ingestion is async.** After upload, poll `POST /ingestion/verify_processing` until each `indexing_status` is `completed` (or `success`). Fail fast on `errored`. `graph_creation` is already searchable -- only wait for `completed` if you need full graph context.
+
+### Ingestion gotchas
+
+11. **`upload_knowledge` is multipart -- always.** Even when sending only `app_knowledge` (no files), use `multipart/form-data`. JSON bodies return 422.
+12. **`app_knowledge` must be a JSON-encoded string.** Sending a raw object via multipart yields 422. Same for `file_metadata`.
+13. **`file_metadata` array length MUST equal `files` count.** Otherwise 422.
+14. **`upsert` defaults to `true`** on both `upload_knowledge` and `add_memory`. Re-sending the same `source_id` overwrites silently. Set `upsert: false` for insert-only semantics.
+15. **App sources use typed `fields`.** Each `app_knowledge` item needs `id`, `tenant_id`, `sub_tenant_id`, `kind`, `provider`, `external_id`, and searchable content under `fields`. Put channel/project/space scope in `metadata` -- `external_id` is the item ID, not the container. At recall, set `search_apps: true` on `full_recall`. See [App Sources](/essentials/app-sources).
+
+### Schema & versioning
+
+16. **Schema immutability** -- `tenant_metadata_schema` field names cannot be renamed or removed after tenant creation. Plan up-front; use `additional_metadata` for free-form per-document fields.
+17. **`enable_match: true` is required for filtering.** A schema field without it is stored but silently ignored when passed in `metadata_filters`.
+18. **`infer` defaults to `false`.** Set `infer: true` explicitly when storing conversation history or free-form notes you want extracted as preferences.
+19. **Verify versions** -- Don't assume SDK version numbers; check PyPI / npm before pinning.
+
+### Env-var prefixes are not uniform
+
+20. **MCP, SDKs, Claude Code plugin** use `HYDRA_DB_API_KEY` and `HYDRA_DB_TENANT_ID` (underscore).
+21. **CLI and Claude Code plugin** use `HYDRADB_TENANT_ID`, `HYDRADB_SUB_TENANT_ID`, `HYDRADB_API_URL` (no underscore), but `HYDRA_DB_API_KEY` (with underscore) for the key.
+22. **OpenClaw plugin** uses `HYDRA_OPENCLAW_API_KEY` and `HYDRA_OPENCLAW_TENANT_ID`.
+    Copy-paste exactly -- don't guess.
 
 ---
 
@@ -259,23 +288,27 @@ hydradb whoami   # verify
 **Or via environment variables (no login required):**
 
 ```bash
-export HYDRA_DB_API_KEY="your-api-key"
-export HYDRA_DB_TENANT_ID="your-tenant-id"
+export HYDRA_DB_API_KEY="your-api-key"      # note the underscore between HYDRA and DB
+export HYDRADB_TENANT_ID="your-tenant-id"   # note: no underscore between HYDRA and DB
 ```
+
+<Warning>
+The CLI uses **two different prefixes**: `HYDRA_DB_` (with underscore) only for the API key, and `HYDRADB_` (no underscore) for everything else. This is asymmetric. Other products (MCP, Claude Code plugin, SDKs) use `HYDRA_DB_` consistently. Copy-paste exactly.
+</Warning>
 
 **Credential resolution order (first match wins):**
 
-1. Environment variables (`HYDRA_DB_API_KEY`, `HYDRA_DB_TENANT_ID`)
+1. Environment variables (`HYDRA_DB_API_KEY`, `HYDRADB_TENANT_ID`)
 2. Config file (`~/.hydradb/config.json`)
 
 **CLI environment variables:**
 
 | Variable | Description | Default |
 |---|---|---|
-| `HYDRA_DB_API_KEY` | API key | *Required* |
-| `HYDRA_DB_TENANT_ID` | Tenant ID | *Required* |
-| `HYDRA_DB_SUB_TENANT_ID` | Sub-tenant for data partitioning | -- |
-| `HYDRA_DB_BASE_URL` | API base URL | `https://api.hydradb.com` |
+| `HYDRA_DB_API_KEY` | API key (note underscore) | *Required* |
+| `HYDRADB_TENANT_ID` | Tenant ID (no underscore) | *Required* |
+| `HYDRADB_SUB_TENANT_ID` | Sub-tenant for data partitioning | -- |
+| `HYDRADB_API_URL` | API base URL | `https://api.hydradb.com` |
 | `HYDRADB_OUTPUT` | Output format (`human` or `json`) | `human` |
 
 ### 4.5 MCP Server
@@ -391,13 +424,15 @@ Run inside Claude Code:
 /reload-plugins
 ```
 
-Set credentials:
+Set credentials (note the **asymmetric prefix** -- same as the CLI):
 
 ```bash
-export HYDRA_DB_API_KEY="your-api-key"
-export HYDRA_DB_TENANT_ID="your-tenant-id"
-export HYDRA_DB_SUB_TENANT_ID=""   # empty string = use plugin default
+export HYDRA_DB_API_KEY="your-api-key"        # underscore between HYDRA and DB
+export HYDRADB_TENANT_ID="your-tenant-id"     # no underscore
+export HYDRADB_SUB_TENANT_ID=""               # no underscore; "" = use plugin default
 ```
+
+`HYDRADB_SUB_TENANT_ID` must be set explicitly -- set it to `""` to use the plugin default, or to a workspace-specific value (e.g., `claude-my-project`) to isolate memory per project.
 
 Verify: run `/hydradb:status` in Claude Code.
 
@@ -408,24 +443,25 @@ Verify: run `/hydradb:status` in Claude Code.
 | `/hydradb:setup` | Initialize plugin with credentials |
 | `/hydradb:status` | Show config + connection state |
 | `/hydradb:search <query>` | Manual recall against HydraDB |
-| `/hydradb:remember <text>` | Save a durable memory |
+| `/hydradb:remember <note>` | Save a durable memory |
 | `/hydradb:save-session` | Persist buffered conversation |
-| `/hydradb:sync-workspace` | Re-sync workspace markdown files |
-| `/hydradb:sync-workspace --force` | Full workspace re-sync |
-| `/hydradb:last-recall` | Debug: show last auto-recall results |
+| `/hydradb:sync-workspace [--force]` | Re-sync workspace markdown files (`--force` = full re-sync) |
 
 **Key configuration:**
 
 | Field | Default | Description |
 |---|---|---|
+| `autoRecall` | `true` | Inject HydraDB context before every prompt |
+| `autoIngest` | `true` | Sync workspace docs on session start and file edits |
 | `captureMode` | `session-upsert` | `turn`, `session-upsert`, `both`, or `off` |
 | `searchMode` | `memory` | `memory`, `knowledge`, or `both` |
 | `ingestionMode` | `memory` | `memory`, `knowledge`, or `auto` |
-| `recallMode` | `thinking` | `fast` or `thinking` |
+| `recallMode` | `fast` | `fast` or `thinking` |
 | `graphContext` | `true` | Include knowledge-graph entity paths in recall |
 | `maxContextChars` | `7000` | Max chars injected per prompt |
 | `maxMemoryResults` | `6` | Max memory chunks per recall |
 | `maxKnowledgeResults` | `4` | Max knowledge chunks per recall |
+| `ignoreMarker` | `hydra-ignore` | Include in a file or prompt to skip capture/sync |
 
 ### 4.7 OpenClaw Plugin
 
@@ -524,17 +560,23 @@ GET /tenants/infra/status?tenant_id=acme_corp
 ```json
 {
   "tenant_id": "acme_corp",
-  "graph_status": true,
-  "vectorstore_status": [true, true],
-  "infra_status": "ready"
+  "org_id": "free",
+  "infra": {
+    "scheduler_status": true,
+    "graph_status": true,
+    "vectorstore_status": [true, true]
+  },
+  "message": "Deployed infrastructure status"
 }
 ```
 
 Wait for **all** of:
 
-- `graph_status: true`
-- `vectorstore_status: [true, true]` (both indices ready)
-- `infra_status: "ready"`
+- `infra.scheduler_status: true`
+- `infra.graph_status: true`
+- `infra.vectorstore_status: [true, true]` (both indices ready; `[0]` = Memories, `[1]` = Knowledge)
+
+There is no top-level `infra_status: "ready"` field  -  readiness is the conjunction of the three fields above.
 
 #### `GET /tenants/monitor`
 
@@ -542,19 +584,25 @@ Wait for **all** of:
 GET /tenants/monitor?tenant_id=acme_corp
 ```
 
-Returns object counts and vector dimensions:
+Returns row counts and vector dimensions per collection:
 
 ```json
 {
   "tenant_id": "acme_corp",
-  "total_chunks": 12847,
-  "total_sources": 432,
-  "total_memories": 1523,
-  "embedding_dimension": 1024,
-  "graph_nodes": 8934,
-  "graph_relationships": 15672
+  "normal_collection": {
+    "row_count": 12847,
+    "dimensions": 1536
+  },
+  "memory_collection": {
+    "row_count": 1523,
+    "dimensions": 1536
+  },
+  "message": "Successfully retrieved tenant collection statistics"
 }
 ```
+
+- `normal_collection` -- the **Knowledge** vector store (index `[1]` in `infra/status`).
+- `memory_collection` -- the **Memories** vector store (index `[0]` in `infra/status`).
 
 #### `GET /tenants/sub_tenant_ids`
 
@@ -631,22 +679,31 @@ curl -X POST https://api.hydradb.com/ingestion/upload_knowledge \
 
 **Hard rules:**
 
-- `file_metadata` array length **must equal** `files` count
-- `app_knowledge` **must** be a JSON-encoded string when sent via multipart form
-- Each app item needs `id`, `tenant_id`, `sub_tenant_id`; put searchable content in `fields` with `kind`, `provider`, and `external_id`
-- Put channel/project/space scope in `metadata`; `external_id` is the item ID, not the container
-- At recall, set `search_apps: true` on `full_recall` (`mode: "thinking"` for thread/relation expansion)
+- Always send `multipart/form-data` -- even when only sending `app_knowledge` (no files). JSON bodies return 422.
+- `file_metadata` array length **must equal** `files` count.
+- `app_knowledge` **must** be a JSON-encoded string when sent via multipart form (`json.dumps(...)` / `JSON.stringify(...)`).
+- Each app item needs `id`, `tenant_id`, `sub_tenant_id`; put searchable content in `fields` with `kind`, `provider`, and `external_id`.
+- Put channel/project/space scope in `metadata`; `external_id` is the item ID, not the container.
+- `upsert` defaults to **`true`** -- re-uploading the same `source_id` overwrites the previous source. Set `upsert: false` if you need insert-only semantics.
+- At recall, set `search_apps: true` on `full_recall` (`mode: "thinking"` for thread/relation expansion).
 - Full contract: [App Sources](/essentials/app-sources)
 
 **Response:**
 
 ```json
 {
-  "status": "success",
-  "message": "Processing started",
-  "source_ids": ["doc_001", "doc_002"]
+  "success": true,
+  "message": "Upload initiated successfully",
+  "results": [
+    {"source_id": "doc_001", "filename": "doc.pdf",    "status": "queued", "error": null},
+    {"source_id": "doc_002", "filename": "report.docx","status": "queued", "error": null}
+  ],
+  "success_count": 2,
+  "failed_count": 0
 }
 ```
+
+Each `results[].source_id` is the ID to use in subsequent `verify_processing`, `delete_knowledge`, `fetch/content`, and recall calls. `filename` is `null` for app-source items.
 
 #### `POST /ingestion/verify_processing`
 
@@ -772,38 +829,65 @@ Knowledge search (index `[1]`) with hybrid semantic + graph + keyword.
 **Parameters:**
 
 - `query` (required)
-- `max_results` (default `5`)
+- `max_results` (no default -- server-determined; start with `10`)
 - `alpha` (default `0.8`, range `0`–`1` or `"auto"`) -- semantic vs keyword balance
 - `recency_bias` (default `0.0`, range `0`–`1`) -- boost recent content
 - `mode` (default `"fast"`) -- `"fast"` or `"thinking"`
 - `graph_context` (default `false`) -- include entity relationships
 - `search_apps` (default `false`) -- app-aware lane: IDs, actors, threads, `parent_id`, `relations` (best with `mode: "thinking"`)
-- `metadata_filters` -- deterministic filtering by schema fields
-- `forceful_relations` -- array of entity names to include explicitly (requires `mode: "thinking"`)
+- `search_forceful_relations` (boolean, default `true`) -- in `thinking` mode, augment context with forcefully-related sources
+- `additional_context` (string, optional) -- extra context to guide retrieval
+- `metadata_filters` -- deterministic filtering by schema fields. Top-level keys match tenant-schema fields declared with `enable_match: true`; nest under `"additional_metadata"` for per-document fields. Exact-equality only -- no `$gte`/`$lt`/`$in`/`$regex`.
 
 **Response (shape):**
 
 ```json
 {
-  "results": [
+  "chunks": [
     {
-      "chunk_uuid": "chunk_001",
-      "text": "Q4 deployment requires approval from tech lead and security review...",
+      "chunk_uuid": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
       "source_id": "doc_deployment_guide",
-      "source_name": "Q4 Deployment Guide.pdf",
-      "score": 0.94,
+      "chunk_content": "Q4 deployment requires approval from tech lead and security review...",
+      "source_title": "Q4 Deployment Guide.pdf",
+      "source_type": "file",
+      "source_upload_time": "2025-09-15T10:00:00Z",
+      "relevancy_score": 0.94,
       "metadata": {"category": "deployment", "timestamp": "2024-10-01"},
-      "additional_metadata": {"author": "alice@acme.com", "version": "2.1"},
-      "graph_context": {
-        "entities": ["Tech Lead", "Security Review"],
-        "relationships": [
-          {"source": "Deployment", "target": "Security Review", "type": "REQUIRES"}
-        ]
-      }
+      "additional_metadata": {"author": "alice@acme.com", "version": "2.1"}
     }
-  ]
+  ],
+  "sources": [
+    {
+      "id": "doc_deployment_guide",
+      "title": "Q4 Deployment Guide.pdf",
+      "type": "file",
+      "url": "https://...",
+      "timestamp": "2025-09-15T10:00:00Z",
+      "metadata": {"category": "deployment"},
+      "additional_metadata": {"author": "alice@acme.com"}
+    }
+  ],
+  "graph_context": {
+    "query_paths": [
+      {
+        "triplets": [
+          {
+            "source": {"name": "Deployment", "type": "PROCESS"},
+            "relation": {"canonical_predicate": "REQUIRES"},
+            "target": {"name": "Security Review", "type": "PROCESS"}
+          }
+        ],
+        "relevancy_score": 0.85
+      }
+    ],
+    "chunk_relations": [],
+    "chunk_id_to_group_ids": {}
+  },
+  "additional_context": {}
 }
 ```
+
+**Critical:** results live in `chunks[]` (not `results[]`). Field names are `chunk_content`, `source_title`, `relevancy_score` -- **not** `text`, `source_name`, `score`. `sources[]` is a deduplicated parallel array of source records (join on `chunk.source_id == source.id`). `graph_context` is a top-level object populated only when `graph_context: true` was requested **and** the ingested content has graph relations.
 
 #### `POST /recall/recall_preferences`
 
@@ -834,11 +918,17 @@ Exact phrase or boolean keyword search.
 }
 ```
 
-**Operators:** `"phrase"`, `"and"`, `"or"`
-**`search_mode`:** `"sources"` (default) or `"memories"`
+**Parameters:**
+
+- `operator` (default `"or"`) -- `"or"` (any term), `"and"` (all terms), `"phrase"` (exact ordered phrase)
+- `max_results` (default `10`)
+- `search_mode` (default `"sources"`) -- `"sources"` (knowledge) or `"memories"`
+- `sub_tenant_id` -- standard scope
+
+**Response:** same shape as `full_recall` (`chunks[]` + `sources[]`); `relevancy_score` is BM25 rather than semantic similarity.
 
 <Warning>
-`boolean_recall` does **not** accept `alpha`, `mode`, or `graph_context`. Sending them returns 400.
+`boolean_recall` does **not** accept `alpha`, `mode`, `recency_bias`, `graph_context`, `metadata_filters`, or `additional_context`. Sending them returns 400. The `phrase` operator is **order-sensitive** -- "30 days refund" will not match "refund within 30 days".
 </Warning>
 
 
@@ -1198,30 +1288,43 @@ exact = client.recall.boolean_recall(
 
 ## 7. CLI Quick Reference
 
+The CLI uses **positional arguments** (not `--tenant-id` flags). `TENANT_ID` is required on most commands; pass it after the verb.
+
 | Task | Command |
 |---|---|
-| Create tenant | `hydradb tenant create --tenant-id acme` |
-| Monitor tenant | `hydradb tenant monitor --tenant-id acme` |
-| List sub-tenants | `hydradb tenant list-sub-tenants --tenant-id acme` |
-| Add memory (inferred) | `hydradb memories add --text "Prefers dark mode" --infer` |
-| Add memory (exact) | `hydradb memories add --text "User ID: 12345"` |
-| List memories | `hydradb memories list --sub-tenant-id user_alice` |
-| Delete memory | `hydradb memories delete --memory-ids mem_001` |
-| Upload files | `hydradb knowledge upload --files doc.pdf report.docx` |
-| Upload text | `hydradb knowledge upload-text --source-id slack_001 --text "..."` |
-| Verify processing | `hydradb knowledge verify --file-ids doc_001` |
-| Search knowledge | `hydradb recall full --query "deployment procedures"` |
-| Search memories | `hydradb recall preferences --query "communication prefs"` |
-| Keyword search | `hydradb recall keyword --query "mechanical engineer" --operator phrase` |
-| List sources | `hydradb fetch sources` |
-| Get source content | `hydradb fetch content --source-ids doc_001` |
-| Delete knowledge | `hydradb knowledge delete --ids doc_001` |
+| Login (interactive) | `hydradb login` |
+| Verify auth | `hydradb whoami` |
+| Logout | `hydradb logout` |
+| Create tenant | `hydradb tenant create acme` |
+| Monitor tenant | `hydradb tenant monitor acme` |
+| List sub-tenants | `hydradb tenant list-sub-tenants acme` |
+| Delete tenant | `hydradb tenant delete acme` |
+| Add memory | `hydradb memories add acme "Prefers dark mode"` |
+| List memories | `hydradb memories list acme` |
+| Delete memory | `hydradb memories delete acme mem_001` |
+| Upload files | `hydradb knowledge upload acme doc.pdf report.docx` |
+| Upload text | `hydradb knowledge upload-text acme "Project uses PostgreSQL 15"` |
+| Verify processing | `hydradb knowledge verify acme doc_001` |
+| Delete knowledge | `hydradb knowledge delete acme doc_001 doc_002` |
+| Search knowledge | `hydradb recall full acme "deployment procedures"` |
+| Search memories | `hydradb recall preferences acme "communication prefs"` |
+| Keyword search | `hydradb recall keyword acme "mechanical engineer"` |
+| List sources | `hydradb fetch sources acme` |
+| Get source content | `hydradb fetch content acme doc_001` |
+| Get graph relations | `hydradb fetch relations acme doc_001` |
+| Show config | `hydradb config show` |
+| Set config value | `hydradb config set output json` |
+
+<Warning>
+The CLI **does not** use `--tenant-id`, `--text`, `--file-ids`, `--memory-ids`, or `--source-ids` flags. Tenant ID, content, and IDs are positional. The `memories add` command auto-extracts insights via `infer`; there is no `--infer` flag on the CLI.
+</Warning>
 
 **Output formats:**
 
 ```bash
-hydradb memories list --output human   # Rich tables (default)
-hydradb memories list --output json    # for scripting
+hydradb memories list acme                  # Rich tables (default)
+hydradb -o json memories list acme          # JSON for scripting
+hydradb config set output json              # set default globally
 ```
 
 ---
@@ -1298,13 +1401,16 @@ for r in boolean_results["results"] + semantic_results["results"]:
 
 ### Entity-anchored (forceful relations)
 
+`search_forceful_relations` is a **boolean** (default `true` in `thinking` mode). It tells the recall pipeline to augment results with chunks from sources that have explicit `relations` to the matched sources. To anchor on specific entities, encode them in the query and/or pass `additional_context`:
+
 ```json
 {
   "tenant_id": "acme_corp",
   "query": "security review process",
   "mode": "thinking",
   "graph_context": true,
-  "forceful_relations": ["Security Team", "Compliance"]
+  "search_forceful_relations": true,
+  "additional_context": "Focus on the Security Team and Compliance entities."
 }
 ```
 
@@ -1427,7 +1533,7 @@ Ingest earnings transcripts with `quarter` / `year` in metadata. Use high `recen
 | `graph_context` empty | Default is `false` | Explicitly set `graph_context: true` |
 | Recency doesn't matter | `recency_bias` defaults to `0` | Set between `0.1` and `1.0` |
 | Wrong data surfaces | Mismatched `sub_tenant_id` | Use the same scope on write and read |
-| Forceful relations not fetching | Not in `thinking` mode | `mode: "thinking"` |
+| Forceful relations not fetching | Not in `thinking` mode, or `search_forceful_relations: false` | `mode: "thinking"` + `search_forceful_relations: true` |
 | 422 on upload | `file_metadata` length mismatch | Match array length to file count |
 | Schema field can't be changed | Tenant schema is immutable | Plan up-front; use `additional_metadata` for flex |
 | 422 on `app_knowledge` | Sent as object, not JSON-encoded string | `json.dumps(...)` / `JSON.stringify(...)` |
@@ -1465,7 +1571,10 @@ client.tenant.create(tenant_id="acme_corp")
 deadline = time.time() + 300  # 5-minute cap
 while time.time() < deadline:
     status = client.tenant.get_infra_status(tenant_id="acme_corp")
-    if status["graph_status"] and status["vectorstore_status"] == [True, True]:
+    infra = status["infra"]
+    if (infra["scheduler_status"]
+            and infra["graph_status"]
+            and all(infra["vectorstore_status"])):
         break
     time.sleep(2)
 else:
@@ -1771,11 +1880,13 @@ client.tenant.create(
 deadline = time.time() + 300
 while time.time() < deadline:
     s = client.tenant.get_infra_status(tenant_id="demo_tenant")
-    ready_graph = s["graph_status"] is True
-    ready_vs = isinstance(s["vectorstore_status"], list) \
-        and len(s["vectorstore_status"]) > 0 \
-        and all(s["vectorstore_status"])
-    if ready_graph and ready_vs:
+    infra = s["infra"]
+    ready_scheduler = infra["scheduler_status"] is True
+    ready_graph = infra["graph_status"] is True
+    ready_vs = isinstance(infra["vectorstore_status"], list) \
+        and len(infra["vectorstore_status"]) > 0 \
+        and all(infra["vectorstore_status"])
+    if ready_scheduler and ready_graph and ready_vs:
         break
     time.sleep(5)
 else:
@@ -1846,11 +1957,13 @@ const deadline = Date.now() + 5 * 60_000;
 let infraReady = false;
 while (Date.now() < deadline) {
   const s = await client.tenant.getInfraStatus({ tenant_id: "demo_tenant" });
-  const readyGraph = s.graph_status === true;
-  const readyVs = Array.isArray(s.vectorstore_status)
-    && s.vectorstore_status.length > 0
-    && s.vectorstore_status.every(Boolean);
-  if (readyGraph && readyVs) { infraReady = true; break; }
+  const infra = s.infra;
+  const readyScheduler = infra.scheduler_status === true;
+  const readyGraph = infra.graph_status === true;
+  const readyVs = Array.isArray(infra.vectorstore_status)
+    && infra.vectorstore_status.length > 0
+    && infra.vectorstore_status.every(Boolean);
+  if (readyScheduler && readyGraph && readyVs) { infraReady = true; break; }
   await sleep(5000);
 }
 if (!infraReady) {
@@ -1877,7 +1990,7 @@ while (Date.now() < procDeadline) {
     tenant_id: "demo_tenant",
     file_ids: ["doc_001"],
   });
-  const statuses = new Set(r.results.map((x) => x.indexing_status));
+  const statuses = new Set(r.statuses.map((x) => x.indexing_status));
   if ([...statuses].some((s) => TERMINAL_FAIL.has(s))) {
     throw new Error(`Ingestion errored: ${JSON.stringify(r)}`);
   }
@@ -1908,10 +2021,11 @@ console.log(results);
 hydradb login
 
 # 2) Create + wait (bounded at 5 min)
-hydradb tenant create --tenant-id demo_tenant
+hydradb tenant create demo_tenant
 deadline=$(( $(date +%s) + 300 ))
-until hydradb tenant monitor --tenant-id demo_tenant --output json \
-      | jq -e '.infra_status == "ready"' >/dev/null 2>&1; do
+until hydradb tenant monitor demo_tenant --output json \
+      | jq -e '.infra.scheduler_status and .infra.graph_status
+               and (.infra.vectorstore_status | all)' >/dev/null 2>&1; do
   if [ "$(date +%s)" -ge "$deadline" ]; then
     echo "Tenant infra not ready after 5 min" >&2
     exit 1
@@ -1920,15 +2034,13 @@ until hydradb tenant monitor --tenant-id demo_tenant --output json \
 done
 
 # 3) Ingest
-hydradb knowledge upload --tenant-id demo_tenant --files doc.pdf \
-  --metadata '{"category": "general"}'
+hydradb knowledge upload demo_tenant doc.pdf
 
-# 4) Verify
-hydradb knowledge verify --tenant-id demo_tenant --file-ids doc_001
+# 4) Verify (use the source_id returned by the upload step)
+hydradb knowledge verify demo_tenant doc_001
 
 # 5) Recall
-hydradb recall full --tenant-id demo_tenant \
-  --query "What is this document about?" --max-results 5
+hydradb recall full demo_tenant "What is this document about?"
 ```
 
 ---

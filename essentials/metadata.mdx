@@ -155,11 +155,10 @@ HydraDB exposes two metadata fields on every source object. **Both are filterabl
 ```json
 {
   "metadata_filters": {
-    "environment": "production",                    // tenant-level (top-level key)
-    "additional_metadata": { "author": "alice" }    // document-level (nested)
+    "environment": "production",
+    "additional_metadata": { "author": "alice" }
   }
 }
-```
 
 If a field will be filtered on every query (hot path), put it in `metadata` and declare it in the tenant schema with `enable_match: true`. For ad-hoc or per-document fields, use `additional_metadata`.
 

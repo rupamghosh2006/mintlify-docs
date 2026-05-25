@@ -182,10 +182,12 @@ Pre-parsed records from business apps. One `app_knowledge` item = one HydraDB so
 | Layer | Fields | Purpose |
 |---|---|---|
 | Envelope | `id`, `tenant_id`, `sub_tenant_id` | Required on every item |
-| Identity | `kind`, `provider`, `external_id` | `email`, `message`, `ticket`, `knowledge_base`, `custom` |
+| Identity | `kind`, `provider`, `external_id` | `email`, `message`, `ticket`, `knowledge_base`, `comment`, `custom` |
 | Content | `fields` | Searchable body/title/status/thread IDs - match `fields.kind` to top-level `kind` |
 | Scope | `metadata` | Channel, project, space, pipeline (`container_type`, `container_id`, …) |
-| Structure | `relations`, `comments`, `attachments` | Cross-source links, discussion, extracted file text |
+| Structure | `relations`, `comments`, `attachments` | Cross-source links, embedded snapshot discussion, extracted file text |
+
+For incremental app webhooks, ingest new Slack/email messages, new knowledge-base pages, and new ticket comments as new sources. Use `kind: "comment"` for ticket comments, with `fields.parent_id` pointing to the parent ticket's `external_id`.
 
 Full field reference, scenarios, and mistakes: [App Sources](/essentials/app-sources).
 

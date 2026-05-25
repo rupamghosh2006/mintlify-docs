@@ -11,7 +11,7 @@ If you're new to HydraDB, the [Core Concepts](/get-started/core-concepts) page i
 
 ## What you'll build
 
-By the end of this quickstart you'll have a working **search method that scales from 10 documents to 10,000+ with no code changes** and reaches across content that extends to **millions of tokens**. HydraDB does the parsing, chunking, embedding, graph construction, and hybrid retrieval; your application sends the query and gets back the right slice of context  -  ready to feed into an LLM prompt.
+By the end of this quickstart you'll have a working **production grade super scalable search that scales from 10 documents to 10,000+ with no code changes** and reaches across content that extends to **millions of tokens**. HydraDB does the parsing, chunking, embedding, graph construction, and hybrid retrieval; your application sends the query and gets back the right slice of context  -  ready to feed into an LLM prompt.
 
 ```mermaid
 flowchart LR
@@ -131,7 +131,7 @@ response = client.tenants.create(tenant_id="my_first_tenant")
 
 <Step title="Step 1b - Wait for provisioning">
 
-Poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until both `vectorstore_status` entries and `graph_status` are `true`. The snippets below loop automatically:
+Poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until  `vectorstore_status` entries and `graph_status` are `true`. The snippets below loop automatically:
 
 <CodeGroup>
 ```bash cURL
@@ -296,7 +296,7 @@ Both responses include a `source_id` per item. Save them  -  you'll use them in 
 
 <Step title="Step 2b - Verify processing">
 
-Ingestion is asynchronous(runs in background). Content passes through this pipeline before it becomes fully recallable:
+Ingestion is asynchronous(runs in background). Content passes through this pipeline(Queued --> Processing --> Graph Creation --> Completed) before it becomes fully recallable:
 
 ```mermaid
 flowchart LR
@@ -398,7 +398,7 @@ Most documents complete in 1–5 minutes. Larger PDFs or DOCX files can take up 
 
 <Step title="Step 3 - Recall context">
 
-Now the fun part. In v2 there's a single retrieval endpoint  -  [`POST /search`](/api-reference/v2/endpoint/search)  -  and two parameters control everything:
+there's a single retrieval endpoint  -  [`POST /search`](/api-reference/v2/endpoint/search)  -  and two parameters control everything:
 
 - **`source`** picks the bucket: `"sources"` (Knowledge), `"memories"` (Memories), or `"all"` (both, merged).
 - **`search_by`** picks the method: `"hybrid"` (default  -  dense + BM25), `"text"` (BM25 only), or `"vector"` (dense only).
@@ -450,7 +450,7 @@ result = client.search.query(
 
 **Key flags:**
 
-- **`mode: "thinking"`**  -  multi-query expansion with reranking. Higher quality, higher latency. Use for customer-facing answers. The default `"fast"` skips expansion. See [Recall](/essentials/v2/recall) for the full deep-dive.
+- **`mode: "thinking"`**  - ensures more accurate results. Higher quality. Use for customer-facing answers. The default `"fast"` skips expansion. See [Recall](/essentials/v2/recall) for the full deep-dive.
 - **`graph_context: true`**  -  enriches results with entity relationships from the [context graph](/essentials/v2/context-graphs).
 - **`alpha`** (not set above, defaults to `0.8`)  -  blends semantic vs. lexical scoring. Lower it (`0.3–0.5`) when the query contains literal tokens like error codes or SKUs.
 

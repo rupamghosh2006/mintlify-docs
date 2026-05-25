@@ -46,7 +46,14 @@ Steps 1 and 3 are **asynchronous**  -  HydraDB provisions infrastructure and ind
 
 <CodeGroup>
 ```bash cURL
-# No install needed — use curl directly
+# No install needed — smoke-test the connection directly.
+# Lists tenants visible to this key. A 200 response confirms
+# auth + the v2 header are both wired up.
+export HYDRA_DB_API_KEY="your_api_key"
+
+curl 'https://api.hydradb.com/tenants' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2"
 ```
 ```bash TypeScript SDK
 npm install @hydradb/sdk@^2
@@ -122,7 +129,7 @@ response = client.tenants.create(tenant_id="my_first_tenant")
 
 </Step>
 
-<Step title="Step 1b — Wait for provisioning">
+<Step title="Step 1b - Wait for provisioning">
 
 Poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until both `vectorstore_status` entries and `graph_status` are `true`. The snippets below loop automatically:
 
@@ -171,7 +178,7 @@ while True:
 
 </Step>
 
-<Step title="Step 2a — Ingest data">
+<Step title="Step 2a - Ingest data">
 
 HydraDB has two content models. Pick the one that matches what you have:
 
@@ -287,7 +294,7 @@ Both responses include a `source_id` per item. Save them  -  you'll use them in 
 
 </Step>
 
-<Step title="Step 2b — Verify processing">
+<Step title="Step 2b - Verify processing">
 
 Ingestion is asynchronous. Content passes through this pipeline before it becomes fully recallable:
 
@@ -389,7 +396,7 @@ Most documents complete in 1–5 minutes. Larger PDFs or DOCX files can take up 
 
 </Step>
 
-<Step title="Step 3 — Recall context">
+<Step title="Step 3 - Recall context">
 
 Now the fun part. In v2 there's a single retrieval endpoint  -  [`POST /search`](/api-reference/v2/endpoint/search)  -  and two parameters control everything:
 
@@ -489,7 +496,7 @@ result = client.search.query(
 
 </Step>
 
-<Step title="Step 4 — Pass it to your LLM">
+<Step title="Step 4 - Pass it to your LLM">
 
 [`POST /search`](/api-reference/v2/endpoint/search) returns structured JSON; your model wants prose. The bridge is a context-building helper that flattens chunks (and optional graph context) into a string you can drop into a system or user prompt. The full helper, with all the formatting edge cases, lives in [How to Use API Results](/essentials/v2/api-results).
 

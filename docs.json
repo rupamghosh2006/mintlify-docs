@@ -34,8 +34,6 @@
               {
                 "group": "Usage",
                 "pages": [
-                  "essentials/v2/search",
-                  "essentials/v2/metadata",
                   {
                     "group": "Ingestion",
                     "pages": [
@@ -43,6 +41,8 @@
                       "essentials/v2/memories"
                     ]
                   },
+                  "essentials/v2/search",
+                  "essentials/v2/metadata",
                   "essentials/v2/api-results"
                 ]
               },

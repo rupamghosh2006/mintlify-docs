@@ -1,0 +1,473 @@
+---
+title: "App Sources"
+description: "How to ingest pre-extracted content from Slack, Gmail, Jira, Notion, CRM, and other apps using the app_knowledge path."
+---
+
+import { Field } from "/snippets/field.jsx";
+
+App sources are pre-parsed records from business applications  -  emails, chat messages, tickets, wiki pages, CRM objects, comments, and attachments  -  where you already have the text and structured fields. Ship them through the same [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) endpoint as files, using the `app_knowledge` field instead of multipart uploads.
+
+Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.cortex_source_ids`](#7-forceful-relations).
+
+<Info>
+  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
+</Info>
+
+---
+
+## 1. What it is
+
+| | App source | File upload |
+|---|---|---|
+| **Content** | Pre-extracted text (Slack message, Notion page, Jira ticket, etc.) | Binary file (PDF, DOCX, MD, CSV, TXT) |
+| **Sent in** | `app_knowledge` (stringified JSON array) | `files` (multipart) |
+| **HydraDB does** | Skips parsing; chunks the text you provide | Parses, then chunks |
+| **Best for** | App connectors with their own extractors | Documents in their original binary format |
+
+Both paths run through the same pipeline after parsing  -  chunk → embed → graph → index  -  and both return a `source_id` you poll on [`GET /source/status`](/api-reference/v2/endpoint/source-status).
+
+---
+
+## 2. The mental model
+
+Every app-source item maps to one HydraDB source with the fields below. The shape is the same regardless of provider  -  use `type` as a free-form category tag, not a discriminator.
+
+| Field | Purpose |
+|---|---|
+| `id` | Stable HydraDB source ID. Upsert key. |
+| `title` | Short display title (subject, channel + timestamp, page name). |
+| `type` | Source category tag (`slack`, `notion`, `gmail`, `jira`, `salesforce`, etc.). Used for display and filtering. |
+| `description` | Optional long-form summary. |
+| `url` | Canonical link back to the source item. |
+| `timestamp` | ISO-8601 creation or last-updated time. |
+| `content` | `{ "text": "..." }` or `{ "markdown": "..." }`  -  the searchable body. |
+| `tenant_metadata` | Schema-aligned filterable fields (channel, project, space, region). See [Scoping using metadata](/essentials/v2/metadata). |
+| `document_metadata` | Free-form display/bookkeeping fields (author, message ts, ticket key, etc.). |
+| `attachments` | Pre-extracted files attached to this item. |
+| `relations` | Forceful links to other HydraDB sources by `cortex_source_ids`. |
+
+There is no separate `kind`, `provider`, `external_id`, `fields`, `thread_id`, `parent_id`, `linked_issue_ids`, or embedded `comments[]` array. Model those concepts using:
+
+- **Stable provider IDs** → put them in `id` (e.g. `slack_C01_1716213600_000100`, `jira_AUTH-123`).
+- **Threads, replies, comments** → ingest each as its own source and link them via [`relations.cortex_source_ids`](#7-forceful-relations).
+- **Channel/project/space scope** → put in `tenant_metadata` (filterable) or `document_metadata` (display).
+
+---
+
+## 3. When to use it
+
+Reach for `app_knowledge` when:
+
+- Your app or connector already extracts text (Slack, Notion, Gmail, Confluence, Jira, Salesforce, HubSpot, Zendesk, Intercom).
+- You want to preserve provider IDs as the HydraDB `id` so re-ingests upsert cleanly.
+- You want chunking driven by structured text rather than file parsing.
+
+Stick with the file-upload path when you have the original binary (PDF/DOCX/MD/CSV) and want HydraDB's parser to handle layout, tables, and OCR. See [Knowledge - Path A](/essentials/v2/knowledge#path-a-files).
+
+---
+
+## 4. Ingest an app source
+
+Send `app_knowledge` as a **stringified JSON** value on the multipart form. Each entry becomes one source.
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2" \
+  -F "type=knowledge" \
+  -F "tenant_id=acme_corp" \
+  -F 'app_knowledge=[
+    {
+      "id": "slack_C01_1716213600_000100",
+      "title": "Auth rollback discussion - #engineering",
+      "type": "slack",
+      "url": "https://acme.slack.com/archives/C01/p1716213600000100",
+      "timestamp": "2026-05-20T10:00:00Z",
+      "content": { "text": "Can someone review the auth rollback? Bob, you free to pair?" },
+      "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
+      "document_metadata": { "slack_ts": "1716213600.000100", "author": "alice" }
+    }
+  ]'
+```
+```typescript TypeScript SDK
+const result = await client.source.ingest({
+  type: "knowledge",
+  tenant_id: "acme_corp",
+  app_knowledge: JSON.stringify([
+    {
+      id: "slack_C01_1716213600_000100",
+      title: "Auth rollback discussion - #engineering",
+      type: "slack",
+      url: "https://acme.slack.com/archives/C01/p1716213600000100",
+      timestamp: "2026-05-20T10:00:00Z",
+      content: { text: "Can someone review the auth rollback? Bob, you free to pair?" },
+      tenant_metadata: { channel: "engineering", workspace: "acme" },
+      document_metadata: { slack_ts: "1716213600.000100", author: "alice" },
+    },
+  ]),
+});
+```
+```python Python SDK
+import json
+
+result = client.source.ingest(
+    type="knowledge",
+    tenant_id="acme_corp",
+    app_knowledge=json.dumps([
+        {
+            "id": "slack_C01_1716213600_000100",
+            "title": "Auth rollback discussion - #engineering",
+            "type": "slack",
+            "url": "https://acme.slack.com/archives/C01/p1716213600000100",
+            "timestamp": "2026-05-20T10:00:00Z",
+            "content": {"text": "Can someone review the auth rollback? Bob, you free to pair?"},
+            "tenant_metadata": {"channel": "engineering", "workspace": "acme"},
+            "document_metadata": {"slack_ts": "1716213600.000100", "author": "alice"},
+        }
+    ]),
+)
+```
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "Knowledge uploaded successfully",
+    "results": [
+      { "source_id": "slack_C01_1716213600_000100", "filename": null, "status": "queued", "error": null }
+    ],
+    "success_count": 1,
+    "failed_count": 0
+  },
+  "error": null,
+  "meta": { "request_id": "...", "latency_ms": 8.4 }
+}
+```
+
+The call returns `202 Accepted`; the source is not searchable until [`GET /source/status`](/api-reference/v2/endpoint/source-status) reports `indexing_status: "completed"` (or at least `graph_creation` for partial availability). See [Knowledge - Verifying processing](/essentials/v2/knowledge#5-verifying-processing) for the polling loop.
+
+<Info>
+  **Multipart, not JSON.** [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) is one of the few endpoints that uses `multipart/form-data`. Stringify `app_knowledge` before sending it in the form field.
+</Info>
+
+---
+
+## 5. Incremental ingestion
+
+Use the same [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) call for both initial backfill and live updates. The choice that matters is whether the provider event is the **same source being updated** or a **new source that arrived later**.
+
+| Provider event | What to send | Why |
+|---|---|---|
+| Ticket title/description/status changed | Re-ingest with the same `id`, `upsert: true` | The ticket itself changed; replace the snapshot |
+| New ticket comment (Linear/Jira/Zendesk) | Ingest a **new** source with its own `id` and `relations.cortex_source_ids` pointing to the parent ticket | The comment is a distinct provider object |
+| Edited ticket comment | Re-ingest the comment source with the same `id`, `upsert: true` | Same comment changed |
+| Deleted ticket comment | Call [`DELETE /source`](/api-reference/v2/endpoint/delete-source) with the comment's `id` | The comment should no longer surface |
+| New Slack/Teams message | Ingest a **new** `type: "slack"` source; link to the thread root via `relations.cortex_source_ids` | Messages are standalone events |
+| New email reply | Ingest a **new** `type: "gmail"` source; link to the original via `relations` | Each email has its own provider ID |
+| New Notion/Confluence page in a space | Ingest a **new** source; space goes in `tenant_metadata` | A page is a standalone document |
+| Existing Notion/Confluence page edited | Re-ingest with the same `id`, `upsert: true` | The page document changed |
+
+<Warning>
+  `upsert: true` (the default) replaces the entire existing source with the new payload. To add a comment to a ticket without losing the ticket body, model the comment as its own source and link via `relations.cortex_source_ids`  -  don't mutate the parent.
+</Warning>
+
+---
+
+## 6. Per-app patterns
+
+### Slack message (with thread + attachment)
+
+A Slack thread is several sources linked together. Use the message timestamp inside a stable composite ID so re-ingests upsert cleanly.
+
+```json
+{
+  "id": "slack_C01_1716213600_000100",
+  "title": "Auth rollback - thread root",
+  "type": "slack",
+  "url": "https://acme.slack.com/archives/C01/p1716213600000100",
+  "timestamp": "2026-05-20T10:00:00Z",
+  "content": { "text": "The auth rollback notes are attached here." },
+  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
+  "document_metadata": {
+    "slack_ts": "1716213600.000100",
+    "author": "alice"
+  },
+  "attachments": [
+    {
+      "id": "F012AUTH",
+      "title": "auth-rollback-notes.md",
+      "url": "https://files.slack.com/files-pri/T01-F012AUTH/auth-rollback-notes.md",
+      "content_type": "text/markdown",
+      "content": { "markdown": "# Auth rollback\nRollback starts by disabling the new token refresh path." }
+    }
+  ]
+}
+```
+
+For a reply, ingest a second source and link it back:
+
+```json
+{
+  "id": "slack_C01_1716213700_000200",
+  "title": "Re: Auth rollback - reply",
+  "type": "slack",
+  "timestamp": "2026-05-20T10:01:40Z",
+  "content": { "text": "Looking now - will pair with Bob in 10." },
+  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
+  "document_metadata": {
+    "slack_ts": "1716213700.000200",
+    "thread_ts": "1716213600.000100",
+    "author": "carol"
+  },
+  "relations": {
+    "cortex_source_ids": ["slack_C01_1716213600_000100"]
+  }
+}
+```
+
+### Jira ticket (with linked issues)
+
+The ticket body lives in `content.text`. Workflow fields (status, priority, assignee, reporter) go into `document_metadata`. Filterable scope (project, environment) goes into `tenant_metadata`. Links to related tickets are forceful relations.
+
+```json
+{
+  "id": "jira_AUTH-123",
+  "title": "Login page returns 500",
+  "type": "jira",
+  "url": "https://jira.example.com/browse/AUTH-123",
+  "timestamp": "2026-05-20T10:00:00Z",
+  "content": {
+    "text": "Invalid credentials return HTTP 500 instead of 401. Reproduces on staging and prod."
+  },
+  "tenant_metadata": { "project": "AUTH", "environment": "production" },
+  "document_metadata": {
+    "ticket_key": "AUTH-123",
+    "status": "open",
+    "priority": "high",
+    "assignee": "alice",
+    "reporter": "bob"
+  },
+  "relations": {
+    "cortex_source_ids": ["jira_AUTH-124", "jira_AUTH-125", "jira_AUTH-100"]
+  }
+}
+```
+
+### Linear ticket comment (incremental)
+
+Comments are their own sources. The link to the parent ticket goes through [`relations.cortex_source_ids`](#7-forceful-relations).
+
+```json
+{
+  "id": "linear_comment_c123",
+  "title": "Comment on AUTH-123",
+  "type": "linear_comment",
+  "url": "https://linear.app/acme/issue/AUTH-123#comment-c123",
+  "timestamp": "2026-05-25T07:00:00Z",
+  "content": { "text": "I found the repro steps. Attaching HAR." },
+  "tenant_metadata": { "project": "AUTH" },
+  "document_metadata": {
+    "comment_id": "c123",
+    "author": "alice@acme.com",
+    "parent_ticket": "UI-001"
+  },
+  "relations": {
+    "cortex_source_ids": ["linear_UI-001"]
+  }
+}
+```
+
+### Notion / Confluence page
+
+A page is one source. The space, workspace, or database goes in metadata, not the source identity.
+
+```json
+{
+  "id": "notion_page_abc",
+  "title": "Incident response runbook",
+  "type": "notion",
+  "url": "https://notion.so/page_abc",
+  "timestamp": "2026-05-25T07:00:00Z",
+  "content": { "markdown": "# Incident response\n\nSteps to triage production incidents..." },
+  "tenant_metadata": { "space": "Engineering", "doc_type": "runbook" },
+  "document_metadata": {
+    "page_id": "page_abc",
+    "created_by": "alice@acme.com",
+    "updated_by": "alice@acme.com"
+  }
+}
+```
+
+### Gmail email (with reply)
+
+Each email message is its own source. Link replies and forwards through [`relations.cortex_source_ids`](#7-forceful-relations).
+
+```json
+{
+  "id": "gmail_msg_19a2b3c",
+  "title": "Q4 launch plan",
+  "type": "gmail",
+  "url": "https://mail.google.com/mail/u/0/#inbox/19a2b3c",
+  "timestamp": "2026-05-20T09:00:00Z",
+  "content": { "text": "Here is the updated plan..." },
+  "tenant_metadata": { "mailbox": "team@acme.com" },
+  "document_metadata": {
+    "gmail_message_id": "19a2b3c",
+    "gmail_thread_id": "thread_19a2",
+    "from": "alice@acme.com",
+    "to": ["team@acme.com"],
+    "cc": ["pm@acme.com"]
+  },
+  "relations": {
+    "cortex_source_ids": ["gmail_msg_19a1a00"]
+  }
+}
+```
+
+### Salesforce opportunity linked to a support ticket
+
+CRM records use the same flat shape. Cross-app links go through [`relations.cortex_source_ids`](#7-forceful-relations)  -  pointing at HydraDB source IDs in any tenant scope.
+
+```json
+{
+  "id": "salesforce_opp_789",
+  "title": "Acme enterprise renewal",
+  "type": "salesforce",
+  "url": "https://acme.lightning.force.com/lightning/r/Opportunity/opp_789/view",
+  "timestamp": "2026-05-21T08:45:00Z",
+  "content": {
+    "text": "Acme renewal in negotiation. $50k ARR. Blocked on auth fix tracked in AUTH-123."
+  },
+  "tenant_metadata": { "pipeline": "enterprise-renewals", "region": "north-america" },
+  "document_metadata": {
+    "record_type": "opportunity",
+    "stage": "negotiation",
+    "amount": "50000",
+    "owner": "morgan",
+    "account_id": "account_456"
+  },
+  "relations": {
+    "cortex_source_ids": ["jira_AUTH-123", "salesforce_account_456"]
+  }
+}
+```
+
+---
+
+## 7. Forceful relations
+
+`relations.cortex_source_ids` declares explicit links between sources. When a query matches one side of the link, HydraDB pulls the linked sources into the `additional_context` field of the [search response](/api-reference/v2/endpoint/search) alongside the primary chunks.
+
+Use forceful relations for connections the text alone can't express:
+
+- Reply / comment / message → parent thread or ticket
+- Linked tickets (`linked_to`, `blocks`, `child_of`)
+- CRM opportunity → support ticket
+- Page → referenced runbook or design doc
+
+```json
+{
+  "relations": {
+    "cortex_source_ids": ["jira_AUTH-100", "jira_AUTH-124"],
+    "properties": { "reason": "linked issues" }
+  }
+}
+```
+
+<Warning>
+  Forceful relations work **within the same store**  -  Knowledge → Knowledge or Memory → Memory. Pointing a Knowledge source at a Memory source ID (or vice versa) silently returns nothing at search.
+</Warning>
+
+<Warning>
+  Forceful-relation context is only fetched when `mode: "thinking"` is set on the [search request](/api-reference/v2/endpoint/search). In `fast` mode, `search_forceful_relations` is ignored.
+</Warning>
+
+See [Knowledge - Forceful relations](/essentials/v2/knowledge#7-forceful-relations) for the full retrieval contract.
+
+---
+
+## 8. Attachments
+
+Use `attachments` when you've already extracted file text and want it indexed alongside the parent source. Each attachment is preserved with the source and surfaced in search results.
+
+```json
+{
+  "attachments": [
+    {
+      "id": "att-har-1",
+      "title": "staging-login.har",
+      "url": "https://...",
+      "content_type": "application/json",
+      "content": { "text": "HAR trace shows repeated 302 redirects after token refresh." },
+      "misc": { "source": "linear", "comment_id": "c123" }
+    }
+  ]
+}
+```
+
+| Attachment field | Effect |
+|---|---|
+| `content.text` / `content.markdown` | Indexed as searchable text linked to the parent source. |
+| `url`, `title`, `content_type` | Preserved for display and citations. |
+| `content_url` | Direct content URL distinct from the reference URL. |
+| `misc` | Free-form metadata (provider IDs, comment IDs, etc.). |
+
+A URL by itself is treated as metadata; HydraDB does **not** fetch and parse arbitrary attachment URLs from app-source payloads. Extract the text yourself and put it in `content.text`.
+
+---
+
+## 9. Metadata: scoping vs display
+
+Two fields, two jobs.
+
+| Use `tenant_metadata` when | Use `document_metadata` when |
+|---|---|
+| You want to **filter** at search time (`metadata_filters`) | The field is for display, citation, or bookkeeping only |
+| The field is declared in the [tenant metadata schema](/api-reference/v2/endpoint/create-tenant) | The field is free-form and changes per source |
+| Examples: `channel`, `project`, `space`, `pipeline`, `environment`, `region`, `doc_type` | Examples: `slack_ts`, `author`, `ticket_key`, `comment_id`, `gmail_message_id`, `stage`, `amount` |
+
+Filterable keys must be declared in `tenant_metadata_schema` with `enable_match: true` at tenant creation. Undeclared keys in `tenant_metadata` are silently ignored at search time. To filter on `document_metadata`, nest under `document_metadata` in `metadata_filters`:
+
+```json
+{
+  "query": "auth rollback discussion",
+  "metadata_filters": {
+    "channel": "engineering",
+    "document_metadata": { "author": "alice" }
+  }
+}
+```
+
+See [Scoping using metadata](/essentials/v2/metadata) for the full schema design rules and filter shapes.
+
+---
+
+## 10. Common mistakes
+
+| Mistake | Why it breaks | Fix |
+|---|---|---|
+| Sending `app_knowledge` as a JSON object instead of a stringified JSON | `multipart/form-data` validation fails | `JSON.stringify(...)` (TS) or `json.dumps(...)` (Python) before sending |
+| Putting filterable fields in `document_metadata` | Filters silently ignored | Move them to `tenant_metadata` and declare in the [tenant schema](/api-reference/v2/endpoint/create-tenant) |
+| Re-ingesting a Slack thread on every new reply | Loses message-level authorship and timestamps; wastes indexing | Ingest each reply as a new source; link via `relations.cortex_source_ids` |
+| Mutating a ticket source to add a comment | `upsert` replaces the whole snapshot | Ingest the comment as its own source with a link back to the ticket |
+| Using a non-stable string for `id` | Re-ingests create duplicate sources instead of upserting | Compose `id` from stable provider IDs (e.g. `slack_<channel>_<ts>`, `jira_<key>`) |
+| Pointing `relations.cortex_source_ids` at memory IDs from a Knowledge source | Silently returns nothing at search | Forceful relations stay within one store - Knowledge ↔ Knowledge, Memory ↔ Memory |
+| Skipping [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Source not indexed yet; empty results | Poll until `indexing_status: "completed"` (or `graph_creation` for partial availability) |
+| Sending `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Not a supported parameter | Just call [`POST /search`](/api-reference/v2/endpoint/search)  -  app sources are already in the [Knowledge](/essentials/v2/knowledge) store |
+
+---
+
+## Related
+
+- [Knowledge](/essentials/v2/knowledge)  -  the broader ingestion path; Path B covers `app_knowledge` end-to-end
+- [Memories](/essentials/v2/memories)  -  the per-user counterpart
+- [Search](/essentials/v2/search)  -  how [`POST /search`](/api-reference/v2/endpoint/search) retrieves app sources
+- [Scoping using metadata](/essentials/v2/metadata)  -  designing filterable schemas
+- [Context Graphs](/essentials/v2/context-graphs)  -  the graph layer built automatically from ingested text
+- [Ingest Content  -  API Reference](/api-reference/v2/endpoint/ingest-content)
+- [Source Status  -  API Reference](/api-reference/v2/endpoint/source-status)

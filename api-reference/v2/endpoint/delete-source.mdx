@@ -23,7 +23,7 @@ Pass one or more IDs in `request.ids`. The body wraps two fields together: `requ
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/source' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -58,7 +58,7 @@ client.source.delete(
     },
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
@@ -75,7 +75,9 @@ The body wraps two fields together. Required fields are marked with `*`.
 
 ### Knowledge (`type=knowledge`)
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "message": "Delete completed",
@@ -87,6 +89,8 @@ The body wraps two fields together. Required fields are marked with `*`.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
 | <Field name="success" /> | `true` if at least one ID was deleted. |
@@ -97,12 +101,16 @@ The body wraps two fields together. Required fields are marked with `*`.
 
 ### Memory (`type=memory`)
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "user_memory_deleted": true
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

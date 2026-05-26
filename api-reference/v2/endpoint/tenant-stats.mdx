@@ -24,7 +24,7 @@ The response splits stats into two collections: `normal_collection` (Knowledge) 
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants/stats?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -38,7 +38,7 @@ const stats = await client.tenants.stats({
 ```python Python SDK
 stats = client.tenants.stats(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
@@ -50,7 +50,9 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "normal_collection": {
@@ -64,6 +66,8 @@ Required fields are marked with `*`.
   "message": "Successfully retrieved tenant collection statistics"
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

@@ -23,7 +23,7 @@ Supports pagination (`page`, `page_size`), structured filters on tenant and docu
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/list' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -67,7 +67,7 @@ sources = client.source.list(
     include_fields=["title", "type", "url", "timestamp"],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
@@ -114,7 +114,9 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "message": "Sources retrieved successfully",
@@ -140,6 +142,8 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
   }
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

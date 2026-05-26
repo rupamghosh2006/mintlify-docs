@@ -24,7 +24,7 @@ Works for both knowledge sources and memory items  -  pass the `source_id` you g
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/status' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -48,7 +48,7 @@ status = client.source.status(
     file_ids=["policy_v2", "runbook_deploy"],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
@@ -67,7 +67,9 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 
 `200` response body matches OpenAPI schema **`BatchProcessingStatus`** with one `ProcessingStatus` per requested ID.
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "statuses": [
     {
@@ -87,6 +89,8 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
   ]
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

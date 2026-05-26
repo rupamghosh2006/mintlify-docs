@@ -22,7 +22,7 @@ Tenant creation is asynchronous. Always poll this endpoint after `POST /tenants`
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -36,7 +36,7 @@ const status = await client.tenants.status({
 ```python Python SDK
 status = client.tenants.status(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
@@ -48,7 +48,9 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "org_id": "org_abc123",
@@ -60,6 +62,8 @@ Required fields are marked with `*`.
   "message": "Deployed infrastructure status"
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

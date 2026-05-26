@@ -20,7 +20,7 @@ The response separates **active/provisioning** tenants (in `tenant_ids`) from te
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -32,17 +32,21 @@ const response = await client.tenants.list();
 ```python Python SDK
 response = client.tenants.list()
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_ids": ["acme_corp", "my_first_tenant"],
   "failed_tenant_ids": null,
   "message": "Successfully retrieved tenant IDs"
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

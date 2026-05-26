@@ -20,7 +20,7 @@ This action is irreversible. There is no soft-delete and no recovery window.
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/tenants?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -34,7 +34,7 @@ const response = await client.tenants.delete({
 ```python Python SDK
 response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
@@ -46,13 +46,17 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "status": "deletion_scheduled",
   "message": "Tenant deregistered. Background cleanup is in progress."
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

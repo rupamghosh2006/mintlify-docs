@@ -26,7 +26,8 @@ Works for both knowledge sources and memories  -  pass the `source_id` from the 
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/fetch' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -36,6 +37,7 @@ curl -G 'https://api.hydradb.com/source/fetch' \
   --data-urlencode "mode=both" \
   --data-urlencode "expiry_seconds=3600"
 ```
+
 ```typescript TypeScript SDK
 const file = await client.source.fetch({
   source_id: "policy_v2",
@@ -44,6 +46,7 @@ const file = await client.source.fetch({
   expiry_seconds: 3600,
 });
 ```
+
 ```python Python SDK
 file = client.source.fetch(
     source_id="policy_v2",
@@ -52,7 +55,8 @@ file = client.source.fetch(
     expiry_seconds=3600,
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ## Query parameters
 
@@ -76,7 +80,9 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "source_id": "policy_v2",
@@ -88,6 +94,8 @@ Required fields are marked with `*`.
   "message": "File fetched successfully"
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

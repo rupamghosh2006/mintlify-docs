@@ -20,7 +20,7 @@ In most cases, you create one tenant per organization. For per-user isolation (B
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -85,7 +85,7 @@ response = client.tenants.create(
     ],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
@@ -100,13 +100,17 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "status": "accepted",
   "tenant_id": "my_first_tenant",
   "message": "Tenant creation started in the background. Use GET /tenants/status?tenant_id=... to check progress."
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

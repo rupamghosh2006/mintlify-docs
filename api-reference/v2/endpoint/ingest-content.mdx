@@ -26,7 +26,8 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 
 ### Knowledge  -  files
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -40,6 +41,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     { "file_id": "runbook_deploy", "tenant_metadata": { "department": "ops" } }
   ]'
 ```
+
 ```typescript TypeScript SDK
 const result = await client.source.ingest({
   type: "knowledge",
@@ -54,6 +56,7 @@ const result = await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -71,11 +74,13 @@ with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb")
         ]),
     )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ### Knowledge  -  pre-extracted app sources
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -92,6 +97,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     }
   ]'
 ```
+
 ```typescript TypeScript SDK
 await client.source.ingest({
   type: "knowledge",
@@ -107,6 +113,7 @@ await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -124,11 +131,13 @@ client.source.ingest(
     ]),
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ### Memory  -  per-user
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -140,6 +149,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     { "text": "Prefers dark mode and short answers.", "infer": true, "user_name": "Alex" }
   ]'
 ```
+
 ```typescript TypeScript SDK
 await client.source.ingest({
   type: "memory",
@@ -150,6 +160,7 @@ await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -162,7 +173,8 @@ client.source.ingest(
     ]),
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ## Form fields
 
@@ -227,7 +239,9 @@ Required fields are marked with `*`.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "message": "Knowledge uploaded successfully",
@@ -239,6 +253,8 @@ Required fields are marked with `*`.
   "failed_count": 0
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

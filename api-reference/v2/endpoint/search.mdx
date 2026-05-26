@@ -27,7 +27,7 @@ Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for lo
 
 ### Document Q&A
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -62,11 +62,11 @@ result = client.search.query(
     graph_context=True,
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ### Personalized Q&A  -  Knowledge + Memories in one call
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -91,11 +91,11 @@ const result = await client.search.query({
   mode: "thinking",
 });
 ```
-</CodeGroup>
+</RequestExample>
 
 ### Exact-phrase lookup
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -118,7 +118,7 @@ result = client.search.query(
     operator="phrase",
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
@@ -190,7 +190,9 @@ For `search_by: "hybrid"` and `"vector"`:
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "chunks": [
     {
@@ -219,6 +221,8 @@ For `search_by: "hybrid"` and `"vector"`:
   }
 }
 ```
+
+</ResponseExample>
 
 | Field | Description |
 |---|---|

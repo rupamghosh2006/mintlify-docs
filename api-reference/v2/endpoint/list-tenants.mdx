@@ -4,6 +4,8 @@ description: "List all tenant IDs registered for your organization."
 openapi: "GET /tenants"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Discover the tenants your API key has access to  -  useful for admin tooling, debug dashboards, populating a tenant picker in a UI, or selecting a target tenant before ingestion or search.
@@ -18,7 +20,7 @@ The response separates **active/provisioning** tenants (in `tenant_ids`) from te
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -30,11 +32,13 @@ const response = await client.tenants.list();
 ```python Python SDK
 response = client.tenants.list()
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_ids": ["acme_corp", "my_first_tenant"],
   "failed_tenant_ids": null,
@@ -42,11 +46,13 @@ response = client.tenants.list()
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `tenant_ids` | Array of string IDs of active or provisioning tenants. |
-| `failed_tenant_ids` | Array of `{ tenant_id, error }` entries, or `null` when no failures. Re-create the tenant to retry provisioning. |
-| `message` | Human-readable status string. |
+| <Field name="tenant_ids" /> | Array of string IDs of active or provisioning tenants. |
+| <Field name="failed_tenant_ids" /> | Array of `{ tenant_id, error }` entries, or `null` when no failures. Re-create the tenant to retry provisioning. |
+| <Field name="message" /> | Human-readable status string. |
 
 ## Behavior notes
 

@@ -4,6 +4,8 @@ description: "Inspect the knowledge graph relationships for a source or sub-tena
 openapi: "GET /source/relations"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Inspect the entity-and-relationship graph HydraDB built during ingestion. Common uses:
@@ -24,7 +26,7 @@ Pass `source_id` to scope to a single ingested item, or omit it to return all re
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/relations' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -47,24 +49,26 @@ relations = client.source.relations(
     limit=500,
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
-| `source_id` | string \| null | When provided, returns relations for that specific source. When omitted, returns all relations across the sub-tenant. (default=`null`) |
-| `is_memory` | boolean | Set `true` to fetch relations for a memory item instead of a knowledge source. (default=`false`) |
-| `sub_tenant_id` | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| `limit` | integer | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
-| `cursor` | number \| null | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
+| <Field name="tenant_id" required /> | string | Owning tenant. |
+| <Field name="source_id" /> | string \| null | When provided, returns relations for that specific source. When omitted, returns all relations across the sub-tenant. (default=`null`) |
+| <Field name="is_memory" /> | boolean | Set `true` to fetch relations for a memory item instead of a knowledge source. (default=`false`) |
+| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="limit" /> | integer | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
+| <Field name="cursor" /> | number \| null | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "relations": [
     {
@@ -90,14 +94,16 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `relations[]` | Array  -  each entry is a `ScoredPathResponse` containing `triplets`, `relevancy_score`, and `group_id`. |
-| `relations[].triplets` | Array  -  source → relation → target hops. |
-| `relations[].triplets[].source` / `.target` | Entity object: `{ name, type, namespace, entity_id, identifier }`. |
-| `relations[].triplets[].relation` | Relation object: `{ canonical_predicate, raw_predicate, context, confidence, temporal_details, ... }`. |
-| `is_truncated` | Boolean  -  `true` when more results exist beyond `limit`. |
-| `next_cursor` | Opaque pagination cursor (number, or `null`). Pass to the next call's `cursor`. `null` when there are no more results. |
+| <Field name="relations[]" /> | Array  -  each entry is a `ScoredPathResponse` containing `triplets`, `relevancy_score`, and `group_id`. |
+| <Field name="relations[].triplets" /> | Array  -  source → relation → target hops. |
+| <Field name="relations[].triplets[].source / .target" /> | Entity object: `{ name, type, namespace, entity_id, identifier }`. |
+| <Field name="relations[].triplets[].relation" /> | Relation object: `{ canonical_predicate, raw_predicate, context, confidence, temporal_details, ... }`. |
+| <Field name="is_truncated" /> | Boolean  -  `true` when more results exist beyond `limit`. |
+| <Field name="next_cursor" /> | Opaque pagination cursor (number, or `null`). Pass to the next call's `cursor`. `null` when there are no more results. |
 
 ## Pagination pattern
 

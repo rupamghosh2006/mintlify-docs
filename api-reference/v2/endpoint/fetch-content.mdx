@@ -4,6 +4,8 @@ description: "Retrieve the original content of an ingested source."
 openapi: "GET /source/fetch"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Pull back the original ingested content for display in your UI, audit trails, or to feed a different downstream model. Common patterns:
@@ -24,7 +26,8 @@ Works for both knowledge sources and memories  -  pass the `source_id` from the 
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/fetch' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -34,6 +37,7 @@ curl -G 'https://api.hydradb.com/source/fetch' \
   --data-urlencode "mode=both" \
   --data-urlencode "expiry_seconds=3600"
 ```
+
 ```typescript TypeScript SDK
 const file = await client.source.fetch({
   source_id: "policy_v2",
@@ -42,6 +46,7 @@ const file = await client.source.fetch({
   expiry_seconds: 3600,
 });
 ```
+
 ```python Python SDK
 file = client.source.fetch(
     source_id="policy_v2",
@@ -50,19 +55,20 @@ file = client.source.fetch(
     expiry_seconds=3600,
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `source_id`<sup style={{ color: "red" }}>*</sup> | string | ID of the source to fetch. |
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
-| `sub_tenant_id` | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| `mode` | `"content" \| "url" \| "both"` | What to return. See [Fetch modes](#fetch-modes). (default=`"content"`) |
-| `expiry_seconds` | integer | TTL of the presigned URL (when `mode` includes `url`). Range `60 ≤ x ≤ 604800` (7 days). (default=`3600`) |
+| <Field name="source_id" required /> | string | ID of the source to fetch. |
+| <Field name="tenant_id" required /> | string | Owning tenant. |
+| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="mode" /> | `"content" \| "url" \| "both"` | What to return. See [Fetch modes](#fetch-modes). (default=`"content"`) |
+| <Field name="expiry_seconds" /> | integer | TTL of the presigned URL (when `mode` includes `url`). Range `60 ≤ x ≤ 604800` (7 days). (default=`3600`) |
 
 ## Fetch modes
 
@@ -74,7 +80,9 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "source_id": "policy_v2",
@@ -87,16 +95,18 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `success` | Boolean  -  always `true` on a 200 response. |
-| `source_id` | The source you asked for (string). |
-| `content` | Parsed text content (string, or `null`). Present when `mode` is `content` or `both` and the file is text-parseable. |
-| `content_base64` | Base64-encoded raw file content (string, or `null`). Present when the source is binary and `mode` includes content. |
-| `presigned_url` | Direct download URL (string, or `null`). Present when `mode` is `url` or `both`. |
-| `content_type` | MIME type when known (string, or `null`). |
-| `size_bytes` | Source file size in bytes when known (integer, or `null`). |
-| `message` | Human-readable status (string). |
+| <Field name="success" /> | Boolean  -  always `true` on a 200 response. |
+| <Field name="source_id" /> | The source you asked for (string). |
+| <Field name="content" /> | Parsed text content (string, or `null`). Present when `mode` is `content` or `both` and the file is text-parseable. |
+| <Field name="content_base64" /> | Base64-encoded raw file content (string, or `null`). Present when the source is binary and `mode` includes content. |
+| <Field name="presigned_url" /> | Direct download URL (string, or `null`). Present when `mode` is `url` or `both`. |
+| <Field name="content_type" /> | MIME type when known (string, or `null`). |
+| <Field name="size_bytes" /> | Source file size in bytes when known (integer, or `null`). |
+| <Field name="message" /> | Human-readable status (string). |
 
 ## Behavior notes
 

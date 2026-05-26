@@ -4,6 +4,8 @@ description: "Permanently remove a tenant and all of its data."
 openapi: "DELETE /tenants"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Tearing down a workspace  -  for customer offboarding, end-of-life environments, or cleanup after testing. Deletes the tenant **and all of its ingested data, memories, metadata schema, vector indices, graph, and infrastructure**.
@@ -18,7 +20,7 @@ This action is irreversible. There is no soft-delete and no recovery window.
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/tenants?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -32,19 +34,21 @@ const response = await client.tenants.delete({
 ```python Python SDK
 response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Identifier of the tenant to delete. |
+| <Field name="tenant_id" required /> | string | Identifier of the tenant to delete. |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "status": "deletion_scheduled",
@@ -52,11 +56,13 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `tenant_id` | The tenant that was deregistered. |
-| `status` | Always `deletion_scheduled` on success. Background workers continue removing data. |
-| `message` | Human-readable hint. |
+| <Field name="tenant_id" /> | The tenant that was deregistered. |
+| <Field name="status" /> | Always `deletion_scheduled` on success. Background workers continue removing data. |
+| <Field name="message" /> | Human-readable hint. |
 
 ## Behavior notes
 

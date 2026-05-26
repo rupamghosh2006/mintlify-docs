@@ -4,6 +4,8 @@ description: "Create an isolated workspace for your data."
 openapi: "POST /tenants"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Creating a new tenant is the first step before any ingestion or recall. A tenant is a fully isolated workspace – no tenant can read another tenant's data.
@@ -18,7 +20,7 @@ In most cases, you create one tenant per organization. For per-user isolation (B
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -83,22 +85,24 @@ response = client.tenants.create(
     ],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Unique identifier for the tenant. Must be at least one character. |
-| `tenant_metadata_schema` | array | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. (default=`null`) |
-| `is_embeddings_tenant` | boolean | Set to `true` to create a pure embeddings tenant (raw vector storage rather than parsed sources). Most applications leave this `false`. (default=`false`) |
-| `embeddings_dimension` | integer | Dimensionality of the dense vector store. Only applies when `is_embeddings_tenant: true`. (default=`1536`) |
+| <Field name="tenant_id" required /> | string | Unique identifier for the tenant. Must be at least one character. |
+| <Field name="tenant_metadata_schema" /> | array | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. (default=`null`) |
+| <Field name="is_embeddings_tenant" /> | boolean | Set to `true` to create a pure embeddings tenant (raw vector storage rather than parsed sources). Most applications leave this `false`. (default=`false`) |
+| <Field name="embeddings_dimension" /> | integer | Dimensionality of the dense vector store. Only applies when `is_embeddings_tenant: true`. (default=`1536`) |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "status": "accepted",
   "tenant_id": "my_first_tenant",
@@ -106,11 +110,13 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `status` | Always `accepted`. Provisioning runs in the background. |
-| `tenant_id` | The tenant identifier provided in the request. |
-| `message` | Human-readable next-step hint. |
+| <Field name="status" /> | Always `accepted`. Provisioning runs in the background. |
+| <Field name="tenant_id" /> | The tenant identifier provided in the request. |
+| <Field name="message" /> | Human-readable next-step hint. |
 
 ## Metadata schema
 
@@ -118,14 +124,14 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 
 | Field | Type | Description |
 |---|---|---|
-| `name`<sup style={{ color: "red" }}>*</sup> | string | Field name. Must start with a letter or underscore and contain only letters, numbers, and underscores (no spaces or special characters). Reserved system names are rejected. |
-| `data_type` | enum | Field data type. Accepts friendly names (`string`, `integer`, `float`, `boolean`, `array`, `object`) or raw Milvus types (`VARCHAR`, `INT32`, etc.). See [Valid data types](#valid-data-types). (default=`VARCHAR`) |
-| `max_length` | integer | Max length for `VARCHAR` fields. Increase for long text. (default=`1024`) |
-| `enable_analyzer` | boolean | Enable a text analyzer for full-text search capabilities on this field. (default=`false`) |
-| `enable_match` | boolean | Enable exact-match filtering on this field via `metadata_filters`. (default=`false`) |
-| `enable_dense_embedding` | boolean | Index a dense embedding for semantic similarity search. Only applicable to `VARCHAR` fields. (default=`false`) |
-| `enable_sparse_embedding` | boolean | Index a sparse embedding (BM25) for keyword search. Only applicable to `VARCHAR` fields. (default=`false`) |
-| `nullable` | boolean | Whether the field can be null at ingestion time. (default=`true`) |
+| <Field name="name" required /> | string | Field name. Must start with a letter or underscore and contain only letters, numbers, and underscores (no spaces or special characters). Reserved system names are rejected. |
+| <Field name="data_type" /> | enum | Field data type. Accepts friendly names (`string`, `integer`, `float`, `boolean`, `array`, `object`) or raw Milvus types (`VARCHAR`, `INT32`, etc.). See [Valid data types](#valid-data-types). (default=`VARCHAR`) |
+| <Field name="max_length" /> | integer | Max length for `VARCHAR` fields. Increase for long text. (default=`1024`) |
+| <Field name="enable_analyzer" /> | boolean | Enable a text analyzer for full-text search capabilities on this field. (default=`false`) |
+| <Field name="enable_match" /> | boolean | Enable exact-match filtering on this field via `metadata_filters`. (default=`false`) |
+| <Field name="enable_dense_embedding" /> | boolean | Index a dense embedding for semantic similarity search. Only applicable to `VARCHAR` fields. (default=`false`) |
+| <Field name="enable_sparse_embedding" /> | boolean | Index a sparse embedding (BM25) for keyword search. Only applicable to `VARCHAR` fields. (default=`false`) |
+| <Field name="nullable" /> | boolean | Whether the field can be null at ingestion time. (default=`true`) |
 
 ### Valid data types
 

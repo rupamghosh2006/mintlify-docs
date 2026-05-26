@@ -4,6 +4,8 @@ description: "Check the processing status of ingested sources by their IDs."
 openapi: "GET /source/status"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 `POST /source/ingest` is asynchronous. Use this endpoint to know when content is ready to be searched. Common patterns:
@@ -22,7 +24,7 @@ Works for both knowledge sources and memory items  -  pass the `source_id` you g
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/status' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -46,16 +48,16 @@ status = client.source.status(
     file_ids=["policy_v2", "runbook_deploy"],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
 | Name | Type | Description |
 |---|---|---|
-| `file_id` | string | **Deprecated**  -  single ID. Use `file_ids` instead. |
-| `file_ids` | string[] | One or more `source_id` values returned at ingestion. Despite the name, accepts IDs of any source  -  files, app sources, memories. (default=`[]`) |
-| `tenant_id` | string | Tenant the items belong to. (default=`""`) |
-| `sub_tenant_id` | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="file_id" /> | string | **Deprecated**  -  single ID. Use `file_ids` instead. |
+| <Field name="file_ids" /> | string[] | One or more `source_id` values returned at ingestion. Despite the name, accepts IDs of any source  -  files, app sources, memories. (default=`[]`) |
+| <Field name="tenant_id" /> | string | Tenant the items belong to. (default=`""`) |
+| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
 
 <Info>
 The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both file uploads and app sources and memories  -  not only file-backed sources.
@@ -65,7 +67,9 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 
 `200` response body matches OpenAPI schema **`BatchProcessingStatus`** with one `ProcessingStatus` per requested ID.
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "statuses": [
     {
@@ -86,14 +90,16 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `statuses[]` | Array  -  one entry per requested ID. |
-| `statuses[].file_id` | The ID being reported on (string). |
-| `statuses[].indexing_status` | Current status (enum). See [Status values](#status-values). |
-| `statuses[].error_code` | Diagnostic code if `errored`; empty string otherwise. |
-| `statuses[].success` | Boolean  -  `true` once the source reaches `completed`. |
-| `statuses[].message` | Detailed status message (string). |
+| <Field name="statuses[]" /> | Array  -  one entry per requested ID. |
+| <Field name="statuses[].file_id" /> | The ID being reported on (string). |
+| <Field name="statuses[].indexing_status" /> | Current status (enum). See [Status values](#status-values). |
+| <Field name="statuses[].error_code" /> | Diagnostic code if `errored`; empty string otherwise. |
+| <Field name="statuses[].success" /> | Boolean  -  `true` once the source reaches `completed`. |
+| <Field name="statuses[].message" /> | Detailed status message (string). |
 
 ## Status values
 

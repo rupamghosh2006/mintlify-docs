@@ -4,6 +4,8 @@ description: "Unified ingestion endpoint for knowledge (files, app sources) and 
 openapi: "POST /source/ingest"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 The single ingestion endpoint for everything that flows into HydraDB. Pick `type` to choose the bucket, then pass the matching content fields:
@@ -24,7 +26,8 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 
 ### Knowledge  -  files
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -38,6 +41,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     { "file_id": "runbook_deploy", "tenant_metadata": { "department": "ops" } }
   ]'
 ```
+
 ```typescript TypeScript SDK
 const result = await client.source.ingest({
   type: "knowledge",
@@ -52,6 +56,7 @@ const result = await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -69,11 +74,13 @@ with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb")
         ]),
     )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ### Knowledge  -  pre-extracted app sources
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -90,6 +97,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     }
   ]'
 ```
+
 ```typescript TypeScript SDK
 await client.source.ingest({
   type: "knowledge",
@@ -105,6 +113,7 @@ await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -122,11 +131,13 @@ client.source.ingest(
     ]),
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ### Memory  -  per-user
 
-<CodeGroup>
+<RequestExample>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -138,6 +149,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
     { "text": "Prefers dark mode and short answers.", "infer": true, "user_name": "Alex" }
   ]'
 ```
+
 ```typescript TypeScript SDK
 await client.source.ingest({
   type: "memory",
@@ -148,6 +160,7 @@ await client.source.ingest({
   ]),
 });
 ```
+
 ```python Python SDK
 import json
 
@@ -160,72 +173,75 @@ client.source.ingest(
     ]),
 )
 ```
-</CodeGroup>
+
+</RequestExample>
 
 ## Form fields
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `type` | `"knowledge" \| "memory"` | Bucket selector. (default=`"knowledge"`) |
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Target tenant. |
-| `sub_tenant_id` | string | Logical partition inside the tenant. (default=`""`  -  default sub-tenant) |
-| `upsert` | boolean | Replace existing sources with the same ID. Set to `false` to error on conflict. (default=`true`) |
-| `files` | file[] | Binary uploads, **knowledge only**. Required when `type=knowledge` and you have files to upload. Omit when ingesting memories. (default=`[]`) |
-| `file_metadata` | string (JSON array) | One entry per file in `files`, same order. See [`file_metadata` item shape](#file_metadata-item-shape). |
-| `app_knowledge` | string (JSON object or array) | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See [`app_knowledge` item shape](#app_knowledge-item-shape). |
-| `memory` | string (JSON array) | Memory items, **memory only**. Required when `type=memory`. See [`memories` item shape](#memories-item-shape). |
+| <Field name="type" /> | `"knowledge" \| "memory"` | Bucket selector. (default=`"knowledge"`) |
+| <Field name="tenant_id" required /> | string | Target tenant. |
+| <Field name="sub_tenant_id" /> | string | Logical partition inside the tenant. (default=`""`  -  default sub-tenant) |
+| <Field name="upsert" /> | boolean | Replace existing sources with the same ID. Set to `false` to error on conflict. (default=`true`) |
+| <Field name="files" /> | file[] | Binary uploads, **knowledge only**. Required when `type=knowledge` and you have files to upload. Omit when ingesting memories. (default=`[]`) |
+| <Field name="file_metadata" /> | string (JSON array) | One entry per file in `files`, same order. See [`file_metadata` item shape](#file_metadata-item-shape). |
+| <Field name="app_knowledge" /> | string (JSON object or array) | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See [`app_knowledge` item shape](#app_knowledge-item-shape). |
+| <Field name="memory" /> | string (JSON array) | Memory items, **memory only**. Required when `type=memory`. See [`memories` item shape](#memories-item-shape). |
 
 ### `file_metadata` item shape
 
 | Field | Type | Description |
 |---|---|---|
-| `file_id` | string | Optional source ID. If set, becomes the `source_id` for this file (use your app's document ID for parity). |
-| `tenant_metadata` | object | Tenant-schema fields for filtering and search. Keys must be declared in `tenant_metadata_schema`. (default=`{}`) |
-| `document_metadata` | object | Free-form per-document fields for display or bookkeeping. To filter on these at search time, nest under `metadata_filters.document_metadata`. (default=`{}`) |
-| `title` | string | Override the source title shown in search results. (default=filename) |
-| `type` | string | Override the source type shown in search results. (default=inferred) |
-| `url` | string | Override the canonical URL. |
-| `timestamp` | string | ISO-8601 timestamp override. (default=upload time) |
-| `relations` | object | Declare forceful relations to other sources. Shape: `{ "cortex_source_ids": ["...", "..."] }`. Surfaced via `additional_context` in `mode: "thinking"` search. |
+| <Field name="file_id" /> | string | Optional source ID. If set, becomes the `source_id` for this file (use your app's document ID for parity). |
+| <Field name="tenant_metadata" /> | object | Tenant-schema fields for filtering and search. Keys must be declared in `tenant_metadata_schema`. (default=`{}`) |
+| <Field name="document_metadata" /> | object | Free-form per-document fields for display or bookkeeping. To filter on these at search time, nest under `metadata_filters.document_metadata`. (default=`{}`) |
+| <Field name="title" /> | string | Override the source title shown in search results. (default=filename) |
+| <Field name="type" /> | string | Override the source type shown in search results. (default=inferred) |
+| <Field name="url" /> | string | Override the canonical URL. |
+| <Field name="timestamp" /> | string | ISO-8601 timestamp override. (default=upload time) |
+| <Field name="relations" /> | object | Declare forceful relations to other sources. Shape: `{ "cortex_source_ids": ["...", "..."] }`. Surfaced via `additional_context` in `mode: "thinking"` search. |
 
 ### `app_knowledge` item shape
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | string | Source ID. Treated as the upsert key. (default=auto-generated) |
-| `title` | string | Short title or subject shown in search results. |
-| `type` | string | Source category (`slack`, `notion`, `gmail`, `webpage`, etc.). Used for filtering and display. |
-| `description` | string | Optional long-form description. |
-| `url` | string | Canonical URL or reference link. |
-| `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
-| `content` | object | Content payload. Use `{ "text": "..." }` for plain text. |
-| `tenant_metadata` | object | Tenant-schema fields. (default=`{}`) |
-| `document_metadata` | object | Free-form per-document fields. (default=`{}`) |
-| `attachments` | array | Optional related attachments. (default=`[]`) |
-| `relations` | object | Forceful relations, same shape as on `file_metadata`. |
+| <Field name="id" /> | string | Source ID. Treated as the upsert key. (default=auto-generated) |
+| <Field name="title" /> | string | Short title or subject shown in search results. |
+| <Field name="type" /> | string | Source category (`slack`, `notion`, `gmail`, `webpage`, etc.). Used for filtering and display. |
+| <Field name="description" /> | string | Optional long-form description. |
+| <Field name="url" /> | string | Canonical URL or reference link. |
+| <Field name="timestamp" /> | string | ISO-8601 timestamp (creation or last-updated). |
+| <Field name="content" /> | object | Content payload. Use `{ "text": "..." }` for plain text. |
+| <Field name="tenant_metadata" /> | object | Tenant-schema fields. (default=`{}`) |
+| <Field name="document_metadata" /> | object | Free-form per-document fields. (default=`{}`) |
+| <Field name="attachments" /> | array | Optional related attachments. (default=`[]`) |
+| <Field name="relations" /> | object | Forceful relations, same shape as on `file_metadata`. |
 
 ### `memories` item shape
 
 | Field | Type | Description |
 |---|---|---|
-| `source_id` | string | Optional unique ID. Acts as the upsert key. (default=auto-generated) |
-| `title` | string | Short label for display in `/source/list` and search hits as `source.title`. (default=truncated `text`) |
-| `text` | string | Raw text or markdown content. Use this **or** `user_assistant_pairs`. |
-| `user_assistant_pairs` | array | Conversation pairs `{ user, assistant }`. Use this **or** `text`. |
-| `is_markdown` | boolean | Treat `text` as markdown for chunking. (default=`false`) |
-| `infer` | boolean | When `true`, HydraDB extracts the underlying preference from raw signal. (default=`false`) |
-| `custom_instructions` | string | Guides extraction when `infer: true`. Ignored when `infer: false`. |
-| `user_name` | string | The user's name. Feeds inference. (default=`"User"`) |
-| `expiry_time` | integer | TTL in seconds. Memory stops surfacing after expiry. |
-| `tenant_metadata` | object | Tenant-schema fields. (default=`{}`) |
-| `document_metadata` | object | Free-form per-document fields. (default=`{}`) |
-| `relations` | object | Forceful relations within the Memories store. Shape: `{ "cortex_source_ids": ["...", "..."] }`. |
+| <Field name="source_id" /> | string | Optional unique ID. Acts as the upsert key. (default=auto-generated) |
+| <Field name="title" /> | string | Short label for display in `/source/list` and search hits as `source.title`. (default=truncated `text`) |
+| <Field name="text" /> | string | Raw text or markdown content. Use this **or** `user_assistant_pairs`. |
+| <Field name="user_assistant_pairs" /> | array | Conversation pairs `{ user, assistant }`. Use this **or** `text`. |
+| <Field name="is_markdown" /> | boolean | Treat `text` as markdown for chunking. (default=`false`) |
+| <Field name="infer" /> | boolean | When `true`, HydraDB extracts the underlying preference from raw signal. (default=`false`) |
+| <Field name="custom_instructions" /> | string | Guides extraction when `infer: true`. Ignored when `infer: false`. |
+| <Field name="user_name" /> | string | The user's name. Feeds inference. (default=`"User"`) |
+| <Field name="expiry_time" /> | integer | TTL in seconds. Memory stops surfacing after expiry. |
+| <Field name="tenant_metadata" /> | object | Tenant-schema fields. (default=`{}`) |
+| <Field name="document_metadata" /> | object | Free-form per-document fields. (default=`{}`) |
+| <Field name="relations" /> | object | Forceful relations within the Memories store. Shape: `{ "cortex_source_ids": ["...", "..."] }`. |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "message": "Knowledge uploaded successfully",
@@ -238,13 +254,15 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `success` | Overall ingest acceptance  -  `true` if at least one item was queued. |
-| `results[]` | One entry per queued item with its `source_id` and initial `status` of `queued`. |
-| `results[].source_id` | Use this for status polling, fetch, list, delete, and graph relations. |
-| `results[].error` | Non-null only if HydraDB rejected the item before queueing (e.g., schema validation). |
-| `success_count` / `failed_count` | Tallies. |
+| <Field name="success" /> | Overall ingest acceptance  -  `true` if at least one item was queued. |
+| <Field name="results[]" /> | One entry per queued item with its `source_id` and initial `status` of `queued`. |
+| <Field name="results[].source_id" /> | Use this for status polling, fetch, list, delete, and graph relations. |
+| <Field name="results[].error" /> | Non-null only if HydraDB rejected the item before queueing (e.g., schema validation). |
+| <Field name="success_count / failed_count" /> | Tallies. |
 
 ## Behavior notes
 

@@ -4,6 +4,8 @@ description: "Paginated browse over knowledge sources or memories with optional 
 openapi: "POST /source/list"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Browse what's in a tenant or sub-tenant  -  for admin dashboards, audit views, populating a "select source" picker, or fetching a known subset of sources by ID. Pick the bucket with `kind`:
@@ -21,7 +23,7 @@ Supports pagination (`page`, `page_size`), structured filters on tenant and docu
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/list' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -65,22 +67,22 @@ sources = client.source.list(
     include_fields=["title", "type", "url", "timestamp"],
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
-| `sub_tenant_id` | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| `kind` | `"knowledge" \| "memories"` | Bucket to list. (default=`"knowledge"`) |
-| `source_ids` | string[] \| null | When provided and non-empty, only items with these IDs are returned (pagination + filters still apply). (default=`null`) |
-| `page` | integer | Page number (1-indexed). (default=`1`) |
-| `page_size` | integer | Items per page. Clamped to a server-side maximum. (default=server default) |
-| `filters` | object | Structured filters. See [Filters](#filters). (default=`null`) |
-| `include_fields` | string[] \| null | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `kind=knowledge`. (default=`null`  -  all fields) |
+| <Field name="tenant_id" required /> | string | Owning tenant. |
+| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="kind" /> | `"knowledge" \| "memories"` | Bucket to list. (default=`"knowledge"`) |
+| <Field name="source_ids" /> | string[] \| null | When provided and non-empty, only items with these IDs are returned (pagination + filters still apply). (default=`null`) |
+| <Field name="page" /> | integer | Page number (1-indexed). (default=`1`) |
+| <Field name="page_size" /> | integer | Items per page. Clamped to a server-side maximum. (default=server default) |
+| <Field name="filters" /> | object | Structured filters. See [Filters](#filters). (default=`null`) |
+| <Field name="include_fields" /> | string[] \| null | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `kind=knowledge`. (default=`null`  -  all fields) |
 
 ### Filters
 
@@ -98,9 +100,9 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 
 | Category | Matched against | Notes |
 |---|---|---|
-| `tenant_metadata` | Source's `tenant_metadata` payload | Keys must be declared in the tenant's `tenant_metadata_schema`. Undeclared keys are silently ignored. |
-| `document_metadata` | Source's `document_metadata` payload | Free-form per-document JSON. No schema declaration required. |
-| `source_fields` | Built-in source fields (`type`, `title`, `description`, `url`, `timestamp`) | Use for app-source categories or quick title lookups. |
+| <Field name="tenant_metadata" /> | Source's `tenant_metadata` payload | Keys must be declared in the tenant's `tenant_metadata_schema`. Undeclared keys are silently ignored. |
+| <Field name="document_metadata" /> | Source's `document_metadata` payload | Free-form per-document JSON. No schema declaration required. |
+| <Field name="source_fields" /> | Built-in source fields (`type`, `title`, `description`, `url`, `timestamp`) | Use for app-source categories or quick title lookups. |
 
 ### `include_fields`
 
@@ -112,7 +114,9 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "success": true,
   "message": "Sources retrieved successfully",
@@ -139,11 +143,13 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `sources[]` | One entry per source (or memory when `kind=memories`). Shape matches `SourceModel`. |
-| `total` | Total matching items across all pages. |
-| `pagination` | Standard `PaginationMeta` with `page`, `page_size`, `total`, `total_pages`, `has_next`, `has_previous`. |
+| <Field name="sources[]" /> | One entry per source (or memory when `kind=memories`). Shape matches `SourceModel`. |
+| <Field name="total" /> | Total matching items across all pages. |
+| <Field name="pagination" /> | Standard `PaginationMeta` with `page`, `page_size`, `total`, `total_pages`, `has_next`, `has_previous`. |
 
 When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  -  same idea but with a `user_memories[]` array of memory items.
 

@@ -4,6 +4,8 @@ description: "Unified retrieval over knowledge, memories, or both."
 openapi: "POST /search"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 The single retrieval endpoint for everything. Use it any time you need to feed an LLM with grounded context, surface user preferences, or fetch chunks ranked by relevance.
@@ -25,7 +27,7 @@ Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for lo
 
 ### Document Q&A
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -60,11 +62,11 @@ result = client.search.query(
     graph_context=True,
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ### Personalized Q&A  -  Knowledge + Memories in one call
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -89,11 +91,11 @@ const result = await client.search.query({
   mode: "thinking",
 });
 ```
-</CodeGroup>
+</RequestExample>
 
 ### Exact-phrase lookup
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -116,28 +118,28 @@ result = client.search.query(
     operator="phrase",
 )
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Request body
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type / values | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
-| `sub_tenant_id` | string \| null | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
-| `query`<sup style={{ color: "red" }}>*</sup> | string | Search terms or natural-language question. Cannot be empty. |
-| `source` | `"sources" \| "memories" \| "all"` | What collection to search. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
-| `search_by` | `"hybrid" \| "text" \| "vector"` | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
-| `operator` | `"or" \| "and" \| "phrase"` | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
-| `mode` | `"fast" \| "thinking"` | Retrieval pipeline. Applies to `hybrid` and `vector` only; ignored for `text`. (default=`"fast"`) |
-| `max_results` | integer \| null | Maximum chunks to return. Start with 10. (default=server default) |
-| `alpha` | float `0.0`–`1.0` \| `"auto"` | Hybrid weight (`1.0` = pure semantic, `0.0` = pure BM25). Applies to `search_by: "hybrid"` only. (default=`0.8`) |
-| `recency_bias` | float `0.0`–`1.0` | Boost newer content. (default=`0.0`) |
-| `graph_context` | boolean | When `true`, includes the entity/relation graph slice in the response under `graph_context`. (default=`false`) |
-| `search_forceful_relations` | boolean | Pull author-declared related sources into `additional_context`. **Only takes effect when `mode: "thinking"`**  -  silently ignored in `fast` mode. (default=`true`) |
-| `additional_context` | string \| null | Free-form hint to guide retrieval (e.g., "user is on the billing page"). (default=`null`) |
-| `metadata_filters` | object \| null | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
+| <Field name="tenant_id" required /> | string | Owning tenant. |
+| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
+| <Field name="query" required /> | string | Search terms or natural-language question. Cannot be empty. |
+| <Field name="source" /> | `"sources" \| "memories" \| "all"` | What collection to search. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
+| <Field name="search_by" /> | `"hybrid" \| "text" \| "vector"` | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
+| <Field name="operator" /> | `"or" \| "and" \| "phrase"` | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
+| <Field name="mode" /> | `"fast" \| "thinking"` | Retrieval pipeline. Applies to `hybrid` and `vector` only; ignored for `text`. (default=`"fast"`) |
+| <Field name="max_results" /> | integer \| null | Maximum chunks to return. Start with 10. (default=server default) |
+| <Field name="alpha" /> | float `0.0`–`1.0` \| `"auto"` | Hybrid weight (`1.0` = pure semantic, `0.0` = pure BM25). Applies to `search_by: "hybrid"` only. (default=`0.8`) |
+| <Field name="recency_bias" /> | float `0.0`–`1.0` | Boost newer content. (default=`0.0`) |
+| <Field name="graph_context" /> | boolean | When `true`, includes the entity/relation graph slice in the response under `graph_context`. (default=`false`) |
+| <Field name="search_forceful_relations" /> | boolean | Pull author-declared related sources into `additional_context`. **Only takes effect when `mode: "thinking"`**  -  silently ignored in `fast` mode. (default=`true`) |
+| <Field name="additional_context" /> | string \| null | Free-form hint to guide retrieval (e.g., "user is on the billing page"). (default=`null`) |
+| <Field name="metadata_filters" /> | object \| null | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
 
 ### Source selection
 
@@ -188,7 +190,9 @@ For `search_by: "hybrid"` and `"vector"`:
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "chunks": [
     {
@@ -218,26 +222,28 @@ For `search_by: "hybrid"` and `"vector"`:
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `chunks[]` | Array of ranked chunks. Preserve server order in your prompt. |
-| `chunks[].chunk_uuid` | Stable chunk identifier (string)  -  use to dedupe across calls. |
-| `chunks[].source_id` | The source this chunk belongs to (string). |
-| `chunks[].source_title` | Display title of the source (string). |
-| `chunks[].chunk_content` | The actual text snippet (string). |
-| `chunks[].relevancy_score` | Relevance score (float). Higher is more relevant. |
-| `chunks[].extra_context_ids` | Array of keys into `additional_context` for forceful-relation-linked content (`thinking` mode only). |
-| `sources[]` | Deduplicated source metadata corresponding to the returned chunks. |
-| `graph_context` | Graph slice object, populated when `graph_context: true`. See [GraphContext fields](#graphcontext-fields). |
-| `additional_context` | Map keyed by chunk UUID containing related content from forceful relations (`thinking` mode only). |
+| <Field name="chunks[]" /> | Array of ranked chunks. Preserve server order in your prompt. |
+| <Field name="chunks[].chunk_uuid" /> | Stable chunk identifier (string)  -  use to dedupe across calls. |
+| <Field name="chunks[].source_id" /> | The source this chunk belongs to (string). |
+| <Field name="chunks[].source_title" /> | Display title of the source (string). |
+| <Field name="chunks[].chunk_content" /> | The actual text snippet (string). |
+| <Field name="chunks[].relevancy_score" /> | Relevance score (float). Higher is more relevant. |
+| <Field name="chunks[].extra_context_ids" /> | Array of keys into `additional_context` for forceful-relation-linked content (`thinking` mode only). |
+| <Field name="sources[]" /> | Deduplicated source metadata corresponding to the returned chunks. |
+| <Field name="graph_context" /> | Graph slice object, populated when `graph_context: true`. See [GraphContext fields](#graphcontext-fields). |
+| <Field name="additional_context" /> | Map keyed by chunk UUID containing related content from forceful relations (`thinking` mode only). |
 
 ### `GraphContext` fields
 
 | Field | Description |
 |---|---|
-| `query_paths[]` | Entity-traversal paths derived from the query. Each path is a list of `{ source, relation, target }` triplets. |
-| `chunk_relations[]` | Per-chunk relations grouped by `group_id`. Attach to chunks via `chunk_id_to_group_ids`. |
-| `chunk_id_to_group_ids` | Maps each `chunk_uuid` to one or more `group_id`s in `chunk_relations`. |
+| <Field name="query_paths[]" /> | Entity-traversal paths derived from the query. Each path is a list of `{ source, relation, target }` triplets. |
+| <Field name="chunk_relations[]" /> | Per-chunk relations grouped by `group_id`. Attach to chunks via `chunk_id_to_group_ids`. |
+| <Field name="chunk_id_to_group_ids" /> | Maps each `chunk_uuid` to one or more `group_id`s in `chunk_relations`. |
 
 For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
 

@@ -3,6 +3,8 @@ title: "Sources - Overview"
 description: "Quick reference for source endpoints, their lifecycle, and when to use which."
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## Lifecycle
 
 ```mermaid
@@ -86,10 +88,10 @@ Use `knowledge` when the content is an external or shared source of truth. Use `
 
 | Field | Why use it? | Example |
 |---|---|---|
-| `file_id` | Sets a stable source ID you can use later for status checks, fetch, list, delete, or relations. | `contract_q4_2026` |
-| `metadata` | Tenant-level metadata for filtering and search. These keys should match your tenant metadata schema when you want reliable filters. | `{ "department": "legal", "region": "us" }` |
-| `additional_metadata` | Document-level details that are useful to display or inspect but may not be part of the tenant-wide schema. | `{ "author": "Finance Team", "version": "final" }` |
-| `relations` | Explicitly connects this file to other sources for graph context. | Link a contract to its account plan. |
+| <Field name="file_id" /> | Sets a stable source ID you can use later for status checks, fetch, list, delete, or relations. | `contract_q4_2026` |
+| <Field name="metadata" /> | Tenant-level metadata for filtering and search. These keys should match your tenant metadata schema when you want reliable filters. | `{ "department": "legal", "region": "us" }` |
+| <Field name="additional_metadata" /> | Document-level details that are useful to display or inspect but may not be part of the tenant-wide schema. | `{ "author": "Finance Team", "version": "final" }` |
+| <Field name="relations" /> | Explicitly connects this file to other sources for graph context. | Link a contract to its account plan. |
 
 For multiple file uploads, send one `file_metadata` entry per file in the same order as the `files` array.
 

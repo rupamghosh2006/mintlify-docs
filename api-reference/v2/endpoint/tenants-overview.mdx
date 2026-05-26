@@ -3,6 +3,8 @@ title: "Tenants - Overview"
 description: "Quick reference for all Tenants endpoints, their lifecycle, and when to call each."
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## Lifecycle
 
 ```mermaid
@@ -87,11 +89,11 @@ DELETE /tenants -> schedule deletion (irreversible)
 
 | Field | What it controls | Example use |
 |---|---|---|
-| `name` | The metadata key you will send during ingestion and use in filters. | `department`, `region`, `customer_tier` |
-| `data_type` | The value type. Friendly names like `string`, `integer`, `float`, `boolean`, `array`, and `object` are accepted. | Use `string` for categories and labels. |
-| `enable_match` | Enables exact filtering on this field. | Filter search to `department = "engineering"`. |
-| `enable_dense_embedding` | Enables semantic search over this field. String fields only. | Match meaning across product descriptions. |
-| `enable_sparse_embedding` | Enables keyword/BM25 search over this field. String fields only. | Find exact terms in long descriptions. |
+| <Field name="name" /> | The metadata key you will send during ingestion and use in filters. | `department`, `region`, `customer_tier` |
+| <Field name="data_type" /> | The value type. Friendly names like `string`, `integer`, `float`, `boolean`, `array`, and `object` are accepted. | Use `string` for categories and labels. |
+| <Field name="enable_match" /> | Enables exact filtering on this field. | Filter search to `department = "engineering"`. |
+| <Field name="enable_dense_embedding" /> | Enables semantic search over this field. String fields only. | Match meaning across product descriptions. |
+| <Field name="enable_sparse_embedding" /> | Enables keyword/BM25 search over this field. String fields only. | Find exact terms in long descriptions. |
 
 Define metadata schema only for fields you expect to reuse across many sources. One-off details belong in source-level metadata during ingestion.
 

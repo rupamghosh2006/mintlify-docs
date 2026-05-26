@@ -4,6 +4,8 @@ description: "Retrieve usage statistics for a tenant."
 openapi: "GET /tenants/stats"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Inspect storage growth, object counts, and vector dimensions for a tenant. Common use cases:
@@ -22,7 +24,7 @@ The response splits stats into two collections: `normal_collection` (Knowledge) 
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants/stats?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -36,19 +38,21 @@ const stats = await client.tenants.stats({
 ```python Python SDK
 stats = client.tenants.stats(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Identifier of the tenant to report on. |
+| <Field name="tenant_id" required /> | string | Identifier of the tenant to report on. |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "normal_collection": {
@@ -63,19 +67,21 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `tenant_id` | The tenant being reported on (string). |
-| `normal_collection` | Stats for the Knowledge collection. See [CollectionStats fields](#collectionstats-fields). |
-| `memory_collection` | Stats for the Memories collection. See [CollectionStats fields](#collectionstats-fields). |
-| `message` | Human-readable status (string). |
+| <Field name="tenant_id" /> | The tenant being reported on (string). |
+| <Field name="normal_collection" /> | Stats for the Knowledge collection. See [CollectionStats fields](#collectionstats-fields). |
+| <Field name="memory_collection" /> | Stats for the Memories collection. See [CollectionStats fields](#collectionstats-fields). |
+| <Field name="message" /> | Human-readable status (string). |
 
 ### `CollectionStats` fields
 
 | Field | Type | Description |
 |---|---|---|
-| `row_count` | integer | Number of indexed chunks in the collection. **Chunks, not sources**  -  one document typically becomes many chunks. |
-| `dimensions` | integer | Embedding dimensionality of the collection. |
+| <Field name="row_count" /> | integer | Number of indexed chunks in the collection. **Chunks, not sources**  -  one document typically becomes many chunks. |
+| <Field name="dimensions" /> | integer | Embedding dimensionality of the collection. |
 
 ## Behavior notes
 

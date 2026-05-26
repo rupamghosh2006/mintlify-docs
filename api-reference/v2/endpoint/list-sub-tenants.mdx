@@ -4,6 +4,8 @@ description: "List sub-tenant IDs that have indexed data inside a tenant."
 openapi: "GET /tenants/sub-tenants"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Discover which sub-tenants exist inside a tenant  -  typically users (B2C), workspaces, teams, projects, or sessions. Useful for admin views, per-user dashboards, audit tooling, or before running a per-user search.
@@ -18,7 +20,7 @@ Sub-tenants are created **implicitly** the first time a `sub_tenant_id` value ap
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants/sub-tenants?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -32,29 +34,33 @@ const response = await client.tenants.subTenants({
 ```python Python SDK
 response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Identifier of the tenant whose sub-tenants you want to list. |
+| <Field name="tenant_id" required /> | string | Identifier of the tenant whose sub-tenants you want to list. |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "sub_tenant_ids": ["user_alex", "user_johndoe", "workspace_42", "default"],
   "message": "Successfully retrieved sub-tenant IDs"
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `sub_tenant_ids` | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
-| `message` | Human-readable status (string). |
+| <Field name="sub_tenant_ids" /> | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
+| <Field name="message" /> | Human-readable status (string). |
 
 ## Behavior notes
 

@@ -4,6 +4,8 @@ description: "Check the provisioning readiness of a tenant's infrastructure."
 openapi: "GET /tenants/status"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Tenant creation is asynchronous. Always poll this endpoint after `POST /tenants` and before your first ingestion or search call  -  the tenant is only ready when **all** of these are `true`:
@@ -20,7 +22,7 @@ Tenant creation is asynchronous. Always poll this endpoint after `POST /tenants`
 
 ## Example
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -34,19 +36,21 @@ const status = await client.tenants.status({
 ```python Python SDK
 status = client.tenants.status(tenant_id="my_first_tenant")
 ```
-</CodeGroup>
+</RequestExample>
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Identifier of the tenant to inspect. |
+| <Field name="tenant_id" required /> | string | Identifier of the tenant to inspect. |
 
 ## Response
 
-```json
+<ResponseExample>
+
+```json Response
 {
   "tenant_id": "my_first_tenant",
   "org_id": "org_abc123",
@@ -59,20 +63,22 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 }
 ```
 
+</ResponseExample>
+
 | Field | Description |
 |---|---|
-| `tenant_id` | The tenant being inspected (string). |
-| `org_id` | Owning organization ID (string). |
-| `infra` | Nested infrastructure status object. See [Infra fields](#infra-fields). |
-| `message` | Human-readable status (string). |
+| <Field name="tenant_id" /> | The tenant being inspected (string). |
+| <Field name="org_id" /> | Owning organization ID (string). |
+| <Field name="infra" /> | Nested infrastructure status object. See [Infra fields](#infra-fields). |
+| <Field name="message" /> | Human-readable status (string). |
 
 ### `Infra` fields
 
 | Field | Type | Description |
 |---|---|---|
-| `scheduler_status` | boolean | Whether the background indexing scheduler is up. |
-| `graph_status` | boolean | Whether the knowledge-graph layer is provisioned. |
-| `vectorstore_status` | tuple of two booleans | Status of `[Memories collection, Knowledge collection]` (indices `0` and `1`). |
+| <Field name="scheduler_status" /> | boolean | Whether the background indexing scheduler is up. |
+| <Field name="graph_status" /> | boolean | Whether the knowledge-graph layer is provisioned. |
+| <Field name="vectorstore_status" /> | tuple of two booleans | Status of `[Memories collection, Knowledge collection]` (indices `0` and `1`). |
 
 <Info>
 `infra.vectorstore_status` is a **two-element tuple**: index `0` is the Memories collection, index `1` is the Knowledge collection. The tenant is fully ready only when both are `true`.

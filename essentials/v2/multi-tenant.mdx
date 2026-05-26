@@ -73,11 +73,11 @@ Typical flow:
 
 For personalized answers grounded in shared Knowledge, use the `source` parameter on `POST /search`:
 
-- `source: "sources"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status` index `1`).
+- `source: "knowledge"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status` index `1`).
 - `source: "memories"` retrieves user-specific Memories (Memories vector store, `vectorstore_status` index `0`).
 - `source: "all"` runs both in parallel and returns one merged, re-ranked result set  -  usually what you want for personalized answers.
 
-When you need different formatting for shared vs personal context in the LLM prompt, call `POST /search` twice (once with `source: "sources"`, once with `source: "memories"`) and combine in your application.
+When you need different formatting for shared vs personal context in the LLM prompt, call `POST /search` twice (once with `source: "knowledge"`, once with `source: "memories"`) and combine in your application.
 
 ---
 
@@ -110,7 +110,7 @@ Use `sub_tenant_id` for partitioning data. Use `metadata_filters` for narrowing 
 Memories and Knowledge live in separate stores, both reached through `POST /search`:
 
 - `source: "memories"` retrieves **Memories** (user-scoped, personal).
-- `source: "sources"` retrieves **Knowledge** (shared documents and app sources).
+- `source: "knowledge"` retrieves **Knowledge** (shared documents and app sources).
 - `source: "all"` retrieves both in one call.
 
 For a personalized answer, the common pattern is one `POST /search` with `source: "all"` and the user's `sub_tenant_id`. HydraDB runs both stores in parallel and merges results. Use two separate calls only when you need to format the two streams differently in your LLM prompt.

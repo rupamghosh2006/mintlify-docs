@@ -17,7 +17,7 @@ HydraDB stores two kinds of context in separate stores, and you pick which one (
 
 | Store | Contains | Search with |
 |---|---|---|
-| [**Knowledge**](/essentials/v2/knowledge) | Ingested documents, files, and app sources | `source: "sources"` |
+| [**Knowledge**](/essentials/v2/knowledge) | Ingested documents, files, and app sources | `source: "knowledge"` |
 | [**Memories**](/essentials/v2/memories) | User preferences, conversation history, per-user inferred content | `source: "memories"` |
 
 A single [`POST /search`](/api-reference/v2/endpoint/search) call can hit either store  -  or both at once via `source: "all"`. When you choose `"all"`, HydraDB runs the two in parallel and returns one merged, re-ranked result set. Set `graph_context: true` and search also pulls in the relevant slice of the context graph alongside the chunks.
@@ -45,8 +45,8 @@ Every call to [`POST /search`](/api-reference/v2/endpoint/search) has two indepe
 
 | Value | Searches | Reach for it when |
 |---|---|---|
-| `"sources"` *(default)* | [Knowledge](/essentials/v2/knowledge) | Document Q&A, RAG over shared content |
-| `"memories"` | [Memories](/essentials/v2/memories) | Personalization, recalling user preferences |
+| `"knowledge"` *(default)* | [Knowledge](/essentials/v2/knowledge) | Document Q&A, RAG over shared content |
+| `"memory"` | [Memories](/essentials/v2/memories) | Personalization, recalling user preferences |
 | `"all"` | Both, merged and re-ranked | Personalized answers grounded in both shared docs and the user's own memories |
 
 ### `search_by`  -  how to match
@@ -57,7 +57,7 @@ Every call to [`POST /search`](/api-reference/v2/endpoint/search) has two indepe
 | `"text"` | BM25 full-text only | Exact terms, compliance lookups, phrase search |
 | `"vector"` | Dense vector only | Pure semantic similarity |
 
-The two dimensions mix freely. `source: "all"` + `search_by: "hybrid"` is the workhorse for personalized RAG; `source: "sources"` + `search_by: "text"` + `operator: "phrase"` is the right shape for exact compliance lookups.
+The two dimensions mix freely. `source: "all"` + `search_by: "hybrid"` is the workhorse for personalized RAG; `source: "knowledge"` + `search_by: "text"` + `operator: "phrase"` is the right shape for exact compliance lookups.
 
 ---
 
@@ -87,7 +87,7 @@ Every parameter on the [`POST /search`](/api-reference/v2/endpoint/search) reque
 | `tenant_id` <sup style={{ color: "red" }}>*</sup> | string | Tenant identifier  -  the top-level scope. |
 | `query` <sup style={{ color: "red" }}>*</sup> | string | Search terms or natural-language question. Cannot be empty. |
 | `sub_tenant_id` | string \| null | Scopes recall to a user, workspace, or partition. Defaults to the tenant's default sub-tenant. See [Multi-Tenant](/essentials/v2/multi-tenant). |
-| `source` | `"sources"` \| `"memories"` \| `"all"` | Which store(s) to search. (default=`"sources"`) |
+| `source` | `"knowledge"` \| `"memories"` \| `"all"` | Which store(s) to search. (default=`"knowledge"`) |
 | `search_by` | `"hybrid"` \| `"text"` \| `"vector"` | Retrieval method. (default=`"hybrid"`) |
 | `mode` | `"fast"` \| `"thinking"` | Retrieval pipeline. Applies to `hybrid` and `vector` only. (default=`"fast"`) |
 | `operator` | `"or"` \| `"and"` \| `"phrase"` | BM25 operator. Applies to `search_by: "text"` only. (default=`"or"`) |
@@ -225,7 +225,7 @@ const completion = await openai.chat.completions.create({
 });
 ```
 
-If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call [`/search`](/api-reference/v2/endpoint/search) twice in parallel with `source: "sources"` and `source: "memories"`, then merge client-side.
+If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call [`/search`](/api-reference/v2/endpoint/search) twice in parallel with `source: "knowledge"` and `source: "memories"`, then merge client-side.
 
 ### Production checklist
 
@@ -242,7 +242,7 @@ If you need to keep the two streams separate  -  for instance to format user pre
 | Empty `query_paths` / `chunk_relations` | `graph_context` not set, or no relations exist for the result set | Set `graph_context: true`. Empty arrays are normal when there's nothing to return  -  see [Context Graphs](/essentials/v2/context-graphs). |
 | Recent uploads don't appear in results | Indexing not finished | Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status)  -  chunks are invisible until processing reaches at least `graph_creation`. |
 | `metadata_filters` doesn't narrow results | Filter key is undeclared, not match-enabled, or nested wrong | Declare filterable keys in [`tenant_metadata_schema`](/essentials/v2/metadata) with `enable_match: true` before ingestion. For free-form per-document fields, nest under `document_metadata`. |
-| Memories missing from a `source: "sources"` search | Wrong store selected | Use `source: "memories"` or `source: "all"`. |
+| Memories missing from a `source: "knowledge"` search | Wrong store selected | Use `source: "memories"` or `source: "all"`. |
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
 | `operator: "phrase"` ignored | `search_by` not set to `"text"` | `operator` only applies to BM25 text search  -  switch `search_by` to `"text"`. |
 | `search_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |

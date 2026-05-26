@@ -10,7 +10,7 @@ The single retrieval endpoint for everything. Use it any time you need to feed a
 
 Two independent dimensions control behavior:
 
-- **`source`** picks **what** to search: `"sources"` (knowledge), `"memories"` (user-scoped), or `"all"` (both, merged and re-ranked together).
+- **`source`** picks **what** to search: `"knowledge"` (knowledge), `"memories"` (user-scoped), or `"all"` (both, merged and re-ranked together).
 - **`search_by`** picks **how** to match: `"hybrid"` (semantic + BM25, the default), `"text"` (BM25 only  -  pair with `operator`), or `"vector"` (pure dense vectors).
 
 Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for low-latency single-pass. Turn on `graph_context: true` to surface entity/relation paths alongside chunks. Tune `alpha`, `recency_bias`, and `metadata_filters` to shape ranking and narrow the candidate set.
@@ -34,7 +34,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "What is our refund policy?",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "mode": "thinking",
     "graph_context": true
@@ -44,7 +44,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 const result = await client.search.query({
   tenant_id: "acme_corp",
   query: "What is our refund policy?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   mode: "thinking",
   graph_context: true,
@@ -54,7 +54,7 @@ const result = await client.search.query({
 result = client.search.query(
     tenant_id="acme_corp",
     query="What is our refund policy?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     mode="thinking",
     graph_context=True,
@@ -102,7 +102,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "GDPR Article 17",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "text",
     "operator": "phrase"
   }'
@@ -111,7 +111,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 result = client.search.query(
     tenant_id="acme_corp",
     query="GDPR Article 17",
-    source="sources",
+    source="knowledge",
     search_by="text",
     operator="phrase",
 )
@@ -127,7 +127,7 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 | `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
 | `sub_tenant_id` | string \| null | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
 | `query`<sup style={{ color: "red" }}>*</sup> | string | Search terms or natural-language question. Cannot be empty. |
-| `source` | `"sources" \| "memories" \| "all"` | What collection to search. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"sources"`) |
+| `source` | `"sources" \| "memories" \| "all"` | What collection to search. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
 | `search_by` | `"hybrid" \| "text" \| "vector"` | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
 | `operator` | `"or" \| "and" \| "phrase"` | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
 | `mode` | `"fast" \| "thinking"` | Retrieval pipeline. Applies to `hybrid` and `vector` only; ignored for `text`. (default=`"fast"`) |
@@ -143,8 +143,8 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 
 | Value | Searches | Best for |
 |---|---|---|
-| `"sources"` *(default)* | Knowledge documents, files, and app sources | Document Q&A, RAG context. |
-| `"memories"` | User memories | Personalization and user preferences. |
+| `"knowledge"` *(default)* | Knowledge documents, files, and app sources | Document Q&A, RAG context. |
+| `"memory"` | User memories | Personalization and user preferences. |
 | `"all"` | Both, merged in one ranked result set | Personalized answers grounded in both shared and user-specific context. |
 
 ### Search methods

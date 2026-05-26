@@ -43,7 +43,7 @@ Use `source` to choose what collection to search:
 
 | Source | Searches | Best for |
 |---|---|---|
-| `sources` | Knowledge documents, files, and app sources | Document Q&A, RAG context |
+| `knowledge` | Knowledge documents, files, and app sources | Document Q&A, RAG context |
 | `memories` | User memories | Personalization and user preferences |
 | `all` | Sources and memories, merged together | Personalized answers grounded in both shared and user-specific context |
 
@@ -75,7 +75,7 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 | `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Tenant to search. |
 | `sub_tenant_id` | string | Optional sub-tenant scope. (default=default sub-tenant) |
 | `query`<sup style={{ color: "red" }}>*</sup> | string | Search terms or natural-language question. Cannot be empty. |
-| `source` | `"sources"` \| `"memories"` \| `"all"` | What collection to search over. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"sources"`) |
+| `source` | `"knowledge"` \| `"memories"` \| `"all"` | What collection to search over. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
 | `search_by` | `"hybrid"` \| `"text"` \| `"vector"` | Retrieval method. `hybrid` = dense vectors + BM25, `text` = BM25 only, `vector` = dense only. (default=`"hybrid"`) |
 | `operator` | `"or"` \| `"and"` \| `"phrase"` | BM25 matching when `search_by: "text"`. `or` = any term, `and` = all terms, `phrase` = exact phrase. Ignored for `hybrid` and `vector`. (default=`"or"`) |
 | `mode` | `"fast"` \| `"thinking"` | Retrieval quality vs latency. `fast` = single query pass. `thinking` = multi-query expansion + reranking + forceful-relation context. Applies to `hybrid` and `vector` only. (default=`"fast"`) |
@@ -111,7 +111,7 @@ Top-level keys (`department`, `region`) are matched against tenant-schema fields
 {
   "tenant_id": "acme",
   "query": "What's our refund policy?",
-  "source": "sources",
+  "source": "knowledge",
   "search_by": "hybrid",
   "mode": "thinking",
   "graph_context": true
@@ -137,7 +137,7 @@ Top-level keys (`department`, `region`) are matched against tenant-schema fields
 {
   "tenant_id": "acme",
   "query": "GDPR Article 17",
-  "source": "sources",
+  "source": "knowledge",
   "search_by": "text",
   "operator": "phrase"
 }

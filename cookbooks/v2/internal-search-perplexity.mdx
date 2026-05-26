@@ -1167,7 +1167,7 @@ def get_user_profile(user_id: str) -> str:
 def explain_decision(question: str, user_id: str) -> str:
     """
     Answer 'why' / 'what led to' questions with full provenance.
-    Step 1: recall chunks + graph relations from /search (source="sources").
+    Step 1: recall chunks + graph relations from /search (source="knowledge").
     Step 2: retrieve user profile from /search (source="memories").
     Step 3: synthesize with citations via LLM.
     """

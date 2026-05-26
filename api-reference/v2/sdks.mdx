@@ -97,7 +97,7 @@ Compared to v1, the surface is intentionally smaller  -  three groups instead of
 
 ### Search
 
-A single method covers all retrieval. Pick `source` (`"sources"`, `"memories"`, `"all"`) and `search_by` (`"hybrid"`, `"text"`, `"vector"`) to control behavior.
+A single method covers all retrieval. Pick `source` (`"knowledge"`, `"memories"`, `"all"`) and `search_by` (`"hybrid"`, `"text"`, `"vector"`) to control behavior.
 
 | Method | Endpoint |
 |---|---|
@@ -125,7 +125,7 @@ The v2 SDKs are a deliberate consolidation. A few common v1 → v2 method swaps:
 | `client.upload.knowledge(...)` | `client.source.ingest(type="knowledge", ...)` |
 | `client.upload.addMemory(...)` | `client.source.ingest(type="memory", ...)` |
 | `client.upload.verifyProcessing(...)` | `client.source.status(...)` |
-| `client.recall.fullRecall(...)` | `client.search.query(source="sources", ...)` |
+| `client.recall.fullRecall(...)` | `client.search.query(source="knowledge", ...)` |
 | `client.recall.recallPreferences(...)` | `client.search.query(source="memories", ...)` |
 | `client.recall.booleanRecall(...)` | `client.search.query(search_by="text", ...)` |
 | `client.fetch.listData(...)` | `client.source.list(...)` |
@@ -326,7 +326,7 @@ A single method covers every retrieval pattern  -  switch `source` and `search_b
 const knowledge = await client.search.query({
   tenant_id: "my_first_tenant",
   query: "What are the pricing tiers?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   mode: "thinking",
   graph_context: true,
@@ -346,7 +346,7 @@ const personalized = await client.search.query({
 const exact = await client.search.query({
   tenant_id: "my_first_tenant",
   query: "ERROR_429 rate limit",
-  source: "sources",
+  source: "knowledge",
   search_by: "text",
   operator: "phrase",
 });
@@ -356,7 +356,7 @@ const exact = await client.search.query({
 knowledge = client.search.query(
     tenant_id="my_first_tenant",
     query="What are the pricing tiers?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     mode="thinking",
     graph_context=True,
@@ -376,7 +376,7 @@ personalized = client.search.query(
 exact = client.search.query(
     tenant_id="my_first_tenant",
     query="ERROR_429 rate limit",
-    source="sources",
+    source="knowledge",
     search_by="text",
     operator="phrase",
 )
@@ -501,7 +501,7 @@ try {
   const result = await client.search.query({
     tenant_id: "my_first_tenant",
     query: "...",
-    source: "sources",
+    source: "knowledge",
   });
 } catch (error) {
   if (error instanceof HydraDBError) {
@@ -526,7 +526,7 @@ try:
     result = client.search.query(
         tenant_id="my_first_tenant",
         query="...",
-        source="sources",
+        source="knowledge",
     )
 except HydraDBError as e:
     code = e.error_code

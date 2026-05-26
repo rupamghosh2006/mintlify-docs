@@ -175,7 +175,7 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 | `files` | file[] | Binary uploads, **knowledge only**. Required when `type=knowledge` and you have files to upload. Omit when ingesting memories. (default=`[]`) |
 | `file_metadata` | string (JSON array) | One entry per file in `files`, same order. See [`file_metadata` item shape](#file_metadata-item-shape). |
 | `app_knowledge` | string (JSON object or array) | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See [`app_knowledge` item shape](#app_knowledge-item-shape). |
-| `memories` | string (JSON array) | Memory items, **memory only**. Required when `type=memory`. See [`memories` item shape](#memories-item-shape). |
+| `memory` | string (JSON array) | Memory items, **memory only**. Required when `type=memory`. See [`memories` item shape](#memories-item-shape). |
 
 ### `file_metadata` item shape
 

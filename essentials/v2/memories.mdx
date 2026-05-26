@@ -13,7 +13,7 @@ Memories are the per-user counterpart to [Knowledge](/essentials/v2/knowledge). 
 |---|---|---|
 | **Content** | User preferences, conversations, inferred traits | Documents, files, app-generated content |
 | **Scope** | Per-user  -  partitioned by `sub_tenant_id` | Shared across all users in a tenant |
-| **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"` | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "sources"` |
+| **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"` | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` |
 | **`vectorstore_status`** | Index `0` (`[0]`) | Index `1` (`[1]`) |
 
 <Info>
@@ -139,7 +139,7 @@ Use `infer: false` for:
 Memories live in their own vector store, distinct from [Knowledge](/essentials/v2/knowledge). The [`POST /search`](/api-reference/v2/endpoint/search) endpoint reaches them via the `source` parameter:
 
 - `source: "memories"` searches the Memories store (`vectorstore_status` index `0`).
-- `source: "sources"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status` index `1`).
+- `source: "knowledge"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status` index `1`).
 - `source: "all"` runs both in parallel and returns a single merged, re-ranked result set.
 
 <Info>
@@ -442,7 +442,7 @@ The same input with `infer: false` would index the raw text verbatim - useful on
 | Doing extraction yourself before sending raw logs | Wastes effort that `infer: true` already handles | Send the raw signal with `infer: true` and let HydraDB derive the preference |
 | Sending pre-extracted facts with `infer: true` | HydraDB may re-derive and lose the original phrasing | Use `infer: false` for already-structured facts |
 | Treating `user_name` as cosmetic | It feeds inference, so the wrong name biases what HydraDB extracts | Pass the actual user's name |
-| Storing shared docs as memories | They won't surface when searching `source: "sources"` | Use [knowledge ingestion](/essentials/v2/knowledge) (`type=knowledge` on `POST /source/ingest`) instead |
+| Storing shared docs as memories | They won't surface when searching `source: "knowledge"` | Use [knowledge ingestion](/essentials/v2/knowledge) (`type=knowledge` on `POST /source/ingest`) instead |
 | Expecting immediate searchability | Ingestion is async | Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) until `completed` |
 | Forgetting `infer` for conversational input | Raw dialogue gets stored without preference extraction | Set `infer: true` explicitly for conversations |
 

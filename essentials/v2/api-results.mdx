@@ -5,7 +5,7 @@ description: "Turn a recall response into a grounded LLM answer."
 
 A recall response is structured JSON. Your model wants prose. This page shows how to bridge that gap  -  turning a `RetrievalResult` into a clean, grounded prompt for an LLM.
 
-The same pattern works for every call to [`POST /search`](/api-reference/v2/endpoint/search-overview), whether you set `source: "sources"`, `source: "memories"`, or `source: "all"`  -  the response shape is identical.
+The same pattern works for every call to [`POST /search`](/api-reference/v2/endpoint/search-overview), whether you set `source: "knowledge"`, `source: "memories"`, or `source: "all"`  -  the response shape is identical.
 
 ---
 
@@ -99,7 +99,7 @@ First, call `POST /search` with the parameters you need:
             "tenant_id": "your-tenant",
             "sub_tenant_id": "your-sub-tenant",
             "query": "How does authentication work?",
-            "source": "sources",
+            "source": "knowledge",
             "search_by": "hybrid",
             "max_results": 5,
             "mode": "fast",
@@ -129,7 +129,7 @@ First, call `POST /search` with the parameters you need:
         tenant_id: "your-tenant",
         sub_tenant_id: "your-sub-tenant",
         query: "How does authentication work?",
-        source: "sources",
+        source: "knowledge",
         search_by: "hybrid",
         max_results: 5,
         mode: "fast",
@@ -551,7 +551,7 @@ prompt = f"Context:\n{context}\n\nQuestion: {question}"
 
 </CodeGroup>
 
-If you need to format Knowledge and Memories differently (e.g., label "User preferences:" vs "Relevant docs:" sections), call `POST /search` twice in parallel with `source: "sources"` and `source: "memories"`, format each result, and combine them into one prompt. There's no required ordering  -  preferences before docs is purely for readability.
+If you need to format Knowledge and Memories differently (e.g., label "User preferences:" vs "Relevant docs:" sections), call `POST /search` twice in parallel with `source: "knowledge"` and `source: "memories"`, format each result, and combine them into one prompt. There's no required ordering  -  preferences before docs is purely for readability.
 
 ```python
 import asyncio
@@ -559,7 +559,7 @@ import asyncio
 knowledge_result, memory_result = await asyncio.gather(
     async_client.search.query(
         tenant_id="acme_corp", query="refund policy",
-        source="sources", search_by="hybrid", mode="thinking",
+        source="knowledge", search_by="hybrid", mode="thinking",
     ),
     async_client.search.query(
         tenant_id="acme_corp", sub_tenant_id="user_123",
@@ -610,5 +610,5 @@ If memory recall fails or times out, fall back to the Knowledge-only prompt  -  
 
 - [Recall](/essentials/v2/recall)  -  request parameters and response shape
 - [Memories](/essentials/v2/memories)  -  what `POST /search` with `source: "memories"` searches
-- [Knowledge](/essentials/v2/knowledge)  -  what `POST /search` with `source: "sources"` searches
+- [Knowledge](/essentials/v2/knowledge)  -  what `POST /search` with `source: "knowledge"` searches
 - [Context Graphs](/essentials/v2/context-graphs)  -  what `graph_context` fields contain

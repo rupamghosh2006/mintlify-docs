@@ -17,7 +17,7 @@ Semantic search is useful because it retrieves by meaning instead of exact wordi
 
 `POST /search` is the single recall endpoint. Two parameters decide what runs:
 
-- **`source`** picks the collection: `"sources"` (Knowledge), `"memories"` (user-scoped Memories), or `"all"` (both, merged and re-ranked together).
+- **`source`** picks the collection: `"knowledge"` (Knowledge), `"memories"` (user-scoped Memories), or `"all"` (both, merged and re-ranked together).
 - **`search_by`** picks the retrieval method: `"hybrid"` (semantic + BM25, the default), `"text"` (BM25 only, with `operator: "or" | "and" | "phrase"`), or `"vector"` (dense vectors only).
 
 ---
@@ -65,7 +65,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme",
     "sub_tenant_id": "team-mobile",
     "query": "How do we rotate API keys?",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "max_results": 8,
     "alpha": 0.8,
@@ -82,7 +82,7 @@ const result = await client.search.query({
   tenant_id: "acme",
   sub_tenant_id: "team-mobile",
   query: "How do we rotate API keys?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   max_results: 8,
   alpha: 0.8,
@@ -97,7 +97,7 @@ result = client.search.query(
     tenant_id="acme",
     sub_tenant_id="team-mobile",
     query="How do we rotate API keys?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     max_results=8,
     alpha=0.8,
@@ -129,7 +129,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme",
     "query": "How does onboarding work?",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "max_results": 8,
     "alpha": 0.8
@@ -140,7 +140,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 const result = await client.search.query({
   tenant_id: "acme",
   query: "How does onboarding work?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   max_results: 8,
   alpha: 0.8,
@@ -151,7 +151,7 @@ const result = await client.search.query({
 result = client.search.query(
     tenant_id="acme",
     query="How does onboarding work?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     max_results=8,
     alpha=0.8,
@@ -174,7 +174,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme",
     "query": "TimeoutError in payments-worker v4.2.1",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "max_results": 5,
     "alpha": 0.3,
@@ -186,7 +186,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 const result = await client.search.query({
   tenant_id: "acme",
   query: "TimeoutError in payments-worker v4.2.1",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   max_results: 5,
   alpha: 0.3,
@@ -198,7 +198,7 @@ const result = await client.search.query({
 result = client.search.query(
     tenant_id="acme",
     query="TimeoutError in payments-worker v4.2.1",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     max_results=5,
     alpha=0.3,
@@ -223,7 +223,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme",
     "sub_tenant_id": "team-mobile",
     "query": "What is the current sprint status?",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "metadata_filters": {
       "project": "phoenix"
@@ -236,7 +236,7 @@ const result = await client.search.query({
   tenant_id: "acme",
   sub_tenant_id: "team-mobile",
   query: "What is the current sprint status?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   metadata_filters: { project: "phoenix" },
 });
@@ -247,7 +247,7 @@ result = client.search.query(
     tenant_id="acme",
     sub_tenant_id="team-mobile",
     query="What is the current sprint status?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     metadata_filters={"project": "phoenix"},
 )
@@ -269,7 +269,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme",
     "query": "mechanical engineer",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "text",
     "operator": "phrase",
     "max_results": 10
@@ -280,7 +280,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 const result = await client.search.query({
   tenant_id: "acme",
   query: "mechanical engineer",
-  source: "sources",
+  source: "knowledge",
   search_by: "text",
   operator: "phrase",
   max_results: 10,
@@ -291,7 +291,7 @@ const result = await client.search.query({
 result = client.search.query(
     tenant_id="acme",
     query="mechanical engineer",
-    source="sources",
+    source="knowledge",
     search_by="text",
     operator="phrase",
     max_results=10,

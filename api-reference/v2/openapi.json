@@ -530,7 +530,7 @@
               "example": {
                 "tenant_id": "my_first_tenant",
                 "query": "What are the pricing tiers?",
-                "source": "sources",
+                "source": "knowledge",
                 "search_by": "hybrid",
                 "max_results": 5
               }
@@ -997,11 +997,11 @@
           "source": {
             "type": "string",
             "enum": [
-              "sources",
+              "knowledge",
               "memories",
               "all"
             ],
-            "default": "sources",
+            "default": "knowledge",
             "description": "What to search."
           },
           "search_by": {

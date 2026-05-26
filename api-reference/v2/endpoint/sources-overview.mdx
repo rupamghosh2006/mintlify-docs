@@ -75,8 +75,8 @@ So `type=knowledge` + `app_knowledge` means "this is knowledge, and I've already
 
 | Type | What it stores | Best for | Search with |
 |---|---|---|---|
-| `knowledge` | Shared information your app or team may need later: files, docs, Slack threads, Notion pages, tickets, webpages, policies, contracts. | RAG over product docs, customer records, internal wikis, support content, or any source that should be reusable across users. | `/search` with `source: "sources"` or `source: "all"` |
-| `memory` | User-specific context: preferences, conversation history, notes, inferred traits, past decisions, or personalization data. | Personalizing answers for one user, account, or sub-tenant. | `/search` with `source: "memories"` or `source: "all"` |
+| `knowledge` | Shared information your app or team may need later: files, docs, Slack threads, Notion pages, tickets, webpages, policies, contracts. | RAG over product docs, customer records, internal wikis, support content, or any source that should be reusable across users. | `/search` with `source: "knowledge"` or `source: "all"` |
+| `memories` | User-specific context: preferences, conversation history, notes, inferred traits, past decisions, or personalization data. | Personalizing answers for one user, account, or sub-tenant. | `/search` with `source: "memories"` or `source: "all"` |
 
 Use `knowledge` when the content is an external or shared source of truth. Use `memory` when the content describes a user or should shape the answer for that user.
 
@@ -151,7 +151,7 @@ Items in `graph_creation` are already retrievable. Wait for `completed` only whe
 | What it stores | Shared documents  -  PDFs, DOCX, CSVs, Notion pages, Slack threads, webpages, app-generated sources | Per-user content  -  preferences, past conversations, notes, inline facts about a specific end-user |
 | Scope | Across the tenant (or a sub-tenant for team-level corpora) | Almost always scoped to a `sub_tenant_id` representing one user, one workspace, or one session |
 | Typical use | RAG over your knowledge base  -  internal docs, customer-facing help content, product catalog | Personalization  -  "remember Alex prefers concise answers" or "this user already bought plan X" |
-| Retrieved via | `/search` with `source: "sources"` | `/search` with `source: "memories"` |
+| Retrieved via | `/search` with `source: "knowledge"` | `/search` with `source: "memories"` |
 | Mix both |  -  | Use `source: "all"` to merge a tenant-wide knowledge search with this user's memories in one ranked result set |
 
 Pick knowledge when the content is meant to be shared. Pick memory when the content is tied to a specific person, agent, or session.

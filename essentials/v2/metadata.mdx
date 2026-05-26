@@ -241,7 +241,7 @@ Use the metadata field names you planned in the tenant metadata schema.
 result = client.search.query(
     tenant_id="acme_corp",
     query="How does authentication control review work?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     metadata_filters={
         "compliance_framework": "SOC2",
@@ -253,7 +253,7 @@ result = client.search.query(
 const result = await client.search.query({
   tenant_id: "acme_corp",
   query: "How does authentication control review work?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   metadata_filters: {
     compliance_framework: "SOC2",

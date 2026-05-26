@@ -77,7 +77,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "How does the billing system handle failed payments?",
-    "source": "sources",
+    "source": "knowledge",
     "search_by": "hybrid",
     "mode": "thinking",
     "graph_context": true
@@ -88,7 +88,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 const result = await client.search.query({
   tenant_id: "acme_corp",
   query: "How does the billing system handle failed payments?",
-  source: "sources",
+  source: "knowledge",
   search_by: "hybrid",
   mode: "thinking",
   graph_context: true,
@@ -109,7 +109,7 @@ if (result.graph_context) {
 result = client.search.query(
     tenant_id="acme_corp",
     query="How does the billing system handle failed payments?",
-    source="sources",
+    source="knowledge",
     search_by="hybrid",
     mode="thinking",
     graph_context=True,

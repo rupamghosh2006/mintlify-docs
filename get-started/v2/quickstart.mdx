@@ -400,7 +400,7 @@ Most documents complete in 1–5 minutes. Larger PDFs or DOCX files can take up 
 
 there's a single retrieval endpoint  -  [`POST /search`](/api-reference/v2/endpoint/search)  -  and two parameters control everything:
 
-- **`source`** picks the bucket: `"sources"` (Knowledge), `"memories"` (Memories), or `"all"` (both, merged).
+- **`source`** picks the bucket: `"knowledge"` (Knowledge), `"memories"` (Memories), or `"all"` (both, merged).
 - **`search_by`** picks the method: `"hybrid"` (default  -  dense + BM25), `"text"` (BM25 only), or `"vector"` (dense only).
 
 For a personalized answer that pulls from both shared docs **and** the user's memories, use `source: "all"`:

@@ -592,7 +592,7 @@ def recall_customer_context(
 ) -> dict:
     """
     Two-call recall pattern:
-    1. search (source="sources") - searches knowledge base (docs, resolved tickets)
+    1. search (source="knowledge") - searches knowledge base (docs, resolved tickets)
     2. search (source="memories") - searches customer's personal memory
     Merge both before passing to LLM.
     mode: "thinking" enables personalised ranking on both calls.

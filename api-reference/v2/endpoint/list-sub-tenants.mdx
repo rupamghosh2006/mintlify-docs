@@ -4,6 +4,8 @@ description: "List sub-tenant IDs that have indexed data inside a tenant."
 openapi: "GET /tenants/sub-tenants"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Discover which sub-tenants exist inside a tenant  -  typically users (B2C), workspaces, teams, projects, or sessions. Useful for admin views, per-user dashboards, audit tooling, or before running a per-user search.
@@ -36,11 +38,11 @@ response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 
 ## Query parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Identifier of the tenant whose sub-tenants you want to list. |
+| <Field name="tenant_id" required /> | string | Identifier of the tenant whose sub-tenants you want to list. |
 
 ## Response
 
@@ -53,8 +55,8 @@ Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
 
 | Field | Description |
 |---|---|
-| `sub_tenant_ids` | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
-| `message` | Human-readable status (string). |
+| <Field name="sub_tenant_ids" /> | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
+| <Field name="message" /> | Human-readable status (string). |
 
 ## Behavior notes
 

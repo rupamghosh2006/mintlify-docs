@@ -4,6 +4,8 @@ description: "Delete knowledge sources or memories by their IDs."
 openapi: "DELETE /source"
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## When to use it
 
 Remove indexed content  -  for data-retention policies, deleting a specific user's memories on request, pruning stale documents, or cleaning up after a botched ingest. Pick the bucket with `type`:
@@ -60,14 +62,14 @@ client.source.delete(
 
 ## Request body
 
-The body wraps two fields together. Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+The body wraps two fields together. Required fields are marked with `*`.
 
 | Name | Type | Description |
 |---|---|---|
-| `request.tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Owning tenant. |
-| `request.sub_tenant_id` | string \| null | Sub-tenant scope. (default=`null`) |
-| `request.ids`<sup style={{ color: "red" }}>*</sup> | string[] | One or more source IDs to delete. At least one is required. |
-| `type` | `"knowledge" \| "memory"` | Bucket selector. (default=`"knowledge"`) |
+| <Field name="request.tenant_id" required /> | string | Owning tenant. |
+| <Field name="request.sub_tenant_id" /> | string \| null | Sub-tenant scope. (default=`null`) |
+| <Field name="request.ids" required /> | string[] | One or more source IDs to delete. At least one is required. |
+| <Field name="type" /> | `"knowledge" \| "memory"` | Bucket selector. (default=`"knowledge"`) |
 
 ## Response
 
@@ -87,11 +89,11 @@ The body wraps two fields together. Parameters marked with <sup style={{ color: 
 
 | Field | Description |
 |---|---|
-| `success` | `true` if at least one ID was deleted. |
-| `results[].id` | The ID being reported on. |
-| `results[].deleted` | Whether deletion succeeded for this specific ID. |
-| `results[].error` | Error message if deletion failed (e.g., not found). |
-| `deleted_count` | Total IDs successfully deleted. |
+| <Field name="success" /> | `true` if at least one ID was deleted. |
+| <Field name="results[].id" /> | The ID being reported on. |
+| <Field name="results[].deleted" /> | Whether deletion succeeded for this specific ID. |
+| <Field name="results[].error" /> | Error message if deletion failed (e.g., not found). |
+| <Field name="deleted_count" /> | Total IDs successfully deleted. |
 
 ### Memory (`type=memory`)
 
@@ -104,8 +106,8 @@ The body wraps two fields together. Parameters marked with <sup style={{ color: 
 
 | Field | Description |
 |---|---|
-| `success` | `true` if all listed memories were deleted. |
-| `user_memory_deleted` | `true` only when every listed memory was deleted. `false` if any deletion failed. |
+| <Field name="success" /> | `true` if all listed memories were deleted. |
+| <Field name="user_memory_deleted" /> | `true` only when every listed memory was deleted. `false` if any deletion failed. |
 
 ## Behavior notes
 

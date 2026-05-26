@@ -3,6 +3,8 @@ title: "Search - Overview"
 description: "Quick reference for search modes, source selection, and when to call each."
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## Which search mode should I use?
 
 ```mermaid
@@ -68,23 +70,23 @@ For `hybrid` and `vector`, use `mode` to control retrieval quality:
 
 ## Common parameters
 
-Parameters marked with <sup style={{ color: "red" }}>*</sup> are required.
+Required fields are marked with `*`.
 
 | Parameter | Type / values | Purpose |
 |---|---|---|
-| `tenant_id`<sup style={{ color: "red" }}>*</sup> | string | Tenant to search. |
-| `sub_tenant_id` | string | Optional sub-tenant scope. (default=default sub-tenant) |
-| `query`<sup style={{ color: "red" }}>*</sup> | string | Search terms or natural-language question. Cannot be empty. |
-| `source` | `"knowledge"` \| `"memories"` \| `"all"` | What collection to search over. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
-| `search_by` | `"hybrid"` \| `"text"` \| `"vector"` | Retrieval method. `hybrid` = dense vectors + BM25, `text` = BM25 only, `vector` = dense only. (default=`"hybrid"`) |
-| `operator` | `"or"` \| `"and"` \| `"phrase"` | BM25 matching when `search_by: "text"`. `or` = any term, `and` = all terms, `phrase` = exact phrase. Ignored for `hybrid` and `vector`. (default=`"or"`) |
-| `mode` | `"fast"` \| `"thinking"` | Retrieval quality vs latency. `fast` = single query pass. `thinking` = multi-query expansion + reranking + forceful-relation context. Applies to `hybrid` and `vector` only. (default=`"fast"`) |
-| `alpha` | float `0.0`–`1.0`, or `"auto"` | Hybrid weight: `1.0` = pure semantic, `0.0` = pure BM25, `"auto"` = let HydraDB pick per query. Applies to `search_by: "hybrid"` only. (default=`0.8`) |
-| `recency_bias` | float `0.0`–`1.0` | Prefer newer content. `0.0` = no recency preference, `1.0` = strong preference for recent items. (default=`0.0`) |
-| `metadata_filters` | object | Deterministic narrowing before ranking. **Top-level keys** match `tenant_metadata` (must be declared in `tenant_metadata_schema` and `enable_match`). **Nest under `document_metadata`** to filter on free-form per-document fields. See the example below. |
-| `graph_context` | boolean | When `true`, includes the entity/relation graph slice for retrieved chunks in the response (`graph_context` field). Off by default  -  turn on when you need to show how things connect, not just what is similar. (default=`false`) |
-| `search_forceful_relations` | boolean | Pull author-declared related sources into `additional_context`. **Only applies when `mode: "thinking"`**  -  ignored in `fast` mode. (default=`true`) |
-| `additional_context` | string | Free-form text to bias retrieval (e.g., "user is on the Pro plan"). |
+| <Field name="tenant_id" required /> | string | Tenant to search. |
+| <Field name="sub_tenant_id" /> | string | Optional sub-tenant scope. (default=default sub-tenant) |
+| <Field name="query" required /> | string | Search terms or natural-language question. Cannot be empty. |
+| <Field name="source" /> | `"knowledge"` \| `"memories"` \| `"all"` | What collection to search over. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
+| <Field name="search_by" /> | `"hybrid"` \| `"text"` \| `"vector"` | Retrieval method. `hybrid` = dense vectors + BM25, `text` = BM25 only, `vector` = dense only. (default=`"hybrid"`) |
+| <Field name="operator" /> | `"or"` \| `"and"` \| `"phrase"` | BM25 matching when `search_by: "text"`. `or` = any term, `and` = all terms, `phrase` = exact phrase. Ignored for `hybrid` and `vector`. (default=`"or"`) |
+| <Field name="mode" /> | `"fast"` \| `"thinking"` | Retrieval quality vs latency. `fast` = single query pass. `thinking` = multi-query expansion + reranking + forceful-relation context. Applies to `hybrid` and `vector` only. (default=`"fast"`) |
+| <Field name="alpha" /> | float `0.0`–`1.0`, or `"auto"` | Hybrid weight: `1.0` = pure semantic, `0.0` = pure BM25, `"auto"` = let HydraDB pick per query. Applies to `search_by: "hybrid"` only. (default=`0.8`) |
+| <Field name="recency_bias" /> | float `0.0`–`1.0` | Prefer newer content. `0.0` = no recency preference, `1.0` = strong preference for recent items. (default=`0.0`) |
+| <Field name="metadata_filters" /> | object | Deterministic narrowing before ranking. **Top-level keys** match `tenant_metadata` (must be declared in `tenant_metadata_schema` and `enable_match`). **Nest under `document_metadata`** to filter on free-form per-document fields. See the example below. |
+| <Field name="graph_context" /> | boolean | When `true`, includes the entity/relation graph slice for retrieved chunks in the response (`graph_context` field). Off by default  -  turn on when you need to show how things connect, not just what is similar. (default=`false`) |
+| <Field name="search_forceful_relations" /> | boolean | Pull author-declared related sources into `additional_context`. **Only applies when `mode: "thinking"`**  -  ignored in `fast` mode. (default=`true`) |
+| <Field name="additional_context" /> | string | Free-form text to bias retrieval (e.g., "user is on the Pro plan"). |
 
 ### Filter examples
 

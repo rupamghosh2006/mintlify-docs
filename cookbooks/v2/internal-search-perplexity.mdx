@@ -1272,7 +1272,7 @@ def smart_search(question: str, user_id: str) -> dict:
 
 ## Step 6 - Recall User Preferences
 
-To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as any [`/search`](/api-reference/v2/endpoint/search) call — an array of `chunks`.
+To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as any [`/search`](/api-reference/v2/endpoint/search) call  -  an array of `chunks`.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/search' \
@@ -1303,7 +1303,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 }
 ```
 
-> **Reading the response**: [`/search`](/api-reference/v2/endpoint/search) returns the same structure regardless of `source` — read the profile from `chunks[0].chunk_content`. `additional_metadata` will be `null` for memory entries; that's expected.
+> **Reading the response**: [`/search`](/api-reference/v2/endpoint/search) returns the same structure regardless of `source`  -  read the profile from `chunks[0].chunk_content`. `additional_metadata` will be `null` for memory entries; that's expected.
 
 ---
 

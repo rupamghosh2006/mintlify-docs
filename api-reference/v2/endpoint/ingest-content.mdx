@@ -187,8 +187,8 @@ Required fields are marked with `*`.
 | <Field name="sub_tenant_id" /> | string | Logical partition inside the tenant. (default=`""`  -  default sub-tenant) |
 | <Field name="upsert" /> | boolean | Replace existing sources with the same ID. Set to `false` to error on conflict. (default=`true`) |
 | <Field name="files" /> | file[] | Binary uploads, **knowledge only**. Required when `type=knowledge` and you have files to upload. Omit when ingesting memories. (default=`[]`) |
-| <Field name="file_metadata" /> | string (JSON array) | One entry per file in `files`, same order. See [`file_metadata` item shape](#file_metadata-item-shape). |
-| <Field name="app_knowledge" /> | string (JSON object or array) | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See [`app_knowledge` item shape](#app_knowledge-item-shape). |
+| <Field name="file_metadata" /> | string (JSON array) | One entry per file in `files`, same order. See [`file_metadata` item shape](#file-metadata-item-shape). |
+| <Field name="app_knowledge" /> | string (JSON object or array) | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See [`app_knowledge` item shape](#app-knowledge-item-shape). |
 | <Field name="memory" /> | string (JSON array) | Memory items, **memory only**. Required when `type=memory`. See [`memories` item shape](#memories-item-shape). |
 
 ### `file_metadata` item shape

@@ -15,7 +15,7 @@ Context graphs augment retrieval. They do not replace it.
 
 ## 2. What it does
 
-When `graph_context: true` is set on a search call, HydraDB returns relationship data alongside the retrieved chunks - showing how those chunks connect to each other and to your query.
+When `graph_context: true` is set on a search call (the default), HydraDB returns relationship data alongside the retrieved chunks - showing how those chunks connect to each other and to your query. Set `graph_context: false` to drop the graph slice when you only need ranked chunks.
 
 This helps your LLM reason about questions that require connecting information across multiple chunks or sources. Similarity search returns relevant content; the context graph surfaces how that content fits together.
 
@@ -39,7 +39,7 @@ Context graphs are hybrid: relationships are extracted at ingestion time and tra
 
 **At ingestion**, HydraDB extracts relationships from your data and stores them in the graph. Sources can also declare explicit relationships to other sources via a `relations` payload at ingestion.
 
-**At search**, when `graph_context: true` is set:
+**At search**, when `graph_context: true` is set (the default):
 
 1. HydraDB runs hybrid retrieval to find relevant chunks.
 2. It traverses the graph to discover relevant relationships between retrieved context.
@@ -174,11 +174,11 @@ The helper formats triplets as:
 
 ## 8. Common mistakes
 
-**Forgetting `graph_context: true`.** Without the flag, search still returns chunks, but the graph fields will not be populated.
+**Setting `graph_context: false` and then expecting the graph slice.** Graph context is on by default - only set the flag to `false` if you explicitly don't want graph data.
 
 **Assuming the graph replaces retrieval.** It doesn't. `chunks` is still the primary result; the graph enriches it with relationships. Use both.
 
-**Enabling graph context on every request.** It increases response size and adds traversal cost. Reserve it for queries where relational structure improves the answer.
+**Forgetting to disable when you don't need it.** Graph context adds response size and a small traversal cost. If your code path only consumes `chunks`, set `graph_context: false` to drop it.
 
 **Treating triplets as flat strings.** `source`, `relation`, and `target` are objects with their own fields. Read them as structured data.
 

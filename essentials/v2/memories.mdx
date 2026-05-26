@@ -14,7 +14,7 @@ Memories are the per-user counterpart to [Knowledge](/essentials/v2/knowledge). 
 | **Content** | User preferences, conversations, inferred traits | Documents, files, app-generated content |
 | **Scope** | Per-user  -  partitioned by `sub_tenant_id` | Shared across all users in a tenant |
 | **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"` | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` |
-| **`vectorstore_status`** | Index `0` (`[0]`) | Index `1` (`[1]`) |
+| **`vectorstore_status`** | `vectorstore_status.memories` | `vectorstore_status.knowledge` |
 
 <Info>
   **One endpoint, two stores.** Memories and [Knowledge](/essentials/v2/knowledge) live in separate stores, but a single [`POST /search`](/api-reference/v2/endpoint/search) call can hit both via `source: "all"`  -  results are merged and re-ranked together. That's the canonical recipe for personalized RAG. See [Search](/essentials/v2/search).
@@ -138,8 +138,8 @@ Use `infer: false` for:
 
 Memories live in their own vector store, distinct from [Knowledge](/essentials/v2/knowledge). The [`POST /search`](/api-reference/v2/endpoint/search) endpoint reaches them via the `source` parameter:
 
-- `source: "memories"` searches the Memories store (`vectorstore_status` index `0`).
-- `source: "knowledge"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status` index `1`).
+- `source: "memories"` searches the Memories store (`vectorstore_status.memories`).
+- `source: "knowledge"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status.knowledge`).
 - `source: "all"` runs both in parallel and returns a single merged, re-ranked result set.
 
 <Info>

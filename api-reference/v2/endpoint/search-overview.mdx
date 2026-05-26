@@ -84,7 +84,7 @@ Required fields are marked with `*`.
 | <Field name="alpha" /> | float `0.0`–`1.0`, or `"auto"` | Hybrid weight: `1.0` = pure semantic, `0.0` = pure BM25, `"auto"` = let HydraDB pick per query. Applies to `search_by: "hybrid"` only. (default=`0.8`) |
 | <Field name="recency_bias" /> | float `0.0`–`1.0` | Prefer newer content. `0.0` = no recency preference, `1.0` = strong preference for recent items. (default=`0.0`) |
 | <Field name="metadata_filters" /> | object | Deterministic narrowing before ranking. **Top-level keys** match `tenant_metadata` (must be declared in `tenant_metadata_schema` and `enable_match`). **Nest under `document_metadata`** to filter on free-form per-document fields. See the example below. |
-| <Field name="graph_context" /> | boolean | When `true`, includes the entity/relation graph slice for retrieved chunks in the response (`graph_context` field). Off by default  -  turn on when you need to show how things connect, not just what is similar. (default=`false`) |
+| <Field name="graph_context" /> | boolean | When `true` (default), includes the entity/relation graph slice for retrieved chunks in the response (`graph_context` field). Set to `false` to drop it when you only need ranked chunks. (default=`true`) |
 | <Field name="search_forceful_relations" /> | boolean | Pull author-declared related sources into `additional_context`. **Only applies when `mode: "thinking"`**  -  ignored in `fast` mode. (default=`true`) |
 | <Field name="additional_context" /> | string | Free-form text to bias retrieval (e.g., "user is on the Pro plan"). |
 

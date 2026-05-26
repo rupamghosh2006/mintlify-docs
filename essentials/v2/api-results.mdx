@@ -601,7 +601,7 @@ If memory search fails or times out, fall back to the Knowledge-only prompt  -  
 | Including too many chunks | Token overflow or answer quality drops | Start at `max_results: 10`; reduce if needed. |
 | Re-sorting chunks client-side | Overrides HydraDB's ranking | Preserve the server-returned order. |
 | Missing a grounding instruction | The model invents answers when context is thin | System prompt: answer only from the provided context. |
-| Expecting graph fields without requesting them | Graph context will not be populated | Set `graph_context: true` on the search call. |
+| Disabling graph fields and then expecting them | Graph context will be omitted from the response | `graph_context: true` is the default - only set it to `false` when you explicitly don't want graph data. |
 | Looking up `chunk_relations` without `chunk_id_to_group_ids` | The right relations don't attach to the right chunk | Use `chunk_id_to_group_ids[chunk_uuid]` to find the `group_id`s, then filter `chunk_relations` by them. |
 
 ---

@@ -1065,8 +1065,8 @@
           },
           "graph_context": {
             "type": "boolean",
-            "default": false,
-            "description": "When `true`, includes the entity/relation graph slice for retrieved chunks in the response under `graph_context` (with `query_paths`, `chunk_relations`, and `chunk_id_to_group_ids`). Off by default \u2014 turn on when you need to show how things connect, not just what is similar."
+            "default": true,
+            "description": "When `true` (default), includes the entity/relation graph slice for retrieved chunks in the response under `graph_context` (with `query_paths`, `chunk_relations`, and `chunk_id_to_group_ids`). Set to `false` to drop the graph slice when you only need ranked chunks."
           },
           "search_forceful_relations": {
             "type": "boolean",

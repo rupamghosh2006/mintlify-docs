@@ -319,7 +319,7 @@ For raw vector use cases  -  bring-your-own-embeddings  -  flip `is_embeddings_t
 ## Behavior notes
 
 <Info>
-**Tenant creation is asynchronous.** Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion call. Both values in `vectorstore_status` and `graph_status` must be `true` before the tenant is ready.
+**Tenant creation is asynchronous.** Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion call. Both `vectorstore_status.knowledge` and `vectorstore_status.memories`, as well as `graph_status`, must be `true` before the tenant is ready.
 </Info>
 
 <Info>

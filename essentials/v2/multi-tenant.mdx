@@ -73,8 +73,8 @@ Typical flow:
 
 For personalized answers grounded in shared Knowledge, use the `source` parameter on `POST /search`:
 
-- `source: "knowledge"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status` index `1`).
-- `source: "memories"` retrieves user-specific Memories (Memories vector store, `vectorstore_status` index `0`).
+- `source: "knowledge"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status.knowledge`).
+- `source: "memories"` retrieves user-specific Memories (Memories vector store, `vectorstore_status.memories`).
 - `source: "all"` runs both in parallel and returns one merged, re-ranked result set  -  usually what you want for personalized answers.
 
 When you need different formatting for shared vs personal context in the LLM prompt, call `POST /search` twice (once with `source: "knowledge"`, once with `source: "memories"`) and combine in your application.

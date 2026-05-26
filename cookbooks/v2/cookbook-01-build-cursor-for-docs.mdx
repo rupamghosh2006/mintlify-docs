@@ -102,7 +102,7 @@ def _poll_until_ready(timeout=180, interval=4):
     while time.time() < deadline:
         status = client.tenants.status(tenant_id=TENANT_ID)
         infra = status.infra
-        if infra.scheduler_status and infra.graph_status and all(infra.vectorstore_status):
+        if infra.scheduler_status and infra.graph_status and infra.vectorstore_status.knowledge and infra.vectorstore_status.memories:
             print("✓ Tenant ready."); return
         print(f"  scheduler={infra.scheduler_status} graph={infra.graph_status} vectorstore={infra.vectorstore_status} - retrying in {interval}s")
         time.sleep(interval)

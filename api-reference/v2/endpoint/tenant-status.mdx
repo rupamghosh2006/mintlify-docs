@@ -10,7 +10,7 @@ import { Field } from "/snippets/field.jsx";
 
 Tenant creation is asynchronous. Always poll this endpoint after `POST /tenants` and before your first ingestion or search call  -  the tenant is only ready when **all** of these are `true`:
 
-- Both entries in `infra.vectorstore_status` (the Knowledge and Memories collections)
+- Both `infra.vectorstore_status.knowledge` and `infra.vectorstore_status.memories` are `true`
 - `infra.graph_status` (the knowledge-graph layer)
 - `infra.scheduler_status` (the background indexing scheduler)
 
@@ -57,7 +57,10 @@ Required fields are marked with `*`.
   "infra": {
     "scheduler_status": true,
     "graph_status": true,
-    "vectorstore_status": [true, true]
+    "vectorstore_status": {
+      "knowledge": true,
+      "memories": true
+    }
   },
   "message": "Deployed infrastructure status"
 }
@@ -78,10 +81,17 @@ Required fields are marked with `*`.
 |---|---|---|
 | <Field name="scheduler_status" /> | boolean | Whether the background indexing scheduler is up. |
 | <Field name="graph_status" /> | boolean | Whether the knowledge-graph layer is provisioned. |
-| <Field name="vectorstore_status" /> | tuple of two booleans | Status of `[Memories collection, Knowledge collection]` (indices `0` and `1`). |
+| <Field name="vectorstore_status" /> | object | `{ knowledge: boolean, memories: boolean }`  -  provisioning status of each vectorstore collection. See [VectorstoreStatus fields](#vectorstorestatus-fields). |
+
+### `VectorstoreStatus` fields
+
+| Field | Type | Description |
+|---|---|---|
+| <Field name="knowledge" /> | boolean | Whether the Knowledge collection has been provisioned. |
+| <Field name="memories" /> | boolean | Whether the Memories collection has been provisioned. |
 
 <Info>
-`infra.vectorstore_status` is a **two-element tuple**: index `0` is the Memories collection, index `1` is the Knowledge collection. The tenant is fully ready only when both are `true`.
+The tenant is fully ready only when both `vectorstore_status.knowledge` and `vectorstore_status.memories` are `true`.
 </Info>
 
 ## Polling pattern
@@ -93,7 +103,7 @@ Poll every 1–2 seconds. Most tenants are ready in under 30 seconds.
 while (true) {
   const status = await client.tenants.status({ tenant_id: "acme" });
   const { graph_status, vectorstore_status, scheduler_status } = status.infra;
-  if (graph_status && scheduler_status && vectorstore_status.every(Boolean)) {
+  if (graph_status && scheduler_status && vectorstore_status.knowledge && vectorstore_status.memories) {
     break;
   }
   await new Promise((r) => setTimeout(r, 2000));
@@ -108,7 +118,8 @@ while True:
     if (
         infra.graph_status
         and infra.scheduler_status
-        and all(infra.vectorstore_status)
+        and infra.vectorstore_status.knowledge
+        and infra.vectorstore_status.memories
     ):
         break
     time.sleep(2)
@@ -118,7 +129,7 @@ TENANT="acme"
 until curl -s -X GET "https://api.hydradb.com/tenants/status?tenant_id=${TENANT}" \
        -H "Authorization: Bearer ${HYDRA_DB_API_KEY}" \
        -H "API-Version: 2" \
-     | jq -e '.data.infra | .graph_status and .scheduler_status and (.vectorstore_status | all)' > /dev/null; do
+     | jq -e '.data.infra | .graph_status and .scheduler_status and .vectorstore_status.knowledge and .vectorstore_status.memories' > /dev/null; do
   sleep 2
 done
 ```

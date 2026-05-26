@@ -131,7 +131,7 @@ response = client.tenants.create(tenant_id="my_first_tenant")
 
 <Step title="Step 1b - Wait for provisioning">
 
-Poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until  `vectorstore_status` entries and `graph_status` are `true`. The snippets below loop automatically:
+Poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `vectorstore_status.knowledge`, `vectorstore_status.memories`, and `graph_status` are all `true`. The snippets below loop automatically:
 
 <CodeGroup>
 ```bash cURL
@@ -139,7 +139,7 @@ TENANT="my_first_tenant"
 until curl -s "https://api.hydradb.com/tenants/status?tenant_id=${TENANT}" \
        -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
        -H "API-Version: 2" \
-     | jq -e '.data.infra | .graph_status and .scheduler_status and (.vectorstore_status | all)' \
+     | jq -e '.data.infra | .graph_status and .scheduler_status and .vectorstore_status.knowledge and .vectorstore_status.memories' \
        > /dev/null; do
   echo "Provisioning…"
   sleep 5
@@ -150,7 +150,7 @@ echo "Tenant ready"
 while (true) {
   const status = await client.tenants.status({ tenant_id: "my_first_tenant" });
   const { graph_status, scheduler_status, vectorstore_status } = status.infra;
-  if (graph_status && scheduler_status && vectorstore_status.every(Boolean)) {
+  if (graph_status && scheduler_status && vectorstore_status.knowledge && vectorstore_status.memories) {
     console.log("Tenant ready");
     break;
   }
@@ -164,7 +164,7 @@ import time
 while True:
     status = client.tenants.status(tenant_id="my_first_tenant")
     infra = status.infra
-    if infra.graph_status and infra.scheduler_status and all(infra.vectorstore_status):
+    if infra.graph_status and infra.scheduler_status and infra.vectorstore_status.knowledge and infra.vectorstore_status.memories:
         print("Tenant ready")
         break
     print("Provisioning…")

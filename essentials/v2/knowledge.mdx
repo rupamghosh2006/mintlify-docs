@@ -15,7 +15,7 @@ Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds
 | **Scope** | Shared across all users in a tenant | Per-user, scoped by `sub_tenant_id` |
 | **Mutability** | Versioned  -  replaced or deleted explicitly | Dynamic  -  evolves with every interaction |
 | **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"` |
-| **`vectorstore_status`** | Index `1` | Index `0` |
+| **`vectorstore_status`** | `vectorstore_status.knowledge` | `vectorstore_status.memories` |
 
 <Info>
   **One endpoint, two stores.** Knowledge and memories are stored separately, but a single [`POST /search`](/api-reference/v2/endpoint/search) call can hit both via `source: "all"`  -  results are merged and re-ranked together. Pick `source: "knowledge"` for shared-doc RAG, `source: "memories"` for per-user context, or `source: "all"` for personalized answers grounded in both. See [Search](/essentials/v2/search) for the full picture.

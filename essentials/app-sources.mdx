@@ -3,6 +3,8 @@ title: "App Sources"
 description: "How to ingest Slack, Gmail, Jira, Notion, CRM, and other app data so Recall can use IDs, threads, actors, and relations correctly."
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 App sources are pre-parsed records from business applications: emails, chat messages, tickets, wiki pages, CRM objects, comments, and attachments.
 
 Use app sources when you already know the item's text and structured fields. HydraDB uses that structure to build better search context than raw text alone.
@@ -63,14 +65,14 @@ The app-specific part of each item uses the public app-source shape:
 
 | Field | What it does | Details |
 |---|---|---|
-| `kind` (recommended) | Type of app object: `email`, `message`, `ticket`, `knowledge_base`, `comment`, `custom`. | [Identity fields](#identity-fields), [Kind-specific fields](#kind-specific-fields) |
-| `provider` (recommended) | System the item came from, such as `slack`, `gmail`, `jira`, `notion`, or `salesforce`. | [Identity fields](#identity-fields) |
-| `external_id` (recommended) | Stable provider ID for this exact item. | [Identity fields](#identity-fields) |
-| `fields` (required) | Structured content and app-specific fields for the selected `kind`. | [Kind-specific fields](#kind-specific-fields), [Thread and parent fields](#thread-and-parent-fields) |
-| `metadata` | Flexible context about where the item lives, such as channel, project, space, workspace, or pipeline. | [Container metadata](#container-metadata) |
-| `relations` | Explicit source-to-source connections, such as linked tickets, blockers, or CRM-to-support links. | [Relations](#relations) |
-| `attachments` | Files attached to this app item. Include `content.text` or `content.markdown` when you already extracted attachment text. | [Attachments and comments](#attachments-and-comments) |
-| `comments` | Embedded snapshot comments attached to this app item. For live incremental comments, prefer `kind: "comment"`. | [Attachments and comments](#attachments-and-comments), [Incremental ingestion](#incremental-ingestion) |
+| <Field name="kind" recommended /> | Type of app object: `email`, `message`, `ticket`, `knowledge_base`, `comment`, `custom`. | [Identity fields](#identity-fields), [Kind-specific fields](#kind-specific-fields) |
+| <Field name="provider" recommended /> | System the item came from, such as `slack`, `gmail`, `jira`, `notion`, or `salesforce`. | [Identity fields](#identity-fields) |
+| <Field name="external_id" recommended /> | Stable provider ID for this exact item. | [Identity fields](#identity-fields) |
+| <Field name="fields" required /> | Structured content and app-specific fields for the selected `kind`. | [Kind-specific fields](#kind-specific-fields), [Thread and parent fields](#thread-and-parent-fields) |
+| <Field name="metadata" /> | Flexible context about where the item lives, such as channel, project, space, workspace, or pipeline. | [Container metadata](#container-metadata) |
+| <Field name="relations" /> | Explicit source-to-source connections, such as linked tickets, blockers, or CRM-to-support links. | [Relations](#relations) |
+| <Field name="attachments" /> | Files attached to this app item. Include `content.text` or `content.markdown` when you already extracted attachment text. | [Attachments and comments](#attachments-and-comments) |
+| <Field name="comments" /> | Embedded snapshot comments attached to this app item. For live incremental comments, prefer `kind: "comment"`. | [Attachments and comments](#attachments-and-comments), [Incremental ingestion](#incremental-ingestion) |
 
 For typed app sources, put the main searchable item text in `fields` (`email.body`, `message.body`, `ticket.description`, `knowledge_base.body`, `comment.body`, or `custom.data`). The top-level `content` object is the older generic knowledge payload and is not required for app-native search.
 
@@ -623,7 +625,7 @@ Use `mode: "thinking"` for best app-source behavior, because relation expansion 
 
 This example ingests a Jira ticket with a parent epic, linked issues, project metadata, embedded snapshot comments, and an explicit blocker relation. For new comments arriving after this ticket has already been indexed, use the first-class `comment` example in [Incremental ingestion](#incremental-ingestion).
 
-```json
+```json expandable
 {
   "id": "jira_AUTH-123",
   "tenant_id": "acme",
@@ -897,137 +899,139 @@ Use `parent_id` for account -> deal/contact hierarchy and `relations[]` for cros
 
 Use this as the compact contract for app-source ingestion. The `fields.kind` value must match the top-level `kind` when you provide typed fields.
 
+
 ### Top-level fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `id` | String | Required | Stable HydraDB source ID for this ingested item. | Used as the source ID returned by ingestion and for later updates/deletes. |
-| `tenant_id` | String | Required | Tenant that owns the item. | Routes the item into the correct tenant scope. |
-| `sub_tenant_id` | String | Required | Sub-tenant/user/workspace scope. Use `"default"` if you do not partition sources. | Routes the item into the correct sub-tenant scope. |
-| `kind` | `email`, `message`, `ticket`, `knowledge_base`, `comment`, `custom` | Recommended | Tells HydraDB how to interpret `fields`. Defaults to `custom` if omitted. | Routes search by object type and selects the right parser for structured fields. |
-| `provider` | String, e.g. `slack`, `gmail`, `jira`, `notion`, `salesforce` | Recommended | Names the app namespace the source came from. | Prevents ID collisions and lets queries scope to a provider, e.g. "Slack messages". |
-| `external_id` | String | Recommended | Stable ID for this exact item in the provider. | Enables exact ID lookup and relation resolution across sources. |
-| `fields` | Object matching one kind-specific shape below | Required for best results | Holds searchable content and structure. | Drives rendering, actors, thread/parent expansion, status/priority filtering, and relation derivation. |
-| `metadata` | Object | Optional | Flexible provider context such as channel, project, space, workspace, pipeline, region, or team. | Preserves source context for display and filtering without adding new typed fields for every app. |
-| `relations` | List of relation objects | Optional | Explicitly connects this source to another source. | Enables connected-context retrieval for links, blockers, dependencies, and CRM/support relationships. |
-| `attachments` | List of attachment objects | Optional | Adds files attached to the app item. | Makes attachment content searchable and can connect sources that share attachments. |
-| `comments` | List of embedded comment objects | Optional | Adds snapshot/backfill comments attached to the app item. | Makes embedded comment text and comment authors searchable. For incremental comments, use `kind: "comment"`. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="id" type="String" required /> | Stable HydraDB source ID for this ingested item. | Used as the source ID returned by ingestion and for later updates/deletes. |
+| <Field name="tenant_id" type="String" required /> | Tenant that owns the item. | Routes the item into the correct tenant scope. |
+| <Field name="sub_tenant_id" type="String" required /> | Sub-tenant/user/workspace scope. Use `"default"` if you do not partition sources. | Routes the item into the correct sub-tenant scope. |
+| <Field name="kind" type="email, message, ticket, knowledge_base, comment, custom" recommended /> | Tells HydraDB how to interpret `fields`. Defaults to `custom` if omitted. | Routes search by object type and selects the right parser for structured fields. |
+| <Field name="provider" type="slack, gmail, jira, notion, salesforce" recommended /> | Names the app namespace the source came from. | Prevents ID collisions and lets queries scope to a provider, e.g. "Slack messages". |
+| <Field name="external_id" type="String" recommended /> | Stable ID for this exact item in the provider. | Enables exact ID lookup and relation resolution across sources. |
+| <Field name="fields" type="Object" recommended /> | Holds searchable content and structure. | Drives rendering, actors, thread/parent expansion, status/priority filtering, and relation derivation. |
+| <Field name="metadata" type="Object" /> | Flexible provider context such as channel, project, space, workspace, pipeline, region, or team. | Preserves source context for display and filtering without adding new typed fields for every app. |
+| <Field name="relations" type="Relation[]" /> | Explicitly connects this source to another source. | Enables connected-context retrieval for links, blockers, dependencies, and CRM/support relationships. |
+| <Field name="attachments" type="Attachment[]" /> | Adds files attached to the app item. | Makes attachment content searchable and can connect sources that share attachments. |
+| <Field name="comments" type="Comment[]" /> | Adds snapshot/backfill comments attached to the app item. | Makes embedded comment text and comment authors searchable. For incremental comments, use `kind: "comment"`. |
 
 ### `email` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `email` | Required inside `fields` | Discriminator for email fields. | Validates and parses the email shape. |
-| `subject` | String | Recommended | Email title/subject. | Improves title, snippets, and semantic matching. |
-| `body` | String | Recommended | Main email content. | Primary searchable text. |
-| `from` | String | Recommended | Sender. | Enables actor queries like "emails from Alice". |
-| `to` | List of strings | Optional | Recipients. | Enables actor queries like "emails to the finance team". |
-| `cc` | List of strings | Optional | CC recipients. | Adds actor context. |
-| `bcc` | List of strings | Optional | BCC recipients when available and safe to expose. | Adds actor context. |
-| `thread_id` | String | Recommended for email threads | Conversation/thread ID. | Enables same-thread expansion. |
-| `reply_to_id` | String | Optional | External ID of the email this replies to. | Connects replies to parent emails. |
-| `forwarded_from_id` | String | Optional | External ID of the original forwarded email. | Connects forwards to originals. |
-| `created_at` | ISO-8601 datetime | Optional | Email creation/sent time. | Helps chronology and recency-aware results. |
-| `url` | String | Optional | Link back to the email. | Improves citations and source navigation. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="email" required /> | Discriminator for email fields. | Validates and parses the email shape. |
+| <Field name="subject" type="String" recommended /> | Email title/subject. | Improves title, snippets, and semantic matching. |
+| <Field name="body" type="String" recommended /> | Main email content. | Primary searchable text. |
+| <Field name="from" type="String" recommended /> | Sender. | Enables actor queries like "emails from Alice". |
+| <Field name="to" type="String[]" /> | Recipients. | Enables actor queries like "emails to the finance team". |
+| <Field name="cc" type="String[]" /> | CC recipients. | Adds actor context. |
+| <Field name="bcc" type="String[]" /> | BCC recipients when available and safe to expose. | Adds actor context. |
+| <Field name="thread_id" type="String" recommended /> | Conversation/thread ID. | Enables same-thread expansion. |
+| <Field name="reply_to_id" type="String" /> | External ID of the email this replies to. | Connects replies to parent emails. |
+| <Field name="forwarded_from_id" type="String" /> | External ID of the original forwarded email. | Connects forwards to originals. |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Email creation/sent time. | Helps chronology and recency-aware results. |
+| <Field name="url" type="String" /> | Link back to the email. | Improves citations and source navigation. |
 
 ### `message` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `message` | Required inside `fields` | Discriminator for message fields. | Validates and parses the message shape. |
-| `body` | String | Recommended | Message text. | Primary searchable text. |
-| `author` | String | Recommended | Message sender. | Enables actor queries like "messages from Alice". |
-| `thread_id` | String | Recommended for threaded messages | Shared thread/conversation ID. | Enables same-thread expansion. |
-| `parent_id` | String | Optional | External ID of the parent/replied-to message. | Connects replies to parent messages. |
-| `mentions` | List of strings | Optional | People or handles mentioned in the message. | Enables actor queries like "messages mentioning Bob". |
-| `created_at` | ISO-8601 datetime | Optional | Message timestamp. | Helps chronology and recency-aware results. |
-| `url` | String | Optional | Link back to the message. | Improves citations and source navigation. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="message" required /> | Discriminator for message fields. | Validates and parses the message shape. |
+| <Field name="body" type="String" recommended /> | Message text. | Primary searchable text. |
+| <Field name="author" type="String" recommended /> | Message sender. | Enables actor queries like "messages from Alice". |
+| <Field name="thread_id" type="String" recommended /> | Shared thread/conversation ID. | Enables same-thread expansion. |
+| <Field name="parent_id" type="String" /> | External ID of the parent/replied-to message. | Connects replies to parent messages. |
+| <Field name="mentions" type="String[]" /> | People or handles mentioned in the message. | Enables actor queries like "messages mentioning Bob". |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Message timestamp. | Helps chronology and recency-aware results. |
+| <Field name="url" type="String" /> | Link back to the message. | Improves citations and source navigation. |
 
 ### `ticket` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `ticket` | Required inside `fields` | Discriminator for ticket fields. | Validates and parses the ticket shape. |
-| `title` | String | Recommended | Ticket title. | Improves title, snippets, and semantic matching. |
-| `description` | String | Recommended | Main ticket body. | Primary searchable text. |
-| `status` | String | Optional, recommended for workflow apps | Workflow state such as `open`, `closed`, `in_progress`. | Enables queries like "open tickets" or "closed issues". |
-| `priority` | String | Optional | Priority such as `high`, `p0`, `urgent`. | Enables priority-aware queries. |
-| `assignee` | String | Optional | Owner/assignee. | Enables actor queries like "tickets assigned to Alice". |
-| `reporter` | String | Optional | Creator/reporter. | Enables actor queries like "tickets reported by Bob". |
-| `parent_id` | String | Optional | Parent ticket/epic external ID. | Enables parent/child traversal. |
-| `linked_issue_ids` | List of strings | Optional | Related ticket/issue external IDs. | Creates linked-ticket context for retrieval. |
-| `created_at` | ISO-8601 datetime | Optional | Ticket creation time. | Helps chronology and recency-aware results. |
-| `updated_at` | ISO-8601 datetime | Optional | Last update time. | Helps freshness and recency-aware results. |
-| `url` | String | Optional | Link back to the ticket. | Improves citations and source navigation. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="ticket" required /> | Discriminator for ticket fields. | Validates and parses the ticket shape. |
+| <Field name="title" type="String" recommended /> | Ticket title. | Improves title, snippets, and semantic matching. |
+| <Field name="description" type="String" recommended /> | Main ticket body. | Primary searchable text. |
+| <Field name="status" type="String" recommended /> | Workflow state such as `open`, `closed`, `in_progress`. | Enables queries like "open tickets" or "closed issues". |
+| <Field name="priority" type="String" /> | Priority such as `high`, `p0`, `urgent`. | Enables priority-aware queries. |
+| <Field name="assignee" type="String" /> | Owner/assignee. | Enables actor queries like "tickets assigned to Alice". |
+| <Field name="reporter" type="String" /> | Creator/reporter. | Enables actor queries like "tickets reported by Bob". |
+| <Field name="parent_id" type="String" /> | Parent ticket/epic external ID. | Enables parent/child traversal. |
+| <Field name="linked_issue_ids" type="String[]" /> | Related ticket/issue external IDs. | Creates linked-ticket context for retrieval. |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Ticket creation time. | Helps chronology and recency-aware results. |
+| <Field name="updated_at" type="ISO-8601 datetime" /> | Last update time. | Helps freshness and recency-aware results. |
+| <Field name="url" type="String" /> | Link back to the ticket. | Improves citations and source navigation. |
 
 ### `knowledge_base` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `knowledge_base` | Required inside `fields` | Discriminator for knowledge-base fields. | Validates and parses the page shape. |
-| `title` | String | Recommended | Page title. | Improves title, snippets, and semantic matching. |
-| `body` | String | Recommended | Main page content. | Primary searchable text. |
-| `parent_id` | String | Optional | Parent page external ID. | Enables page hierarchy traversal. |
-| `created_by` | String | Optional | Page creator. | Enables actor queries like "docs created by Alice". |
-| `updated_by` | String | Optional | Last editor/updater. | Enables actor queries like "docs updated by Bob". |
-| `created_at` | ISO-8601 datetime | Optional | Page creation time. | Helps chronology and recency-aware results. |
-| `updated_at` | ISO-8601 datetime | Optional | Last update time. | Helps freshness and recency-aware results. |
-| `url` | String | Optional | Link back to the page. | Improves citations and source navigation. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="knowledge_base" required /> | Discriminator for knowledge-base fields. | Validates and parses the page shape. |
+| <Field name="title" type="String" recommended /> | Page title. | Improves title, snippets, and semantic matching. |
+| <Field name="body" type="String" recommended /> | Main page content. | Primary searchable text. |
+| <Field name="parent_id" type="String" /> | Parent page external ID. | Enables page hierarchy traversal. |
+| <Field name="created_by" type="String" /> | Page creator. | Enables actor queries like "docs created by Alice". |
+| <Field name="updated_by" type="String" /> | Last editor/updater. | Enables actor queries like "docs updated by Bob". |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Page creation time. | Helps chronology and recency-aware results. |
+| <Field name="updated_at" type="ISO-8601 datetime" /> | Last update time. | Helps freshness and recency-aware results. |
+| <Field name="url" type="String" /> | Link back to the page. | Improves citations and source navigation. |
 
 ### `comment` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `comment` | Required inside `fields` | Discriminator for first-class comment fields. | Validates and parses the comment shape. |
-| `body` | String | Recommended | Main comment text. | Primary searchable text. |
-| `author` | String | Recommended | Comment author. | Enables actor queries like "comments from Carol". |
-| `parent_id` | String | Optional, recommended for ticket/page comments | Parent source external ID in the same provider namespace. | Derives a `comment_on` relation to the parent source. |
-| `thread_id` | String | Optional | Shared discussion/activity thread ID. | Enables same-thread expansion around comments. |
-| `created_at` | ISO-8601 datetime | Optional | Comment creation time. | Helps chronology and recency-aware results. |
-| `updated_at` | ISO-8601 datetime | Optional | Comment edit/update time. | Helps freshness and recency-aware results. |
-| `url` | String | Optional | Link back to the comment. | Improves citations and source navigation. |
-| `properties` | Object | Optional | Extra comment metadata. | Carries provider-specific comment context. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="comment" required /> | Discriminator for first-class comment fields. | Validates and parses the comment shape. |
+| <Field name="body" type="String" recommended /> | Main comment text. | Primary searchable text. |
+| <Field name="author" type="String" recommended /> | Comment author. | Enables actor queries like "comments from Carol". |
+| <Field name="parent_id" type="String" recommended /> | Parent source external ID in the same provider namespace. | Derives a `comment_on` relation to the parent source. |
+| <Field name="thread_id" type="String" /> | Shared discussion/activity thread ID. | Enables same-thread expansion around comments. |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Comment creation time. | Helps chronology and recency-aware results. |
+| <Field name="updated_at" type="ISO-8601 datetime" /> | Comment edit/update time. | Helps freshness and recency-aware results. |
+| <Field name="url" type="String" /> | Link back to the comment. | Improves citations and source navigation. |
+| <Field name="properties" type="Object" /> | Extra comment metadata. | Carries provider-specific comment context. |
 
 ### `custom` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `kind` | `custom` | Required inside `fields` | Discriminator for custom fields. | Validates and parses the custom shape. |
-| `parent_id` | String | Optional | Parent `external_id` for custom hierarchies in the same `provider` namespace, e.g. account -> deal. | Enables parent/child traversal. |
-| `thread_id` | String | Optional | Shared activity stream or conversation ID. | Enables same-thread/activity-stream expansion. |
-| `data` | Object | Recommended | App-specific structured payload. | Preserves CRM/business fields without requiring a new kind. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="kind" type="custom" required /> | Discriminator for custom fields. | Validates and parses the custom shape. |
+| <Field name="parent_id" type="String" /> | Parent `external_id` for custom hierarchies in the same `provider` namespace, e.g. account -> deal. | Enables parent/child traversal. |
+| <Field name="thread_id" type="String" /> | Shared activity stream or conversation ID. | Enables same-thread/activity-stream expansion. |
+| <Field name="data" type="Object" recommended /> | App-specific structured payload. | Preserves CRM/business fields without requiring a new kind. |
 
 ### Attachment fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `id` | String | Optional | Stable attachment ID. | Helps deduplicate and connect attachment context. |
-| `url` | String | Optional | Attachment URL. | Lets results point back to the attachment. |
-| `title` | String | Optional | File name/title. | Improves attachment search and display. |
-| `content_type` | String | Optional | MIME type such as `application/pdf` or `image/png`. | Helps classify attachment content. |
-| `size_bytes` | Integer | Optional | Attachment size. | Useful for display/debugging. |
-| `content.text` | String | Optional | Pre-extracted plain-text attachment body. | Indexed in attachment-specific vectors. |
-| `content.markdown` | String | Optional | Pre-extracted Markdown attachment body. | Indexed like `content.text` when plain text is not provided. |
-| `content.html_base64` | String | Optional | Base64-encoded HTML, kept for structured attachment payloads. | Preserved in the payload; provide `content.text` or `content.markdown` for search. |
-| `content.csv_base64` | String | Optional | Base64-encoded CSV, kept for structured attachment payloads. | Preserved in the payload; provide `content.text` or `content.markdown` for search. |
-| `properties` | Object | Optional | Extra attachment metadata. | Carries provider-specific attachment context in the payload; use `title`, `url`, and `content` for searchable attachment context. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="id" type="String" /> | Stable attachment ID. | Helps deduplicate and connect attachment context. |
+| <Field name="url" type="String" /> | Attachment URL. | Lets results point back to the attachment. |
+| <Field name="title" type="String" /> | File name/title. | Improves attachment search and display. |
+| <Field name="content_type" type="String" /> | MIME type such as `application/pdf` or `image/png`. | Helps classify attachment content. |
+| <Field name="size_bytes" type="Integer" /> | Attachment size. | Useful for display/debugging. |
+| <Field name="content.text" type="String" /> | Pre-extracted plain-text attachment body. | Indexed in attachment-specific vectors. |
+| <Field name="content.markdown" type="String" /> | Pre-extracted Markdown attachment body. | Indexed like `content.text` when plain text is not provided. |
+| <Field name="content.html_base64" type="String" /> | Base64-encoded HTML, kept for structured attachment payloads. | Preserved in the payload; provide `content.text` or `content.markdown` for search. |
+| <Field name="content.csv_base64" type="String" /> | Base64-encoded CSV, kept for structured attachment payloads. | Preserved in the payload; provide `content.text` or `content.markdown` for search. |
+| <Field name="properties" type="Object" /> | Extra attachment metadata. | Carries provider-specific attachment context in the payload; use `title`, `url`, and `content` for searchable attachment context. |
 
 ### Embedded `comments[]` fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `id` | String | Optional | Stable comment ID. | Helps deduplicate comments. |
-| `author` | String | Recommended | Comment author. | Enables queries like "comments from Carol". |
-| `body` | String | Recommended | Comment text. | Makes comments searchable. |
-| `created_at` | ISO-8601 datetime | Optional | Comment timestamp. | Helps chronology and recency-aware results. |
-| `properties` | Object | Optional | Extra comment metadata. | Carries provider-specific comment context in the payload; use `author` and `body` for searchable comment context. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="id" type="String" /> | Stable comment ID. | Helps deduplicate comments. |
+| <Field name="author" type="String" recommended /> | Comment author. | Enables queries like "comments from Carol". |
+| <Field name="body" type="String" recommended /> | Comment text. | Makes comments searchable. |
+| <Field name="created_at" type="ISO-8601 datetime" /> | Comment timestamp. | Helps chronology and recency-aware results. |
+| <Field name="properties" type="Object" /> | Extra comment metadata. | Carries provider-specific comment context in the payload; use `author` and `body` for searchable comment context. |
 
 ### Relation fields
 
-| Field | Type / allowed values | Required? | Why send it | Search / ingestion effect |
-|---|---|---|---|---|
-| `predicate` | String, e.g. `linked_to`, `blocks`, `child_of`, `reply_to`, `comment_on`, `related_to` | Optional, defaults to `linked_to` | Names the relationship. | Lets search traverse only the relevant relationship type. |
-| `target.source_id` | String | One target required | Use when you already know the HydraDB source ID. | Connects directly to an existing source. |
-| `target.external_id` | String | One target required | Use when you know the provider ID but not the HydraDB source ID. | Lets HydraDB resolve or connect to the target by provider ID. |
-| `target.provider` | String | Required when `target.external_id` is set | Disambiguates provider ID namespaces. | Prevents false links across apps that share the same ID text. |
-| `properties` | Object | Optional | Extra relation metadata, such as reason or confidence. | Preserves why the relation exists. |
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="predicate" type="linked_to, blocks, child_of, reply_to, comment_on, related_to" /> | Names the relationship. | Lets search traverse only the relevant relationship type. |
+| <Field name="target.source_id" type="String" required /> | Use when you already know the HydraDB source ID. | Connects directly to an existing source. |
+| <Field name="target.external_id" type="String" required /> | Use when you know the provider ID but not the HydraDB source ID. | Lets HydraDB resolve or connect to the target by provider ID. |
+| <Field name="target.provider" type="String" required /> | Disambiguates provider ID namespaces. | Prevents false links across apps that share the same ID text. |
+| <Field name="properties" type="Object" /> | Extra relation metadata, such as reason or confidence. | Preserves why the relation exists. |
+

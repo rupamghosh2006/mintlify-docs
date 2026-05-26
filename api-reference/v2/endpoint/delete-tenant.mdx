@@ -18,8 +18,6 @@ This action is irreversible. There is no soft-delete and no recovery window.
 - **Idempotency:** Calling on an already-deleted tenant returns `404 TENANT_NOT_FOUND`
 - **Async:** Yes  -  the response acknowledges the deletion; cleanup of vector indices, the graph, and storage objects runs in the background.
 
-## Example
-
 <RequestExample>
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/tenants?tenant_id=my_first_tenant' \

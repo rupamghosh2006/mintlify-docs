@@ -22,11 +22,204 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 - **Async:** Yes  -  returns `202 Accepted` with the new `source_id`s. Poll [Source Status](/api-reference/v2/endpoint/source-status) until each item reports `completed`.
 - **Content-Type:** `multipart/form-data` (not JSON).
 
+<RequestExample>
+
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=knowledge" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=default" \
+  -F "upsert=true" \
+  -F "files=@/path/to/policy.pdf" \
+  -F 'file_metadata=[
+    {
+      "file_id": "policy_v2",
+      "tenant_metadata": { "department": "legal" },
+      "document_metadata": { "source": "policy" }
+    }
+  ]' \
+  -F 'app_knowledge=[
+    {
+      "id": "slack_thread_001",
+      "title": "Pricing discussion",
+      "type": "slack",
+      "content": { "text": "We agreed on three tiers..." },
+      "tenant_metadata": { "department": "product" },
+      "document_metadata": { "channel": "pricing" }
+    }
+  ]'
+
+# OR: memory from raw text.
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "text": "Prefers concise answers and dark mode.",
+      "infer": true,
+      "user_name": "Alex"
+    }
+  ]'
+
+# OR: memory from conversation pairs.
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "title": "Support conversation about refunds",
+      "user_assistant_pairs": [
+        { "user": "Can I get a refund?", "assistant": "Refunds are available within 30 days." }
+      ],
+      "infer": false
+    }
+  ]'
+```
+
+```typescript TypeScript SDK
+const knowledgeResult = await client.source.ingest({
+  // Knowledge requests can include files, app_knowledge, or both.
+  type: "knowledge",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "default",
+  upsert: true,
+
+  // Use files when HydraDB should parse PDFs, DOCX, CSV, Markdown, or text files.
+  files: [
+    { path: "/path/to/policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
+  ],
+  file_metadata: JSON.stringify([
+    {
+      file_id: "policy_v2",
+      tenant_metadata: { department: "legal" },
+      document_metadata: { source: "policy" },
+    },
+  ]),
+
+  // Use app_knowledge when your app already extracted the source text/metadata.
+  app_knowledge: JSON.stringify([
+    {
+      id: "slack_thread_001",
+      title: "Pricing discussion",
+      type: "slack",
+      content: { text: "We agreed on three tiers..." },
+      tenant_metadata: { department: "product" },
+      document_metadata: { channel: "pricing" },
+    },
+  ]),
+});
+
+const textMemoryResult = await client.source.ingest({
+  type: "memory",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  memories: JSON.stringify([
+    {
+      // Use text for raw notes or signals.
+      text: "Prefers concise answers and dark mode.",
+      infer: true,
+      user_name: "Alex",
+    },
+  ]),
+});
+
+const conversationMemoryResult = await client.source.ingest({
+  type: "memory",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  memories: JSON.stringify([
+    {
+      // Use user_assistant_pairs for conversation history instead of text.
+      title: "Support conversation about refunds",
+      user_assistant_pairs: [
+        { user: "Can I get a refund?", assistant: "Refunds are available within 30 days." },
+      ],
+      infer: false,
+    },
+  ]),
+});
+```
+
+```python Python SDK
+import json
+
+with open("/path/to/policy.pdf", "rb") as policy:
+    knowledge_result = client.source.ingest(
+        # Knowledge requests can include files, app_knowledge, or both.
+        type="knowledge",
+        tenant_id="acme_corp",
+        sub_tenant_id="default",
+        upsert=True,
+
+        # Use files when HydraDB should parse PDFs, DOCX, CSV, Markdown, or text files.
+        files=[("policy.pdf", policy, "application/pdf")],
+        file_metadata=json.dumps([
+            {
+                "file_id": "policy_v2",
+                "tenant_metadata": {"department": "legal"},
+                "document_metadata": {"source": "policy"},
+            }
+        ]),
+
+        # Use app_knowledge when your app already extracted the source text/metadata.
+        app_knowledge=json.dumps([
+            {
+                "id": "slack_thread_001",
+                "title": "Pricing discussion",
+                "type": "slack",
+                "content": {"text": "We agreed on three tiers..."},
+                "tenant_metadata": {"department": "product"},
+                "document_metadata": {"channel": "pricing"},
+            }
+        ]),
+    )
+
+text_memory_result = client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=json.dumps([
+        {
+            # Use text for raw notes or signals.
+            "text": "Prefers concise answers and dark mode.",
+            "infer": True,
+            "user_name": "Alex",
+        }
+    ]),
+)
+
+conversation_memory_result = client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=json.dumps([
+        {
+            # Use user_assistant_pairs for conversation history instead of text.
+            "title": "Support conversation about refunds",
+            "user_assistant_pairs": [
+                {"user": "Can I get a refund?", "assistant": "Refunds are available within 30 days."},
+            ],
+            "infer": False,
+        }
+    ]),
+)
+```
+
+</RequestExample>
+
 ## Examples
 
-### Knowledge  -  files
-
-<RequestExample>
+<AccordionGroup>
+  <Accordion title="Knowledge - files" defaultOpen>
+    <CodeGroup>
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
@@ -75,11 +268,11 @@ with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb")
     )
 ```
 
-</RequestExample>
+    </CodeGroup>
+  </Accordion>
 
-### Knowledge  -  pre-extracted app sources
-
-<RequestExample>
+  <Accordion title="Knowledge - pre-extracted app sources">
+    <CodeGroup>
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
@@ -132,11 +325,11 @@ client.source.ingest(
 )
 ```
 
-</RequestExample>
+    </CodeGroup>
+  </Accordion>
 
-### Memory  -  per-user
-
-<RequestExample>
+  <Accordion title="Memory - text">
+    <CodeGroup>
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/ingest' \
@@ -146,7 +339,11 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
   -F "tenant_id=acme_corp" \
   -F "sub_tenant_id=user_alex" \
   -F 'memories=[
-    { "text": "Prefers dark mode and short answers.", "infer": true, "user_name": "Alex" }
+    {
+      "text": "Prefers dark mode and short answers.",
+      "infer": true,
+      "user_name": "Alex"
+    }
   ]'
 ```
 
@@ -156,7 +353,11 @@ await client.source.ingest({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_alex",
   memories: JSON.stringify([
-    { text: "Prefers dark mode and short answers.", infer: true, user_name: "Alex" },
+    {
+      text: "Prefers dark mode and short answers.",
+      infer: true,
+      user_name: "Alex",
+    },
   ]),
 });
 ```
@@ -169,12 +370,79 @@ client.source.ingest(
     tenant_id="acme_corp",
     sub_tenant_id="user_alex",
     memories=json.dumps([
-        {"text": "Prefers dark mode and short answers.", "infer": True, "user_name": "Alex"}
+        {
+            "text": "Prefers dark mode and short answers.",
+            "infer": True,
+            "user_name": "Alex",
+        }
     ]),
 )
 ```
 
-</RequestExample>
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Memory - conversation pairs">
+    <CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "title": "Support conversation about refunds",
+      "user_assistant_pairs": [
+        { "user": "Can I get a refund?", "assistant": "Refunds are available within 30 days." }
+      ],
+      "infer": false
+    }
+  ]'
+```
+
+```typescript TypeScript SDK
+await client.source.ingest({
+  type: "memory",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  memories: JSON.stringify([
+    {
+      title: "Support conversation about refunds",
+      user_assistant_pairs: [
+        { user: "Can I get a refund?", assistant: "Refunds are available within 30 days." },
+      ],
+      infer: false,
+    },
+  ]),
+});
+```
+
+```python Python SDK
+import json
+
+client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=json.dumps([
+        {
+            "title": "Support conversation about refunds",
+            "user_assistant_pairs": [
+                {"user": "Can I get a refund?", "assistant": "Refunds are available within 30 days."},
+            ],
+            "infer": False,
+        }
+    ]),
+)
+```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
 
 ## Form fields
 

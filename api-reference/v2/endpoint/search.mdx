@@ -23,11 +23,107 @@ Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for lo
 - **Idempotency:** Read-only
 - **Async:** No
 
+<RequestExample>
+
+```bash cURL
+curl -X POST 'https://api.hydradb.com/search' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_alex",
+    "query": "What is our refund policy, and how should I explain it to this user?",
+    "source": "all",
+    "search_by": "hybrid",
+    "mode": "thinking",
+    "operator": "or",
+    "max_results": 10,
+    "alpha": "auto",
+    "recency_bias": 0.2,
+    "graph_context": true,
+    "search_forceful_relations": true,
+    "metadata_filters": {
+      "department": "support",
+      "document_metadata": {
+        "source": "policy"
+      }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  query: "What is our refund policy, and how should I explain it to this user?",
+
+  // Choose what to search: "knowledge", "memories", or "all".
+  source: "all",
+
+  // Choose retrieval: "hybrid" (default), "text" (BM25), or "vector".
+  search_by: "hybrid",
+
+  // Use mode for hybrid/vector. For search_by: "text", use operator instead.
+  mode: "thinking",
+  operator: "or", // "or", "and", or "phrase"; only used for text search.
+
+  max_results: 10,
+  alpha: "auto", // Hybrid weight: 0.0 to 1.0, or "auto".
+  recency_bias: 0.2,
+  graph_context: true,
+  search_forceful_relations: true,
+
+  // Top-level keys match tenant metadata; document_metadata is free-form per source.
+  metadata_filters: {
+    department: "support",
+    document_metadata: {
+      source: "policy",
+    },
+  },
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="What is our refund policy, and how should I explain it to this user?",
+
+    # Choose what to search: "knowledge", "memories", or "all".
+    source="all",
+
+    # Choose retrieval: "hybrid" (default), "text" (BM25), or "vector".
+    search_by="hybrid",
+
+    # Use mode for hybrid/vector. For search_by="text", use operator instead.
+    mode="thinking",
+    operator="or",  # "or", "and", or "phrase"; only used for text search.
+
+    max_results=10,
+    alpha="auto",  # Hybrid weight: 0.0 to 1.0, or "auto".
+    recency_bias=0.2,
+    graph_context=True,
+    search_forceful_relations=True,
+
+    # Top-level keys match tenant metadata; document_metadata is free-form per source.
+    metadata_filters={
+        "department": "support",
+        "document_metadata": {
+            "source": "policy",
+        },
+    },
+)
+```
+
+</RequestExample>
+
 ## Examples
 
-### Document Q&A
+<AccordionGroup>
+  <Accordion title="Document Q&A" defaultOpen>
+    <CodeGroup>
 
-<RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -42,6 +138,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "graph_context": true
   }'
 ```
+
 ```typescript TypeScript SDK
 const result = await client.search.query({
   tenant_id: "acme_corp",
@@ -52,6 +149,7 @@ const result = await client.search.query({
   graph_context: true,
 });
 ```
+
 ```python Python SDK
 result = client.search.query(
     tenant_id="acme_corp",
@@ -62,11 +160,13 @@ result = client.search.query(
     graph_context=True,
 )
 ```
-</RequestExample>
 
-### Personalized Q&A  -  Knowledge + Memories in one call
+    </CodeGroup>
+  </Accordion>
 
-<RequestExample>
+  <Accordion title="Personalized Q&A - Knowledge + Memories">
+    <CodeGroup>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -81,6 +181,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "mode": "thinking"
   }'
 ```
+
 ```typescript TypeScript SDK
 const result = await client.search.query({
   tenant_id: "acme_corp",
@@ -91,11 +192,24 @@ const result = await client.search.query({
   mode: "thinking",
 });
 ```
-</RequestExample>
 
-### Exact-phrase lookup
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="What is our refund policy, and how should I explain it to this user?",
+    source="all",
+    search_by="hybrid",
+    mode="thinking",
+)
+```
 
-<RequestExample>
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Exact-phrase lookup">
+    <CodeGroup>
+
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -109,6 +223,17 @@ curl -X POST 'https://api.hydradb.com/search' \
     "operator": "phrase"
   }'
 ```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  query: "GDPR Article 17",
+  source: "knowledge",
+  search_by: "text",
+  operator: "phrase",
+});
+```
+
 ```python Python SDK
 result = client.search.query(
     tenant_id="acme_corp",
@@ -118,7 +243,11 @@ result = client.search.query(
     operator="phrase",
 )
 ```
-</RequestExample>
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
 
 ## Request body
 

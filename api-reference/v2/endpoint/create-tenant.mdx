@@ -18,8 +18,6 @@ In most cases, you create one tenant per organization. For per-user isolation (B
 - **Idempotency:** Re-sending with the same `tenant_id` returns `409 CONFLICT`
 - **Async:** Yes – returns `status: accepted`. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) before ingestion or search.
 
-## Example
-
 <RequestExample>
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants' \

@@ -24,8 +24,6 @@ Pass `source_id` to scope to a single ingested item, or omit it to return all re
 - **Async:** No
 - **Pagination:** Cursor-based. `limit` clamped to `1 ≤ x ≤ 10000`; default `5000`. Pass the response's `next_cursor` to fetch the next page.
 
-## Example
-
 <RequestExample>
 ```bash cURL
 curl -G 'https://api.hydradb.com/source/relations' \

@@ -21,8 +21,6 @@ Pass one or more IDs in `request.ids`. The body wraps two fields together: `requ
 - **Idempotency:** Deleting an already-deleted ID is a no-op for that ID  -  the rest of the batch still proceeds. `success` reflects whether *any* ID was removed.
 - **Async:** Background workers may continue removing vector entries briefly after the response  -  but the source is immediately excluded from search.
 
-## Example
-
 <RequestExample>
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/source' \

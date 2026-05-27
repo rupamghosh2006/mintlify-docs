@@ -170,7 +170,7 @@ response = await async_client.tenants.create(tenant_id="my_first_tenant")
 ```
 </CodeGroup>
 
-Tenant creation is asynchronous. Poll [`tenants.status`](/api-reference/v2/endpoint/tenants-overview) until provisioning completes:
+Tenant creation is asynchronous. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) until provisioning completes:
 
 <CodeGroup>
 ```typescript TypeScript SDK
@@ -178,8 +178,13 @@ while (true) {
   const status = await client.tenants.status({
     tenant_id: "my_first_tenant",
   });
-  const { graph_status, vectorstore_status } = status.infra;
-  if (graph_status && vectorstore_status.every(Boolean)) break;
+  const { scheduler_status, graph_status, vectorstore_status } = status.infra;
+  if (
+    scheduler_status &&
+    graph_status &&
+    vectorstore_status.knowledge &&
+    vectorstore_status.memory
+  ) break;
   await new Promise((r) => setTimeout(r, 2000));
 }
 ```
@@ -188,7 +193,12 @@ import time
 
 while True:
     status = client.tenants.status(tenant_id="my_first_tenant")
-    if status.infra.graph_status and all(status.infra.vectorstore_status):
+    if (
+        status.infra.scheduler_status
+        and status.infra.graph_status
+        and status.infra.vectorstore_status.knowledge
+        and status.infra.vectorstore_status.memory
+    ):
         break
     time.sleep(2)
 ```
@@ -543,7 +553,7 @@ except HydraDBError as e:
 ```
 </CodeGroup>
 
-For the full list of error codes and retry patterns, see [Error Responses](/api-reference/error-responses).
+For the full list of error codes and retry patterns, see [Error Responses](/api-reference/v2/error-responses).
 
 ## IDE-driven discovery
 
@@ -558,7 +568,7 @@ This works because the SDKs are fully typed with comprehensive parameter docs so
 ## Related sections
 
 - [API Reference](/api-reference/v2)  -  complete endpoint documentation
-- [Error Responses](/api-reference/error-responses)  -  HTTP codes, error codes, retry patterns
+- [Error Responses](/api-reference/v2/error-responses)  -  HTTP codes, error codes, retry patterns
 - [Quickstart](/get-started/v2/quickstart)  -  build your first integration in five minutes
 - [Search](/essentials/v2/search)  -  conceptual overview of `POST /search`
 - [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories)  -  ingestion deep-dives

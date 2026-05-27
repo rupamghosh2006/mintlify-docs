@@ -5,7 +5,7 @@ description: "Quick reference for search modes, source selection, and when to ca
 
 import { Field } from "/snippets/field.jsx";
 
-## Which search mode should I use?
+Use this page to choose the right search shape before opening the full [Search](/api-reference/v2/endpoint/search) endpoint reference. Search has three main decisions: what to search (`source`), how to match (`search_by`), and how much retrieval work to spend (`mode`).
 
 ```mermaid
 flowchart LR
@@ -33,117 +33,95 @@ class H innovation;
 linkStyle default stroke:#64748b,stroke-width:2px;
 ```
 
-## Endpoint reference
+## Parameters that matter
 
-| Endpoint | Method | SDK method | Purpose | Returns |
-|---|---|---|---|---|
-| [`/search`](/api-reference/v2/endpoint/search) | `POST` | `search.query` | Unified retrieval over knowledge, memories, or both | Ranked chunks + optional graph context |
-
-## Source selection
-
-Use `source` to choose what collection to search:
-
-| Source | Searches | Best for |
+| Parameter | Values | Use it for |
 |---|---|---|
-| `knowledge` | Knowledge documents, files, and app sources | Document Q&A, RAG context |
-| `memories` | User memories | Personalization and user preferences |
-| `all` | Sources and memories, merged together | Personalized answers grounded in both shared and user-specific context |
+| <Field name="source" /> | `"knowledge"`, `"memories"`, `"all"` | Choose the collection. Use `"knowledge"` for shared docs/app sources, `"memories"` for user context, and `"all"` when an answer should use both. |
+| <Field name="search_by" /> | `"hybrid"`, `"text"`, `"vector"` | Choose the matching method. Use `"hybrid"` by default, `"text"` for exact terms or phrases, and `"vector"` only when you want pure dense similarity. |
+| <Field name="mode" /> | `"fast"`, `"thinking"` | Choose latency vs quality. Use `"fast"` for low-latency paths and `"thinking"` for multi-query retrieval, reranking, and forceful-relation context. |
+| <Field name="max_results" /> | integer | Control prompt size. Start with `10`, reduce for tight context windows, increase only when you rerank or summarize downstream. |
+| <Field name="alpha" /> | `0.0`-`1.0` or `"auto"` | Tune hybrid search. Lower values favor BM25 keywords; higher values favor semantic similarity. |
+| <Field name="metadata_filters" /> | object | Narrow candidates before ranking. Top-level keys match `tenant_metadata`; nested `document_metadata` filters free-form per-source fields. |
+| <Field name="graph_context" /> | boolean | Include entity/relation context with the chunks. On by default; set `false` for chunk-only responses. |
 
-## Search methods
-
-Use `search_by` to choose the retrieval method:
-
-| Method | Match type | Best for |
-|---|---|---|
-| `hybrid` | Semantic + keyword | General-purpose retrieval and RAG |
-| `text` | BM25 full-text search | Compliance lookups, exact matches, phrase search |
-| `vector` | Dense vector search | Pure semantic similarity |
-
-## Modes
-
-For `hybrid` and `vector`, use `mode` to control retrieval quality:
-
-| Mode | Behavior | When to use |
-|---|---|---|
-| `fast` | Single query pass, lower latency | Real-time chat, autocomplete, simple lookups |
-| `thinking` | Multi-query expansion, reranking, forceful-relation context | Complex queries, customer-facing answers, anything where quality matters |
+<Tip>
+For filter design, read [Essentials - Metadata](/essentials/v2/metadata) before creating tenant schemas. For exact request fields, defaults, and response shape, use [Search](/api-reference/v2/endpoint/search).
+</Tip>
 
 ## Recommended configurations
 
 | User intent | Recommended config |
 |---|---|
-| Fast RAG | `source="knowledge"`, `search_by="hybrid"`, `mode="fast"`, `max_results=5-10` |
-| Highest-quality RAG | `source="knowledge"`, `search_by="hybrid"`, `mode="thinking"`, `graph_context=true` |
-| Exact keyword lookup | `search_by="text"`, `operator="phrase"` |
-| Personalization | `source="all"`, include `sub_tenant_id` for the user/workspace/session |
-
-## Common parameters
-
-
-
-| Parameter | Type / values | Purpose |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Tenant to search. |
-| <Field name="sub_tenant_id" /> | string | Optional sub-tenant scope. (default=default sub-tenant) |
-| <Field name="query" required /> | string | Search terms or natural-language question. Cannot be empty. |
-| <Field name="source" /> | `"knowledge"` \| `"memories"` \| `"all"` | What collection to search over. `"all"` runs knowledge and memories in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
-| <Field name="search_by" /> | `"hybrid"` \| `"text"` \| `"vector"` | Retrieval method. `hybrid` = dense vectors + BM25, `text` = BM25 only, `vector` = dense only. (default=`"hybrid"`) |
-| <Field name="operator" /> | `"or"` \| `"and"` \| `"phrase"` | BM25 matching when `search_by: "text"`. `or` = any term, `and` = all terms, `phrase` = exact phrase. Ignored for `hybrid` and `vector`. (default=`"or"`) |
-| <Field name="mode" /> | `"fast"` \| `"thinking"` | Retrieval quality vs latency. `fast` = single query pass. `thinking` = multi-query expansion + reranking + forceful-relation context. Applies to `hybrid` and `vector` only. (default=`"fast"`) |
-| <Field name="max_results" /> | integer | Maximum chunks to return. Start with `10` for RAG, reduce for short prompts, increase when reranking downstream. |
-| <Field name="alpha" /> | float `0.0`–`1.0`, or `"auto"` | Hybrid weight: `1.0` = pure semantic, `0.0` = pure BM25, `"auto"` = let HydraDB pick per query. Applies to `search_by: "hybrid"` only. (default=`0.8`) |
-| <Field name="recency_bias" /> | float `0.0`–`1.0` | Prefer newer content. `0.0` = no recency preference, `1.0` = strong preference for recent items. (default=`0.0`) |
-| <Field name="metadata_filters" /> | object | Deterministic narrowing before ranking. **Top-level keys** match `tenant_metadata` (must be declared in `tenant_metadata_schema` and `enable_match`). **Nest under `document_metadata`** to filter on free-form per-document fields. See the example below. |
-| <Field name="graph_context" /> | boolean | When `true`, includes the entity/relation graph slice for retrieved chunks in the response (`graph_context` field). Off by default  -  turn on when you need to show how things connect, not just what is similar. (default=`false`) |
-| <Field name="search_forceful_relations" /> | boolean | Pull author-declared related sources into `additional_context`. **Only applies when `mode: "thinking"`**  -  ignored in `fast` mode. (default=`true`) |
-| <Field name="additional_context" /> | string | Free-form text to bias retrieval (e.g., "user is on the Pro plan"). |
-
-### Filter examples
-
-```json
-{
-  "metadata_filters": {
-    "department": "engineering",
-    "region": "us-east",
-    "document_metadata": {
-      "source": "account_plan",
-      "author": "alex"
-    }
-  }
-}
-```
-
-Top-level keys (`department`, `region`) are matched against tenant-schema fields. The nested `document_metadata` object filters free-form per-document fields.
+| Fast document RAG | `source="knowledge"`, `search_by="hybrid"`, `mode="fast"`, `max_results=5-10`, `graph_context=false` |
+| Highest-quality document RAG | `source="knowledge"`, `search_by="hybrid"`, `mode="thinking"`, `graph_context=true`, `alpha="auto"` |
+| Personalized answer | `source="all"`, include `sub_tenant_id`, `search_by="hybrid"`, `mode="thinking"` |
+| User preferences only | `source="memories"`, include `sub_tenant_id`, `search_by="hybrid"` |
+| Exact keyword or phrase | `source="knowledge"`, `search_by="text"`, `operator="phrase"` |
+| Recent operational updates | `search_by="hybrid"`, `recency_bias=0.2-0.4`, filter to the right document type |
 
 ## Typical patterns
 
-### Document Q&A
+<AccordionGroup>
+  <Accordion title="Document Q&A from shared knowledge" defaultOpen>
+
+Use this for standard RAG over docs, PDFs, tickets, pages, or app sources.
 
 ```json
 {
   "tenant_id": "acme",
-  "query": "What's our refund policy?",
+  "query": "What is our refund policy?",
   "source": "knowledge",
   "search_by": "hybrid",
   "mode": "thinking",
+  "max_results": 10,
   "graph_context": true
 }
 ```
 
-### Personalized Q&A
+  </Accordion>
+
+  <Accordion title="Personalized answer with memories">
+
+Use this when the answer should combine shared knowledge with user-specific context. Always pass the same `sub_tenant_id` used at memory ingestion.
 
 ```json
 {
   "tenant_id": "acme",
   "sub_tenant_id": "user_alex",
-  "query": "What's our refund policy, and how should I explain it to this user?",
+  "query": "What is our refund policy, and how should I explain it to this user?",
   "source": "all",
   "search_by": "hybrid",
   "mode": "thinking"
 }
 ```
 
-### Exact-match lookup
+  </Accordion>
+
+  <Accordion title="Filtered search for a specific slice">
+
+Use `metadata_filters` when you already know the slice you want. Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`; free-form per-source fields go under `document_metadata`.
+
+```json
+{
+  "tenant_id": "acme",
+  "query": "What launch constraints apply to enterprise customers?",
+  "source": "knowledge",
+  "search_by": "hybrid",
+  "metadata_filters": {
+    "department": "product",
+    "document_metadata": {
+      "source": "launch_plan"
+    }
+  }
+}
+```
+
+  </Accordion>
+
+  <Accordion title="Exact phrase lookup">
+
+Use text search when literal wording matters: legal clauses, SKUs, error codes, IDs, or compliance references.
 
 ```json
 {
@@ -155,24 +133,16 @@ Top-level keys (`department`, `region`) are matched against tenant-schema fields
 }
 ```
 
+  </Accordion>
+</AccordionGroup>
+
 ## Response summary
 
 `POST /search` returns ranked `chunks[]`, deduplicated `sources[]`, optional `graph_context`, and optional `additional_context` from forceful relations. Preserve `chunks[]` order when building prompts; HydraDB has already ranked the results. For prompt formatting and citation patterns, see [How to Use API Results](/essentials/v2/api-results).
 
-## Key concepts
-
-**Hybrid retrieval** - Combines semantic similarity (embeddings) with keyword matching (BM25). The `alpha` parameter controls the weight. Default `0.8` favors semantic.
-
-**Source merging** - With `source: all`, HydraDB searches knowledge and memories and returns a merged ranked result set.
-
-**Graph context** - Entity relationships extracted from your data. Optional. Helps surface how things connect in addition to what is similar.
-
-**`thinking` mode** - Expands the query into multiple sub-queries, retrieves for each, and reranks the combined results. Higher quality, higher latency.
-
-**Forceful relations** - Sources can be explicitly linked at ingestion. In `thinking` mode, search surfaces context from these linked sources via the `additional_context` field.
-
 ## Related sections
 
-- [Essentials - Search](/essentials/v2/search) - conceptual overview, the multi-stage pipeline
-- [Essentials - Context Graphs](/essentials/v2/context-graphs) - how graph context is built and used
-- [Sources](/api-reference/v2/endpoint/sources-overview) - ingest content before search
+- [Search](/api-reference/v2/endpoint/search) - full endpoint reference
+- [Essentials - Search](/essentials/v2/search) - conceptual overview, retrieval modes, and ranking behavior
+- [Essentials - Metadata](/essentials/v2/metadata) - filtering with tenant and document metadata
+- [Essentials - Context Graphs](/essentials/v2/context-graphs) - graph context and relation paths

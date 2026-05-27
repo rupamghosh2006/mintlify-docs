@@ -1,6 +1,6 @@
 ---
 title: "API Reference"
-description: "Complete reference for every HydraDB endpoint, organized by group."
+description: "Single reference to all HydraDB endpoints"
 ---
 
 ## Quick links
@@ -15,18 +15,18 @@ description: "Complete reference for every HydraDB endpoint, organized by group.
 
 | Group | Purpose | When to reach for it |
 |---|---|---|
-| [Tenants](/api-reference/v2/endpoint/tenants-overview) (6 endpoints) | Create, monitor, and manage isolated workspaces | First step in any integration  -  and any time you need usage stats, provisioning status, or to tear down a workspace |
-| [Sources](/api-reference/v2/endpoint/sources-overview) (6 endpoints) | Ingest, list, fetch, delete, and inspect knowledge or memories | Every time data flows in or out of HydraDB  -  file uploads, app-extracted content, user memories, and lifecycle ops |
-| [Search](/api-reference/v2/endpoint/search-overview) (1 endpoint) | Retrieve context with hybrid, text, or vector search | At query time  -  the only endpoint you call to feed an LLM |
+| [Tenants](/api-reference/v2/endpoint/tenants-overview) | Create, monitor, and manage isolated workspaces | First step in any integration  -  and any time you need usage stats, provisioning status, or to tear down a workspace |
+| [Sources](/api-reference/v2/endpoint/sources-overview) | Ingest, list, fetch, delete, and inspect knowledge or memories | Every time data flows into HydraDB  -  file uploads, app-uploads, user memories, and lifecycle ops |
+| [Search](/api-reference/v2/endpoint/search-overview) | Retrieve context with hybrid, text, or vector search | At query time  -  the only endpoint you call to feed an LLM |
 
 ## Core concepts
 
 | Concept | What it means | When you use it |
 |---|---|---|
 | `tenant_id` | Your isolated workspace for data, metadata schema, and search. | Send it on every API call so HydraDB knows which workspace to read or write. |
-| `sub_tenant_id` | Optional partition inside a tenant, often a user, team, account, or customer. | Use it when one tenant contains data for multiple users or customers. |
-| Knowledge | Shared source material such as PDFs, docs, app pages, tickets, Slack threads, or webpages. | Use `type=knowledge` when many users or agents should search the same content. |
-| Memory | User-specific context such as preferences, conversation history, notes, and inferred traits. | Use `type=memory` when the content should personalize answers for a specific user or sub-tenant. |
+| `sub_tenant_id` | Optional partition inside a tenant, often a user, team, account, or customer. | Use it when one tenant contains data for multiple users or customers. Read more about our [multi-tenant architecture](/essentials/v2/multi-tenant) |
+| [Knowledge](essentials/v2/knowledge) | Shared source material such as PDFs, docs, app pages, tickets, Slack threads, or webpages. | Use `type=knowledge` when many users or agents should search the same content. |
+| [Memory](essentials/v2/memory) | User-specific context such as preferences, conversation history, notes, and inferred traits. | Use `type=memory` when the content should personalize answers for a specific user or sub-tenant. |
 | `tenant_metadata_schema` | Tenant-level fields you define up front so metadata can be filtered or searched consistently. | Use it for stable fields like department, customer, region, plan, category, or compliance label. |
 | `file_metadata` | Per-file metadata sent during file ingestion. | Use it to attach source IDs, titles, filterable metadata, document metadata, or forceful relations to each uploaded file. |
 | `source_ids` | IDs returned by ingestion or visible from `/source/list`. | Use them when polling processing status, fetching content, listing a specific subset, deleting sources, or inspecting relations. |
@@ -108,9 +108,9 @@ SDK methods mirror the API: `client.<group>.<method>()` maps to the correspondin
 
 ## Conventions
 
-**Authentication.** Every endpoint requires `Authorization: Bearer <your_api_key>` in the request header. Get your key at [app.hydradb.com](https://app.hydradb.com).
+**Authentication:** Every endpoint requires `Authorization: Bearer <your_api_key>` in the request header. Get your key at [app.hydradb.com](https://app.hydradb.com).
 
-**Versioning.** Send `API-Version: 2` with every request.
+**Versioning:** Send `API-Version: 2` with every request.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/search' \
@@ -125,7 +125,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 
-**Response envelope.** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages document the resource-specific `data` payload unless the full envelope is important to the behavior.
+**Response envelope:** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages document the resource-specific `data` payload unless the full envelope is important to the behavior.
 
 ```json
 {
@@ -141,17 +141,19 @@ curl -X POST 'https://api.hydradb.com/search' \
 
 Errors use the same envelope with `success: false`, `data: null`, and an `error` object containing `code` and `message`.
 
-**Tenant scoping.** Most tenant-scoped endpoints require a `tenant_id`. Many source and search endpoints also accept an optional `sub_tenant_id` for finer-grained scoping. If omitted, the default sub-tenant is used.
+- **Quick reference vs API details.** Each endpoint page starts with a short cheat sheet (what to send, what to save, common gotchas). Later on the page you will see a complete field reference with types, defaults, and examples that is kept in sync with the API. Use the cheat sheet to get moving quickly, and the API details when you need exact request/response shapes (especially for agents and strict validators).
 
-**Async operations.** Tenant creation, deletion, and content ingestion are asynchronous. They return immediately after queuing. Use the relevant status endpoint to confirm completion before downstream operations.
+- **Tenant scoping.** Most tenant-scoped endpoints require a `tenant_id`. Many source and search endpoints also accept an optional `sub_tenant_id` for finer-grained scoping. If omitted, the default sub-tenant is used.
 
-**Pagination.** Listing endpoints (`/source/list`) return pagination fields for browsing large result sets.
+- **Async operations.** Tenant creation, deletion, and content ingestion are asynchronous. They return immediately after queuing. Use the relevant status endpoint to confirm completion before downstream operations.
 
-**Parameter casing.** The REST API uses snake_case (`tenant_id`). The TypeScript SDK accepts the same snake_case keys; method names are camelCase when generated for TypeScript. The Python SDK uses snake_case throughout.
+- **Pagination.** Listing endpoints (`/source/list`) return pagination fields for browsing large result sets.
 
-**Search modes.** `POST /search` supports `search_by: "hybrid"`, `"text"`, or `"vector"` and `source: "knowledge"`, `"memories"`, or `"all"`.
+- **Parameter casing.** The REST API uses snake_case (`tenant_id`). The TypeScript SDK accepts the same snake_case keys; method names are camelCase when generated for TypeScript. The Python SDK uses snake_case throughout.
 
-**Status codes.** Successful responses return `200` (or `202` for async accepts). Errors follow standard HTTP semantics:
+- **Search modes.** `POST /search` supports `search_by: "hybrid"`, `"text"`, or `"vector"` and `source: "knowledge"`, `"memories"`, or `"all"`.
+
+**Status codes:** Successful responses return `200` (or `202` for async accepts). Errors follow standard HTTP semantics:
 
 | Code | Meaning |
 |---|---|

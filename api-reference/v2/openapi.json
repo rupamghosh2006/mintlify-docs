@@ -1071,7 +1071,7 @@
           "search_forceful_relations": {
             "type": "boolean",
             "default": true,
-            "description": "Whether to pull author-declared related sources (set at ingest via the per-item `relations.cortex_source_ids`) into the response's `additional_context` field. **Only takes effect when `mode: \"thinking\"`** \u2014 silently ignored in `fast` mode."
+            "description": "Whether to pull author-declared related sources (set at ingest via the per-item `relations.source_ids`) into the response's `additional_context` field. **Only takes effect when `mode: \"thinking\"`** \u2014 silently ignored in `fast` mode."
           },
           "additional_context": {
             "type": "string",

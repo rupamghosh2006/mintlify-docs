@@ -480,7 +480,7 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 | <Field name="type" type="string" /> | Override the source type shown in search results. (default=inferred) |
 | <Field name="url" type="string" /> | Override the canonical URL. |
 | <Field name="timestamp" type="string" /> | ISO-8601 timestamp override. (default=upload time) |
-| <Field name="relations" type="object" /> | Declare forceful relations to other sources. Shape: `{ "cortex_source_ids": ["...", "..."] }`. Surfaced via `additional_context` in `mode: "thinking"` search. |
+| <Field name="relations" type="object" /> | Declare forceful relations to other sources. Shape: `{ "source_ids": ["...", "..."] }` (legacy alias `cortex_source_ids` still accepted). Surfaced via `additional_context` in `mode: "thinking"` search. |
 
 ### `app_knowledge` item shape
 
@@ -513,7 +513,7 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 | <Field name="expiry_time" type="integer" /> | TTL in seconds. Memory stops surfacing after expiry. |
 | <Field name="tenant_metadata" type="object" /> | Tenant-schema fields. (default=`{}`) |
 | <Field name="document_metadata" type="object" /> | Free-form per-document fields. (default=`{}`) |
-| <Field name="relations" type="object" /> | Forceful relations within the Memories store. Shape: `{ "cortex_source_ids": ["...", "..."] }`. |
+| <Field name="relations" type="object" /> | Forceful relations within the Memories store. Shape: `{ "source_ids": ["...", "..."] }` (legacy alias `cortex_source_ids` still accepted). |
 
 ## Response
 

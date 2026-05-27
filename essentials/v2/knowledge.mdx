@@ -309,7 +309,7 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 | <Field name="type" type="string" /> | Override the source type shown in search results. |
 | <Field name="url" type="string" /> | Override the canonical URL. |
 | <Field name="timestamp" type="ISO-8601 datetime" /> | Override the source timestamp. |
-| <Field name="relations" type="object" /> | Forcefully connect this source to others with `{ "cortex_source_ids": [...] }`. |
+| <Field name="relations" type="object" /> | Forcefully connect this source to others with `{ "source_ids": [...] }`. |
 
 ### App source model (`app_knowledge` array items)
 
@@ -348,7 +348,7 @@ Set the `relations` field on any item in `file_metadata` or `app_knowledge`:
 ```json
 {
   "relations": {
-    "cortex_source_ids": ["source-id-1", "source-id-2"]
+    "source_ids": ["source-id-1", "source-id-2"]
   }
 }
 ```
@@ -365,7 +365,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
       "id": "auth-guide",
       "title": "Authentication Guide",
       "content": { "text": "..." },
-      "relations": { "cortex_source_ids": ["auth-troubleshooting", "auth-faq"] }
+      "relations": { "source_ids": ["auth-troubleshooting", "auth-faq"] }
     }
   ]'
 ```
@@ -378,7 +378,7 @@ await client.source.ingest({
       id: "auth-guide",
       title: "Authentication Guide",
       content: { text: "..." },
-      relations: { cortex_source_ids: ["auth-troubleshooting", "auth-faq"] },
+      relations: { source_ids: ["auth-troubleshooting", "auth-faq"] },
     },
   ]),
 });
@@ -394,7 +394,7 @@ client.source.ingest(
             "id": "auth-guide",
             "title": "Authentication Guide",
             "content": {"text": "..."},
-            "relations": {"cortex_source_ids": ["auth-troubleshooting", "auth-faq"]},
+            "relations": {"source_ids": ["auth-troubleshooting", "auth-faq"]},
         }
     ]),
 )

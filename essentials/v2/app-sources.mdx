@@ -7,7 +7,7 @@ import { Field } from "/snippets/field.jsx";
 
 App sources are pre-parsed records from business applications  -  emails, chat messages, tickets, wiki pages, CRM objects, comments, and attachments  -  where you already have the text and structured fields. Ship them through the same [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) endpoint as files, using the `app_knowledge` field instead of multipart uploads.
 
-Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.cortex_source_ids`](#7-forceful-relations).
+Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.source_ids`](#7-forceful-relations).
 
 <Info>
   App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
@@ -44,12 +44,12 @@ Every app-source item maps to one HydraDB source with the fields below. The shap
 | `tenant_metadata` | Schema-aligned filterable fields (channel, project, space, region). See [Scoping using metadata](/essentials/v2/metadata). |
 | `document_metadata` | Free-form display/bookkeeping fields (author, message ts, ticket key, etc.). |
 | `attachments` | Pre-extracted files attached to this item. |
-| `relations` | Forceful links to other HydraDB sources by `cortex_source_ids`. |
+| `relations` | Forceful links to other HydraDB sources by `source_ids`. |
 
 There is no separate `kind`, `provider`, `external_id`, `fields`, `thread_id`, `parent_id`, `linked_issue_ids`, or embedded `comments[]` array. Model those concepts using:
 
 - **Stable provider IDs** → put them in `id` (e.g. `slack_C01_1716213600_000100`, `jira_AUTH-123`).
-- **Threads, replies, comments** → ingest each as its own source and link them via [`relations.cortex_source_ids`](#7-forceful-relations).
+- **Threads, replies, comments** → ingest each as its own source and link them via [`relations.source_ids`](#7-forceful-relations).
 - **Channel/project/space scope** → put in `tenant_metadata` (filterable) or `document_metadata` (display).
 
 ---
@@ -164,16 +164,16 @@ Use the same [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) 
 | Provider event | What to send | Why |
 |---|---|---|
 | Ticket title/description/status changed | Re-ingest with the same `id`, `upsert: true` | The ticket itself changed; replace the snapshot |
-| New ticket comment (Linear/Jira/Zendesk) | Ingest a **new** source with its own `id` and `relations.cortex_source_ids` pointing to the parent ticket | The comment is a distinct provider object |
+| New ticket comment (Linear/Jira/Zendesk) | Ingest a **new** source with its own `id` and `relations.source_ids` pointing to the parent ticket | The comment is a distinct provider object |
 | Edited ticket comment | Re-ingest the comment source with the same `id`, `upsert: true` | Same comment changed |
 | Deleted ticket comment | Call [`DELETE /source`](/api-reference/v2/endpoint/delete-source) with the comment's `id` | The comment should no longer surface |
-| New Slack/Teams message | Ingest a **new** `type: "slack"` source; link to the thread root via `relations.cortex_source_ids` | Messages are standalone events |
+| New Slack/Teams message | Ingest a **new** `type: "slack"` source; link to the thread root via `relations.source_ids` | Messages are standalone events |
 | New email reply | Ingest a **new** `type: "gmail"` source; link to the original via `relations` | Each email has its own provider ID |
 | New Notion/Confluence page in a space | Ingest a **new** source; space goes in `tenant_metadata` | A page is a standalone document |
 | Existing Notion/Confluence page edited | Re-ingest with the same `id`, `upsert: true` | The page document changed |
 
 <Warning>
-  `upsert: true` (the default) replaces the entire existing source with the new payload. To add a comment to a ticket without losing the ticket body, model the comment as its own source and link via `relations.cortex_source_ids`  -  don't mutate the parent.
+  `upsert: true` (the default) replaces the entire existing source with the new payload. To add a comment to a ticket without losing the ticket body, model the comment as its own source and link via `relations.source_ids`  -  don't mutate the parent.
 </Warning>
 
 ---
@@ -225,7 +225,7 @@ For a reply, ingest a second source and link it back:
     "author": "carol"
   },
   "relations": {
-    "cortex_source_ids": ["slack_C01_1716213600_000100"]
+    "source_ids": ["slack_C01_1716213600_000100"]
   }
 }
 ```
@@ -253,14 +253,14 @@ The ticket body lives in `content.text`. Workflow fields (status, priority, assi
     "reporter": "bob"
   },
   "relations": {
-    "cortex_source_ids": ["jira_AUTH-124", "jira_AUTH-125", "jira_AUTH-100"]
+    "source_ids": ["jira_AUTH-124", "jira_AUTH-125", "jira_AUTH-100"]
   }
 }
 ```
 
 ### Linear ticket comment (incremental)
 
-Comments are their own sources. The link to the parent ticket goes through [`relations.cortex_source_ids`](#7-forceful-relations).
+Comments are their own sources. The link to the parent ticket goes through [`relations.source_ids`](#7-forceful-relations).
 
 ```json
 {
@@ -277,7 +277,7 @@ Comments are their own sources. The link to the parent ticket goes through [`rel
     "parent_ticket": "UI-001"
   },
   "relations": {
-    "cortex_source_ids": ["linear_UI-001"]
+    "source_ids": ["linear_UI-001"]
   }
 }
 ```
@@ -305,7 +305,7 @@ A page is one source. The space, workspace, or database goes in metadata, not th
 
 ### Gmail email (with reply)
 
-Each email message is its own source. Link replies and forwards through [`relations.cortex_source_ids`](#7-forceful-relations).
+Each email message is its own source. Link replies and forwards through [`relations.source_ids`](#7-forceful-relations).
 
 ```json
 {
@@ -324,14 +324,14 @@ Each email message is its own source. Link replies and forwards through [`relati
     "cc": ["pm@acme.com"]
   },
   "relations": {
-    "cortex_source_ids": ["gmail_msg_19a1a00"]
+    "source_ids": ["gmail_msg_19a1a00"]
   }
 }
 ```
 
 ### Salesforce opportunity linked to a support ticket
 
-CRM records use the same flat shape. Cross-app links go through [`relations.cortex_source_ids`](#7-forceful-relations)  -  pointing at HydraDB source IDs in any tenant scope.
+CRM records use the same flat shape. Cross-app links go through [`relations.source_ids`](#7-forceful-relations)  -  pointing at HydraDB source IDs in any tenant scope.
 
 ```json
 {
@@ -352,7 +352,7 @@ CRM records use the same flat shape. Cross-app links go through [`relations.cort
     "account_id": "account_456"
   },
   "relations": {
-    "cortex_source_ids": ["jira_AUTH-123", "salesforce_account_456"]
+    "source_ids": ["jira_AUTH-123", "salesforce_account_456"]
   }
 }
 ```
@@ -361,7 +361,7 @@ CRM records use the same flat shape. Cross-app links go through [`relations.cort
 
 ## 7. Forceful relations
 
-`relations.cortex_source_ids` declares explicit links between sources. When a query matches one side of the link, HydraDB pulls the linked sources into the `additional_context` field of the [search response](/api-reference/v2/endpoint/search) alongside the primary chunks.
+`relations.source_ids` declares explicit links between sources. When a query matches one side of the link, HydraDB pulls the linked sources into the `additional_context` field of the [search response](/api-reference/v2/endpoint/search) alongside the primary chunks.
 
 Use forceful relations for connections the text alone can't express:
 
@@ -373,7 +373,7 @@ Use forceful relations for connections the text alone can't express:
 ```json
 {
   "relations": {
-    "cortex_source_ids": ["jira_AUTH-100", "jira_AUTH-124"],
+    "source_ids": ["jira_AUTH-100", "jira_AUTH-124"],
     "properties": { "reason": "linked issues" }
   }
 }
@@ -465,7 +465,7 @@ Use this as the compact contract for `app_knowledge` ingestion in API v2. Unlike
 | <Field name="tenant_metadata" type="object" /> | Schema-aligned, filterable fields such as channel, project, space, mailbox, pipeline, region, or environment. | Searchable via `metadata_filters` when keys are declared in `tenant_metadata_schema`. |
 | <Field name="document_metadata" type="object" /> | Free-form display/bookkeeping fields such as author, ticket key, provider IDs, status, assignee, thread ID, or stage. | Preserved on the source and searchable/filterable under `metadata_filters.document_metadata`. |
 | <Field name="attachments" type="array" /> | Pre-extracted files attached to this item. | Attachment text is indexed alongside the source. |
-| <Field name="relations" type="object" /> | Forceful links to other sources: `{ "cortex_source_ids": ["..."] }`. | In `thinking` mode, linked Knowledge sources can be returned in `additional_context`. |
+| <Field name="relations" type="object" /> | Forceful links to other sources: `{ "source_ids": ["..."] }`. | In `thinking` mode, linked Knowledge sources can be returned in `additional_context`. |
 
 ### Content fields
 
@@ -493,7 +493,7 @@ Send at least one of `content.text` or `content.markdown`. If you have both, kee
 
 | Field | Why send it | Search / ingestion effect |
 |---|---|---|
-| <Field name="relations.cortex_source_ids" type="string[]" required /> | Source IDs of related Knowledge sources. | Enables forceful relation expansion in `mode: "thinking"`. |
+| <Field name="relations.source_ids" type="string[]" required /> | Source IDs of related Knowledge sources. | Enables forceful relation expansion in `mode: "thinking"`. |
 | <Field name="relations.properties" type="object" /> | Optional metadata about the relationship, such as reason, relation type, or confidence. | Preserved with the declared relation. |
 
 Only link to source IDs in the same store. For app sources, that means Knowledge → Knowledge. If the related item may arrive later, still use the stable source ID you plan to ingest for that item.
@@ -502,7 +502,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 
 `type` is free-form, but using consistent values makes filtering, analytics, and source rendering easier.
 
-| App concept | Recommended `type` | `content` | `tenant_metadata` | `document_metadata` | Link with `relations.cortex_source_ids` |
+| App concept | Recommended `type` | `content` | `tenant_metadata` | `document_metadata` | Link with `relations.source_ids` |
 |---|---|---|---|---|---|
 | Email message | `gmail`, `outlook`, `email` | Subject/body text or thread excerpt | Mailbox, team, workspace | Provider message ID, thread ID, from/to/cc/bcc, reply/forward IDs | Parent email, thread root, forwarded source |
 | Chat message | `slack`, `teams`, `discord`, `message` | Message body | Channel, workspace, team | Message timestamp, thread timestamp, author, mentions | Thread root or replied-to message |
@@ -536,7 +536,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 | `body` | `content.text` | Primary searchable text. |
 | `author`, `mentions` | `document_metadata` | Preserves actor context. |
 | `channel`, `workspace`, `team` | `tenant_metadata` | Enables channel/workspace filters. |
-| `message_ts`, `thread_ts`, `parent_message_id` | `document_metadata`; put parent source IDs in `relations.cortex_source_ids` | Reconstructs threads and replies. |
+| `message_ts`, `thread_ts`, `parent_message_id` | `document_metadata`; put parent source IDs in `relations.source_ids` | Reconstructs threads and replies. |
 
 #### Ticket
 
@@ -546,7 +546,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 | `description` | `content.text` or `content.markdown` | Primary searchable text. |
 | `status`, `priority`, `assignee`, `reporter` | `document_metadata` unless you need schema-level filtering | Preserves workflow state and ownership. |
 | `project`, `queue`, `environment` | `tenant_metadata` | Enables common ticket filters. |
-| `ticket_key`, `parent_id`, `linked_issue_ids` | `document_metadata`; put known source IDs in `relations.cortex_source_ids` | Keeps provider IDs and connected-ticket retrieval. |
+| `ticket_key`, `parent_id`, `linked_issue_ids` | `document_metadata`; put known source IDs in `relations.source_ids` | Keeps provider IDs and connected-ticket retrieval. |
 
 #### Knowledge-base page
 
@@ -563,7 +563,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 |---|---|---|
 | `body` | `content.text` | Primary searchable text. |
 | `author`, `comment_id`, `parent_id`, `thread_id` | `document_metadata` | Preserves comment identity and parent/thread context. |
-| Parent ticket/page/source | `relations.cortex_source_ids` | Pulls the parent source into `additional_context` in thinking-mode search. |
+| Parent ticket/page/source | `relations.source_ids` | Pulls the parent source into `additional_context` in thinking-mode search. |
 
 #### Custom / CRM
 
@@ -572,7 +572,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 | Important record summary | `content.text` | Makes the business object searchable. |
 | `record_type`, `record_id`, `stage`, `amount`, `owner`, `account_id` | `document_metadata` unless you need schema-level filtering | Preserves provider-specific CRM fields. |
 | `pipeline`, `region`, `segment`, `team` | `tenant_metadata` | Enables operational filters. |
-| Related account/deal/contact/support ticket | `relations.cortex_source_ids` | Connects cross-app context. |
+| Related account/deal/contact/support ticket | `relations.source_ids` | Connects cross-app context. |
 
 ---
 
@@ -582,10 +582,10 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 |---|---|---|
 | Sending `app_knowledge` as a JSON object instead of a stringified JSON | `multipart/form-data` validation fails | `JSON.stringify(...)` (TS) or `json.dumps(...)` (Python) before sending |
 | Putting filterable fields in `document_metadata` | Filters silently ignored | Move them to `tenant_metadata` and declare in the [tenant schema](/api-reference/v2/endpoint/create-tenant) |
-| Re-ingesting a Slack thread on every new reply | Loses message-level authorship and timestamps; wastes indexing | Ingest each reply as a new source; link via `relations.cortex_source_ids` |
+| Re-ingesting a Slack thread on every new reply | Loses message-level authorship and timestamps; wastes indexing | Ingest each reply as a new source; link via `relations.source_ids` |
 | Mutating a ticket source to add a comment | `upsert` replaces the whole snapshot | Ingest the comment as its own source with a link back to the ticket |
 | Using a non-stable string for `id` | Re-ingests create duplicate sources instead of upserting | Compose `id` from stable provider IDs (e.g. `slack_<channel>_<ts>`, `jira_<key>`) |
-| Pointing `relations.cortex_source_ids` at memory IDs from a Knowledge source | Silently returns nothing at search | Forceful relations stay within one store - Knowledge ↔ Knowledge, Memory ↔ Memory |
+| Pointing `relations.source_ids` at memory IDs from a Knowledge source | Silently returns nothing at search | Forceful relations stay within one store - Knowledge ↔ Knowledge, Memory ↔ Memory |
 | Skipping [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Source not indexed yet; empty results | Poll until `indexing_status: "completed"` (or `graph_creation` for partial availability) |
 | Sending `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Not a supported parameter | Just call [`POST /search`](/api-reference/v2/endpoint/search)  -  app sources are already in the [Knowledge](/essentials/v2/knowledge) store |
 

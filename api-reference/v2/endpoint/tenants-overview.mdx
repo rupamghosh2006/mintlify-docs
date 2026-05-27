@@ -63,7 +63,7 @@ For a new tenant from scratch:
 ## Tenant lifecycle checklist
 
 1. Create the tenant.
-2. Wait for readiness: `scheduler_status`, `graph_status`, `vectorstore_status[0]`, and `vectorstore_status[1]` must all be `true`.
+2. Wait for readiness: `scheduler_status`, `graph_status`, `vectorstore_status.knowledge`, and `vectorstore_status.memory` must all be `true`.
 3. Ingest knowledge or memories.
 4. Monitor source processing with the returned `source_id`s.
 5. Search, list, fetch, or inspect relations.

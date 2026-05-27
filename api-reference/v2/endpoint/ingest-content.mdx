@@ -460,7 +460,7 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 | Name | Description |
 | --- | --- |
-| <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. Use singular `"memory"` when writing memories. (default=`"knowledge"`) |
+| <Field name="type" type='"knowledge" or "memory"' /> | Use singular `"memory"` when writing memories. (default=`"knowledge"`) |
 | <Field name="tenant_id" type="string" required /> | Target tenant. |
 | <Field name="sub_tenant_id" type="string" /> | Logical partition inside the tenant. (default=`""`  -  default sub-tenant) |
 | <Field name="upsert" type="boolean" /> | Replace existing sources with the same ID. Set to `false` to error on conflict. (default=`true`) |
@@ -568,4 +568,4 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories) · [Sources  -  Overview](/api-reference/v2/endpoint/sources-overview)
+Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories) · [Sources - Overview](/api-reference/v2/endpoint/sources-overview)

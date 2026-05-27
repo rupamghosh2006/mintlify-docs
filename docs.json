@@ -9,11 +9,7 @@
   },
   "favicon": "/favicon.svg",
   "contextual": {
-    "options": [
-      "copy",
-      "chatgpt",
-      "claude"
-    ]
+    "options": ["copy", "chatgpt", "claude"]
   },
   "navigation": {
     "versions": [
@@ -96,11 +92,7 @@
             "groups": [
               {
                 "group": "API Documentation",
-                "pages": [
-                  "api-reference/v2/index",
-                  "api-reference/v2/sdks",
-                  "api-reference/v2/error-responses"
-                ]
+                "pages": ["api-reference/v2/index", "api-reference/v2/sdks"]
               },
               {
                 "group": "Tenants",
@@ -132,6 +124,10 @@
                   "api-reference/v2/endpoint/search-overview",
                   "api-reference/v2/endpoint/search"
                 ]
+              },
+              {
+                "group": "Miscellaneous",
+                "pages": ["api-reference/v2/error-responses"]
               }
             ]
           }
@@ -179,9 +175,7 @@
               },
               {
                 "group": "For Agents",
-                "pages": [
-                  "AGENTS"
-                ]
+                "pages": ["AGENTS"]
               }
             ]
           },

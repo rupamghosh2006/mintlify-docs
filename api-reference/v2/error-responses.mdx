@@ -214,7 +214,7 @@ Also send `API-Version: 2` on raw HTTP requests. The official SDKs set the versi
 
 ### Tenant not found after creation
 
-Tenant creation is asynchronous. After `POST /tenants`, poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `infra.scheduler_status`, `infra.graph_status`, and both entries in `infra.vectorstore_status` are `true`.
+Tenant creation is asynchronous. After `POST /tenants`, poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `infra.scheduler_status`, `infra.graph_status`, `infra.vectorstore_status.knowledge`, and `infra.vectorstore_status.memory` are all `true`.
 
 ### Ingestion validation errors
 

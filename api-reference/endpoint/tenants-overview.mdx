@@ -90,13 +90,12 @@ DELETE /tenants/delete → schedule deletion (irreversible)
 
 ## Key concepts
 
-**Tenant** – Top-level isolated workspace. One per organization in most cases.
+- **Tenant** – Top-level isolated workspace. One per organization in most cases.
+- **Sub-tenant** – Subdivision inside a tenant. Created automatically the first time a `sub_tenant_id` is used. No explicit creation step, no confirmation.
 
-**Sub-tenant** – Subdivision inside a tenant. Created automatically the first time a `sub_tenant_id` is used. No explicit creation step, no confirmation.
+- **Default sub-tenant** – Every tenant gets one at creation. API calls that omit `sub_tenant_id` target this default.
 
-**Default sub-tenant** – Every tenant gets one at creation. API calls that omit `sub_tenant_id` target this default.
-
-**Tenant metadata schema** – Immutable field definitions set at creation. Cannot be changed later.
+- **Tenant metadata schema** – Immutable field definitions set at creation. Cannot be changed later.
 
 
 

@@ -10,11 +10,12 @@ The single retrieval endpoint for everything. Use it any time you need to feed a
 
 Two independent dimensions control behavior:
 
-- **`source`** picks **what** to search: `"knowledge"` (knowledge), `"memories"` (user-scoped), or `"all"` (both, merged and re-ranked together).
+- **`source`** picks **what** to search: `"knowledge"`, `"memories"`, or `"all"` (both, merged and re-ranked together).
 - **`search_by`** picks **how** to match: `"hybrid"` (semantic + BM25, the default), `"text"` (BM25 only  -  pair with `operator`), or `"vector"` (pure dense vectors).
+- **`mode`** picks **how** to rank results: `"fast"` (single-pass, low-latency), or `"thinking"` (expands query, reranks, and can include forceful-relation context).
 
-Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for low-latency single-pass. Turn on `graph_context: true` to surface entity/relation paths alongside chunks. Tune `alpha`, `recency_bias`, and `metadata_filters` to shape ranking and narrow the candidate set.
 
+Read more about choosing the perfect mode for your use case [here](/api-reference/v2/endpoint/search-overview#recommended-configurations).
 <RequestExample>
 
 ```bash cURL
@@ -27,7 +28,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "sub_tenant_id": "user_alex",
     "query": "What is our refund policy, and how should I explain it to this user?",
     "source": "all",
-    "search_by": "hybrid",
+    "search_by": "hybrid", // or "text" or "vector"
     "mode": "thinking",
     "max_results": 10,
     "alpha": "auto",
@@ -39,7 +40,8 @@ curl -X POST 'https://api.hydradb.com/search' \
       "document_metadata": {
         "source": "policy"
       }
-    }
+    },
+    "additional_context": "User is asking from the billing help center."
   }'
 ```
 
@@ -49,28 +51,35 @@ const result = await client.search.query({
   sub_tenant_id: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
 
-  // Choose what to search: "knowledge", "memories", or "all".
+  // What to search: "knowledge", "memories", or "all".
   source: "all",
 
-  // Choose retrieval: "hybrid" (default), "text" (BM25), or "vector".
+  // How to match: "hybrid" (default), "text" (BM25), or "vector".
   search_by: "hybrid",
 
-  // Use mode for hybrid/vector. For search_by: "text", use operator instead.
+  // "thinking" improves quality; use "fast" for lowest latency.
   mode: "thinking",
 
+  // Ranking and response controls.
   max_results: 10,
-  alpha: "auto", // Hybrid weight: 0.0 to 1.0, or "auto".
+  alpha: "auto",
   recency_bias: 0.2,
   graph_context: true,
+
+  // Pull author-declared related sources into additional_context.
+  // Only applies when mode: "thinking".
   search_forceful_relations: true,
 
-  // Top-level keys match tenant metadata; document_metadata is free-form per source.
+  // Top-level keys match tenant_metadata; document_metadata is per-source.
   metadata_filters: {
     department: "support",
     document_metadata: {
       source: "policy",
     },
   },
+
+  // Short factual hint; not a hard filter.
+  additional_context: "User is asking from the billing help center.",
 });
 ```
 
@@ -80,34 +89,41 @@ result = client.search.query(
     sub_tenant_id="user_alex",
     query="What is our refund policy, and how should I explain it to this user?",
 
-    # Choose what to search: "knowledge", "memories", or "all".
+    # What to search: "knowledge", "memories", or "all".
     source="all",
 
-    # Choose retrieval: "hybrid" (default), "text" (BM25), or "vector".
+    # How to match: "hybrid" (default), "text" (BM25), or "vector".
     search_by="hybrid",
 
-    # Use mode for hybrid/vector. For search_by="text", use operator instead.
+    # "thinking" improves quality; use "fast" for lowest latency.
     mode="thinking",
 
+    # Ranking and response controls.
     max_results=10,
-    alpha="auto",  # Hybrid weight: 0.0 to 1.0, or "auto".
+    alpha="auto",
     recency_bias=0.2,
     graph_context=True,
+
+    # Pull author-declared related sources into additional_context.
+    # Only applies when mode="thinking".
     search_forceful_relations=True,
 
-    # Top-level keys match tenant metadata; document_metadata is free-form per source.
+    # Top-level keys match tenant_metadata; document_metadata is per-source.
     metadata_filters={
         "department": "support",
         "document_metadata": {
             "source": "policy",
         },
     },
+
+    # Short factual hint; not a hard filter.
+    additional_context="User is asking from the billing help center.",
 )
 ```
 
 </RequestExample>
 
-## Examples
+## Common use-cases and their configurations
 
 <AccordionGroup>
   <Accordion title="Knowledge RAG - answer from shared documents" defaultOpen>
@@ -124,6 +140,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "source": "knowledge",
     "search_by": "hybrid",
     "mode": "thinking",
+    "max_results": 10,
     "graph_context": true
   }'
 ```
@@ -135,6 +152,7 @@ const result = await client.search.query({
   source: "knowledge",
   search_by: "hybrid",
   mode: "thinking",
+  max_results: 10,
   graph_context: true,
 });
 ```
@@ -146,6 +164,7 @@ result = client.search.query(
     source="knowledge",
     search_by="hybrid",
     mode="thinking",
+    max_results=10,
     graph_context=True,
 )
 ```
@@ -196,6 +215,46 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
+  <Accordion title="Retrieve user preferences - search only user memories">
+    <CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.hydradb.com/search' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_alex",
+    "query": "Does the user have any specific preferences for tone or response length?",
+    "source": "memories",
+    "search_by": "hybrid"
+  }'
+```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  query: "Does the user have any specific preferences for tone or response length?",
+  source: "memories",
+  search_by: "hybrid",
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="Does the user have any specific preferences for tone or response length?",
+    source="memories",
+    search_by="hybrid",
+)
+```
+
+    </CodeGroup>
+  </Accordion>
+
   <Accordion title="Exact phrase lookup - BM25 for legal terms, SKUs, or IDs">
     <CodeGroup>
 
@@ -237,15 +296,6 @@ result = client.search.query(
   </Accordion>
 </AccordionGroup>
 
-
-<Accordion title="HTTP request details">
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
-
 ## Request body
 
 
@@ -262,7 +312,7 @@ result = client.search.query(
 | <Field name="max_results" type="integer or null" /> | Maximum chunks to return. Default `10`; maximum `50`. Start with `10`, use `5` for tight prompts, and increase only when reranking downstream. |
 | <Field name="alpha" type='float 0.0–1.0 or "auto"' /> | Hybrid weight (`1.0` = pure semantic, `0.0` = pure BM25). Applies to `search_by: "hybrid"` only. (default=`0.8`) |
 | <Field name="recency_bias" type="float 0.0–1.0" /> | Boost newer content. (default=`0.0`) |
-| <Field name="graph_context" type="boolean" /> | When `true`, includes the entity/relation graph slice in the response under `graph_context`. (default=`false`) |
+| <Field name="graph_context" type="boolean" /> | When `true`, includes the entity/relation graph slice in the response under `graph_context`. Set to `false` when you only need ranked chunks. (default=`true`) |
 | <Field name="search_forceful_relations" type="boolean" /> | Pull author-declared related sources into `additional_context`. **Only takes effect when `mode: "thinking"`**  -  silently ignored in `fast` mode. (default=`true`) |
 | <Field name="additional_context" type="string or null" /> | Request-time hint to guide retrieval (e.g., "user is on the billing page"). This is different from the response `additional_context` map. (default=`null`) |
 | <Field name="metadata_filters" type="object or null" /> | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
@@ -387,33 +437,26 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 ## Behavior notes
 
 <Info>
-**`graph_context` is on by default.** Set it to `false` if you only need ranked chunks and want to drop the graph slice from the response.
+**Default Behaviors**
+- **`graph_context` is on by default.** Set it to `false` if you only need ranked chunks and want to drop the graph slice from the response.
+- **`recency_bias` is off by default.** Defaults to `0.0`  -  no recency boost is applied unless you set it.
 </Info>
 
-<Info>
-**`recency_bias` is off by default.** Defaults to `0.0`  -  no recency boost is applied unless you set it.
-</Info>
-
 <Warning>
-**`search_forceful_relations` requires `mode: "thinking"`.** In `fast` mode the flag is silently ignored. The server does not error or warn  -  your `additional_context` will simply be empty.
+**Important Considerations & Common Mistakes**
+- **`search_forceful_relations` requires `mode: "thinking"`.** In `fast` mode the flag is silently ignored. The server does not error or warn  -  your `additional_context` will simply be empty.
+- **`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under a `document_metadata` key.
+- **Common mistakes.** Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before searching. If you omit `sub_tenant_id`, HydraDB searches the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
 </Warning>
 
-<Warning>
-**`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under a `document_metadata` key.
-</Warning>
-
-<Warning>
-**Common mistakes.** Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before searching. If you omit `sub_tenant_id`, HydraDB searches the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
-</Warning>
-
-<Info>
+<Tip>
 **Tuning heuristics.**
 <ul>
   <li><strong><code>alpha</code></strong>: start at <code>0.8</code>. Lower toward <code>0.3–0.5</code> when the query contains literal tokens (error codes, SKUs, product names). Raise toward <code>0.9</code> for conceptual questions. Use <code>"auto"</code> when query shape varies.</li>
   <li><strong><code>recency_bias</code></strong>: leave at <code>0</code> for static reference material. Set <code>0.2–0.4</code> for mixed content, <code>0.6–0.8</code> for changelogs, news, or status updates.</li>
   <li><strong><code>max_results</code></strong>: start at <code>10</code>. Drop to <code>5</code> for tight context windows; raise to <code>20</code> if you rerank downstream.</li>
 </ul>
-</Info>
+</Tip>
 
 ## Related endpoints
 
@@ -427,4 +470,4 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 
 Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Search  -  Overview](/api-reference/v2/endpoint/search-overview)
+Read more: [Search - Overview](/api-reference/v2/endpoint/search-overview)

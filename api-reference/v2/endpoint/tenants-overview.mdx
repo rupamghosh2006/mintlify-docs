@@ -5,36 +5,7 @@ description: "Quick reference for all Tenants endpoints, their lifecycle, and wh
 
 import { Field } from "/snippets/field.jsx";
 
-## Lifecycle
-
-```mermaid
-flowchart LR
-
-    classDef standard fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
-    classDef success fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
-
-    subgraph TenantLifecycle [" "]
-      direction LR
-      A[Create Tenant]
-      B[Poll Infra Status]
-      C{Ready?}
-      D[Ingest Documents<br/>or Memories]
-      E[Search]
-      M[Stats &<br/>List Tenants]
-    end
-
-    A --> B
-    B --> C
-    C -- no --> B
-    C -- yes --> D
-    D --> E
-    A -.-> M
-    D -.-> M
-
-    class A,B,D,E,M standard;
-    class C success;
-    linkStyle default stroke:#64748b,stroke-width:2px;
-```
+Tenants are isolated workspaces. In most integrations you create a tenant once, wait for provisioning, then ingest and search inside it.
 
 ## Endpoint reference
 
@@ -51,23 +22,12 @@ flowchart LR
 
 For a new tenant from scratch:
 
-```
-1. POST   /tenants             -> returns accepted
-2. GET    /tenants/status      -> wait for scheduler, graph, and both vector stores
-3. POST   /source/ingest       -> start ingesting data
-4. GET    /source/status       -> wait until recent sources are searchable
-5. POST   /search              -> query your data
-6. GET    /tenants/stats       -> verify storage
-```
-
-## Tenant lifecycle checklist
-
-1. Create the tenant.
-2. Wait for readiness: `scheduler_status`, `graph_status`, `vectorstore_status[0]`, and `vectorstore_status[1]` must all be `true`.
-3. Ingest knowledge or memories.
-4. Monitor source processing with the returned `source_id`s.
-5. Search, list, fetch, or inspect relations.
-6. Delete the tenant when the workspace should be permanently removed.
+1. Create the tenant: `POST /tenants`
+2. Wait for provisioning: `GET /tenants/status` until `scheduler_status`, `graph_status`, `vectorstore_status.knowledge`, and `vectorstore_status.memory` are all `true`
+3. Ingest content: `POST /source/ingest`
+4. Wait for indexing: `GET /source/status` until sources are searchable
+5. Retrieve context: `POST /search`
+6. Inspect usage or clean up: `GET /tenants/stats` or `DELETE /tenants`
 
 For routine operations on an existing tenant:
 
@@ -85,27 +45,16 @@ DELETE /tenants -> schedule deletion (irreversible)
 
 ## Key concepts
 
-**Tenant** - Top-level isolated workspace. One per organization in most cases.
+- **Tenant** - Top-level isolated workspace. One per organization in most cases.
+- **Sub-tenant** - Subdivision inside a tenant. Created automatically the first time ingestion writes data with a `sub_tenant_id`. No explicit creation step, no confirmation.
 
-**Sub-tenant** - Subdivision inside a tenant. Created automatically the first time ingestion writes data with a `sub_tenant_id`. No explicit creation step, no confirmation.
+- **Default sub-tenant** - HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused.
 
-**Default sub-tenant** - HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused.
+- **Tenant metadata** - Structured fields you attach at ingestion for filtering and consistent slicing (department, region, plan). Keys must be declared in the tenant metadata schema. For one-off per-source fields, use `document_metadata`.
 
-**Tenant metadata** - The values you attach to each document at ingestion under the `tenant_metadata` key. They must conform to the tenant metadata schema. Use them for org-wide attributes that stay consistent across documents (department, region, plan, customer tier, product area, compliance framework)  -  fields you want to filter or search by during retrieval. For per-document free-form fields, use `document_metadata` instead. See [Essentials - Metadata](/essentials/v2/metadata) for the full contrast.
+- **Tenant metadata schema** - Immutable field definitions set at creation. Declare only the keys you expect to filter on later.
 
-**Tenant metadata schema** - Immutable field definitions set at creation. Use this to tell HydraDB which tenant-level metadata fields should be filterable or searchable later. For example, create fields for `department`, `region`, `customer_tier`, `product_area`, or `compliance_framework` if you plan to filter or search by those values during retrieval.
-
-## Tenant metadata schema
-
-| Field | What it controls | Example use |
-|---|---|---|
-| <Field name="name" type="string" /> | The metadata key you will send during ingestion and use in filters. | `department`, `region`, `customer_tier` |
-| <Field name="data_type" type="enum" /> | The value type. Friendly names like `string`, `integer`, `float`, `boolean`, `array`, and `object` are accepted. | Use `string` for categories and labels. |
-| <Field name="enable_match" type="boolean" /> | Enables exact filtering on this field. | Filter search to `department = "engineering"`. |
-| <Field name="enable_dense_embedding" type="boolean" /> | Enables semantic search over this field. String fields only. | Match meaning across product descriptions. |
-| <Field name="enable_sparse_embedding" type="boolean" /> | Enables keyword/BM25 search over this field. String fields only. | Find exact terms in long descriptions. |
-
-Define metadata schema only for fields you expect to reuse across many sources. One-off details belong in source-level metadata during ingestion.
+For the full schema options and examples, see [Create Tenant](/api-reference/v2/endpoint/create-tenant) and [Essentials - Metadata](/essentials/v2/metadata).
 
 ## Related sections
 

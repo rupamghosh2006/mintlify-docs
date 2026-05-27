@@ -6,12 +6,11 @@ openapi: "POST /source/ingest"
 
 import { Field } from "/snippets/field.jsx";
 
-The single ingestion endpoint for everything that flows into HydraDB. Pick `type` to choose the bucket, then pass the matching content fields:
+- **`type=knowledge`** - Build your knowledge base using:
+  - **Files** - Use `files` for binary uploads (PDF, DOCX, CSV, MD, TXT) that HydraDB should parse. Read more about [ingesting files](/essentials/v2/knowledge-files).
+  - **App Sources** - Use `app_knowledge` for pre-extracted JSON content (Slack threads, Notion pages, web pages). Read more about [ingesting knowledge buried in apps](/essentials/v2/app-knowledge).
+- **`type=memory`** - Use `memories` for per-user content, scoped with `sub_tenant_id`. Set `infer: true` to automatically extract preferences from raw signals, or `infer: false` to store the text verbatim. Read more about [ingesting memories](/essentials/v2/memory).
 
-- **`type=knowledge`**  -  shared content. Use `files` for binary uploads HydraDB should parse (PDF, DOCX, CSV, MD, TXT), or `app_knowledge` for pre-extracted JSON content (Slack threads, Notion pages, web pages). Both can be sent in a single request.
-- **`type=memory`**  -  per-user content. Scope with `sub_tenant_id`. Use `infer: true` to let HydraDB extract preferences from raw signal automatically; `infer: false` stores the text verbatim.
-
-Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge`, `memories`) must be sent as **JSON-stringified** form values.
 
 <RequestExample>
 
@@ -206,10 +205,9 @@ conversation_memory_result = client.source.ingest(
 
 </RequestExample>
 
-## Common use-cases
-
+## Four common use-cases and their configurations:
 <AccordionGroup>
-  <Accordion title="Knowledge files - upload PDFs, DOCX, CSV, Markdown, or text for HydraDB to parse" defaultOpen>
+  <Accordion title="Knowledge files - upload PDFs, DOCX, CSV, Markdown, or text for HydraDB to parse">
     <CodeGroup>
 
 ```bash cURL
@@ -434,25 +432,9 @@ client.source.ingest(
   </Accordion>
 </AccordionGroup>
 
-
-## Request shape rules
-
-- **Use `type=knowledge` with `files` when HydraDB should parse uploaded files.** Send one or more `files`. Optionally send `file_metadata` as a JSON-stringified array in the same order as `files`. Do not send `memories` in this request.
-- **Use `type=knowledge` with `app_knowledge` when your app already has extracted text.** Send `app_knowledge` as a JSON-stringified object or array. Use this for Slack messages, Notion pages, webpages, tickets, emails, and other app-native sources. You may combine `files` and `app_knowledge` in the same knowledge request. Do not send `memories`.
-- **Use `type=memory` with `memories` for user-specific context.** Send `memories` as a non-empty JSON-stringified array. Do not send `files` or `app_knowledge`. Include `sub_tenant_id` when the memory belongs to a specific user, workspace, or session; omitting it writes to the default sub-tenant.
-
-<Info>
+<Tip>
 After ingestion, save every returned `results[].source_id`. Use these IDs for status polling, fetch, list filtering, deletion, and relations.
-</Info>
-
-<Accordion title="HTTP request details">
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Controlled by `upsert`  -  `true` (default) replaces an existing source with the same ID; `false` errors on conflict.
-- **Async:** Yes  -  returns `202 Accepted` with the new `source_id`s. Poll [Source Status](/api-reference/v2/endpoint/source-status) until each item reports `graph_creation` for search readiness or `completed` for full graph readiness.
-- **Content-Type:** `multipart/form-data` (not JSON).
-
-</Accordion>
+</Tip>
 
 ## Form fields
 
@@ -460,7 +442,7 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 | Name | Description |
 | --- | --- |
-| <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. Use singular `"memory"` when writing memories. (default=`"knowledge"`) |
+| <Field name="type" type='"knowledge" or "memory"' /> | Use singular `"memory"` when writing memories. (default=`"knowledge"`) |
 | <Field name="tenant_id" type="string" required /> | Target tenant. |
 | <Field name="sub_tenant_id" type="string" /> | Logical partition inside the tenant. (default=`""`  -  default sub-tenant) |
 | <Field name="upsert" type="boolean" /> | Replace existing sources with the same ID. Set to `false` to error on conflict. (default=`true`) |
@@ -515,6 +497,12 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 | <Field name="document_metadata" type="object" /> | Free-form per-document fields. (default=`{}`) |
 | <Field name="relations" type="object" /> | Forceful relations within the Memories store. Shape: `{ "cortex_source_ids": ["...", "..."] }`. |
 
+
+<Note>
+Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge`, `memories`) must be sent as **JSON-stringified** form values.
+</Note>
+
+
 ## Response
 
 <ResponseExample>
@@ -568,4 +556,4 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories) · [Sources  -  Overview](/api-reference/v2/endpoint/sources-overview)
+Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories) · [Sources - Overview](/api-reference/v2/endpoint/sources-overview)

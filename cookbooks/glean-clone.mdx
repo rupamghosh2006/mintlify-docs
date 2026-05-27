@@ -168,34 +168,37 @@ class GmailConnector {
 
 ### 1.2 Data Normalization
 
-Create a unified data format for all sources:
+Normalize every connector record into HydraDB's typed app-source contract. This preserves provider IDs, threads, actors, and relations for app-aware recall:
 
 > **Important**: For optimal performance, limit each batch to a maximum of **20 app sources** per request. Send multiple batch requests with an interval of **1 second** between each request.
 
 
 ```javascript
-// Unified data structure for HydraDB app upload
+// Typed app-source item for HydraDB app upload
 const normalizedData = {
-  id: 'unique_id',
-  tenant_id: 'your_tenant_id',
-  sub_tenant_id: 'your_sub_tenant_id',
-  title: 'Document/Message Title',
-  source: 'slack_message', // Source app: gmail, slack_message, notion_page, document, etc.
-  timestamp: '2024-01-01T00:00:00Z', // ISO timestamp
-  content: {
-    text: 'Main content text',
-    html_base64: 'base64_encoded_html',
-    markdown: 'markdown_content'
+  id: "slack_C01_1716213600_000100",     // stable HydraDB source ID
+  tenant_id: "your_tenant_id",
+  sub_tenant_id: "workspace",
+  kind: "message",                       // email | message | ticket | knowledge_base | comment | custom
+  provider: "slack",                     // slack | gmail | jira | notion | salesforce | ...
+  external_id: "1716213600.000100",      // provider's stable item ID
+  fields: {
+    kind: "message",
+    body: "Main content text",
+    author: "user@company.com",
+    thread_id: "1716213600.000100",
+    parent_id: undefined, // set to the root ts only for replies
+    created_at: "2024-01-01T00:00:00Z",
+    url: "https://app.com/item/123"
   },
-  url: 'https://app.com/item/123', // Optional: source URL
-  description: 'Optional description of the source', // Optional
-  metadata: {}, // Optional tenant-level metadata
-  additional_metadata: {
-    author: 'user@company.com',
-    id: 'original_id',
-    tags: ['project-a', 'urgent', 'meeting-notes'],
-    permissions: ['user1@company.com', 'user2@company.com']
-  }
+  metadata: {
+    container_type: "channel",
+    container_id: "C01",
+    container_name: "engineering",
+    source: "slack"
+  },
+  relations: [],     // e.g. { predicate: "linked_to", target: { external_id: "AUTH-123", provider: "jira" } }
+  attachments: []    // include content.text/markdown when you already extracted file text
 };
 ```
 
@@ -213,12 +216,12 @@ import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY! });
 
-// Upload a batch of knowledge sources
-const uploadBatch = async (sources: any[], tenantId: string, subTenantId?: string) => {
+// Upload a batch of typed app sources
+const uploadBatch = async (sources: any[], tenantId: string, subTenantId = "workspace") => {
   const appKnowledge = sources.map(source => ({
     ...source,
     tenant_id: tenantId,
-    sub_tenant_id: subTenantId || tenantId
+    sub_tenant_id: subTenantId
   }));
 
   const result = await client.upload.knowledge({
@@ -233,8 +236,12 @@ const uploadBatch = async (sources: any[], tenantId: string, subTenantId?: strin
 const uploadWithVerification = async (sources: any[], tenantId: string, subTenantId?: string) => {
   const uploadResult = await uploadBatch(sources, tenantId, subTenantId);
 
-  if (uploadResult.ids) {
-    for (const sourceId of uploadResult.ids) {
+  const sourceIds = (uploadResult.results ?? [])
+    .map((item: any) => item.source_id)
+    .filter(Boolean);
+
+  if (sourceIds.length) {
+    for (const sourceId of sourceIds) {
       const status = await client.upload.verifyProcessing({
         tenant_id: tenantId,
         file_ids: [sourceId]
@@ -255,10 +262,11 @@ from hydra_db import HydraDB
 
 client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
-# Upload a batch of knowledge sources
-def upload_batch(sources: list, tenant_id: str, sub_tenant_id: str = None):
+# Upload a batch of typed app sources
+def upload_batch(sources: list, tenant_id: str, sub_tenant_id: str = "workspace"):
+    sub_tenant_id = sub_tenant_id or "workspace"
     app_knowledge = [
-        {**source, "tenant_id": tenant_id, "sub_tenant_id": sub_tenant_id or tenant_id}
+        {**source, "tenant_id": tenant_id, "sub_tenant_id": sub_tenant_id}
         for source in sources
     ]
 
@@ -294,7 +302,7 @@ def upload_with_verification(sources: list, tenant_id: str, sub_tenant_id: str =
 
 Create a search interface that queries across all data sources:
 
-> **Note**: HydraDB supports filtering by `source_title` and `source_type` using the `metadata` parameter. Use these for targeted searches across specific data sources.
+> **Note**: App-aware search requires `search_apps: true`. If you need hard filters, mirror stable scope values into `metadata` during ingestion (for example `source: "slack"` or `container_id: "C01"`) and query them with `metadata_filters`.
 
 
 <CodeGroup>
@@ -306,16 +314,16 @@ const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY! });
 interface SearchOptions {
   sub_tenant_id?: string;
   max_results?: number;
-  mode?: string;
-  metadata?: Record<string, any>;
+  mode?: "fast" | "thinking";
+  metadata_filters?: Record<string, any>;
 }
 
 const search = async (query: string, tenantId: string, options: SearchOptions = {}) => {
   const {
     sub_tenant_id,
     max_results = 10,
-    mode = "fast",
-    metadata,
+    mode = "thinking",
+    metadata_filters,
   } = options;
 
   return await client.recall.fullRecall({
@@ -324,19 +332,20 @@ const search = async (query: string, tenantId: string, options: SearchOptions = 
     sub_tenant_id,
     max_results,
     mode,
+    search_apps: true,
     alpha: 0.5,         // Balance semantic vs keyword search (0.0 to 1.0)
     recency_bias: 0.3,  // Recency preference (0.0 to 1.0)
-    ...(metadata && { metadata }),
+    ...(metadata_filters && { metadata_filters }),
   });
 };
 
-// Filter search by source type
-const searchBySourceType = (query: string, tenantId: string, sourceType: string) =>
-  search(query, tenantId, { metadata: { source_type: sourceType } });
+// Filter by provider/source when you mirrored it into metadata at ingestion
+const searchByProvider = (query: string, tenantId: string, provider: string) =>
+  search(`${provider} ${query}`, tenantId, { metadata_filters: { source: provider } });
 
-// Filter search by source title
-const searchBySourceTitle = (query: string, tenantId: string, sourceTitle: string) =>
-  search(query, tenantId, { metadata: { source_title: sourceTitle } });
+// Filter by container/channel/project when stored in metadata
+const searchByContainer = (query: string, tenantId: string, containerId: string) =>
+  search(query, tenantId, { metadata_filters: { container_id: containerId } });
 ```
 ```python Python SDK
 import os
@@ -345,26 +354,27 @@ from hydra_db import HydraDB
 client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
 def search(query: str, tenant_id: str, sub_tenant_id: str = None,
-           max_results: int = 10, mode: str = "fast",
-           metadata: dict = None):
+           max_results: int = 10, mode: str = "thinking",
+           metadata_filters: dict = None):
     return client.recall.full_recall(
         query=query,
         tenant_id=tenant_id,
         sub_tenant_id=sub_tenant_id,
         max_results=max_results,
         mode=mode,
+        search_apps=True,
         alpha=0.5,        # Balance semantic vs keyword search (0.0 to 1.0)
         recency_bias=0.3, # Recency preference (0.0 to 1.0)
-        **({"metadata": metadata} if metadata else {}),
+        **({"metadata_filters": metadata_filters} if metadata_filters else {}),
     )
 
-# Filter search by source type
-def search_by_source_type(query: str, tenant_id: str, source_type: str):
-    return search(query, tenant_id, metadata={"source_type": source_type})
+# Filter by provider/source when you mirrored it into metadata at ingestion
+def search_by_provider(query: str, tenant_id: str, provider: str):
+    return search(f"{provider} {query}", tenant_id, metadata_filters={"source": provider})
 
-# Filter search by source title
-def search_by_source_title(query: str, tenant_id: str, source_title: str):
-    return search(query, tenant_id, metadata={"source_title": source_title})
+# Filter by container/channel/project when stored in metadata
+def search_by_container(query: str, tenant_id: str, container_id: str):
+    return search(query, tenant_id, metadata_filters={"container_id": container_id})
 ```
 </CodeGroup>
 
@@ -386,24 +396,25 @@ import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY! });
 
-// Search with optional source type / title metadata filters
+// Search with optional metadata filters for provider/container scopes
 const searchWithFilters = async (
   query: string,
   tenantId: string,
-  filters: { sourceTypes?: string; sourceTitles?: string } = {}
+  filters: { source?: string; containerId?: string } = {}
 ) => {
-  const metadata: Record<string, any> = {};
-  if (filters.sourceTypes) metadata.source_type = filters.sourceTypes;
-  if (filters.sourceTitles) metadata.source_title = filters.sourceTitles;
+  const metadata_filters: Record<string, any> = {};
+  if (filters.source) metadata_filters.source = filters.source;
+  if (filters.containerId) metadata_filters.container_id = filters.containerId;
 
   return await client.recall.fullRecall({
     query,
     tenant_id: tenantId,
     max_results: 10,
-    mode: "fast",
+    mode: "thinking",
+    search_apps: true,
     alpha: 0.5,
     recency_bias: 0.3,
-    ...(Object.keys(metadata).length > 0 && { metadata })
+    ...(Object.keys(metadata_filters).length > 0 && { metadata_filters })
   });
 };
 
@@ -413,7 +424,8 @@ const searchWithContext = async (query: string, tenantId: string, context: strin
     query: context ? `${context}\n\n${query}` : query,
     tenant_id: tenantId,
     max_results: 10,
-    mode: "fast",
+    mode: "thinking",
+    search_apps: true,
     alpha: 0.5,
     recency_bias: 0.3,
   });
@@ -430,7 +442,8 @@ const conversationalSearch = async (
       : query,
     tenant_id: tenantId,
     max_results: 10,
-    mode: "fast",
+    mode: "thinking",
+    search_apps: true,
     alpha: 0.5,
     recency_bias: 0.3,
   });
@@ -442,22 +455,23 @@ from hydra_db import HydraDB
 
 client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
-# Search with optional source type / title metadata filters
-def search_with_filters(query: str, tenant_id: str, source_types: str = None, source_titles: str = None):
-    metadata = {}
-    if source_types:
-        metadata["source_type"] = source_types
-    if source_titles:
-        metadata["source_title"] = source_titles
+# Search with optional metadata filters for provider/container scopes
+def search_with_filters(query: str, tenant_id: str, source: str = None, container_id: str = None):
+    metadata_filters = {}
+    if source:
+        metadata_filters["source"] = source
+    if container_id:
+        metadata_filters["container_id"] = container_id
 
     return client.recall.full_recall(
         query=query,
         tenant_id=tenant_id,
         max_results=10,
-        mode="fast",
+        mode="thinking",
+        search_apps=True,
         alpha=0.5,
         recency_bias=0.3,
-        **({"metadata": metadata} if metadata else {})
+        **({"metadata_filters": metadata_filters} if metadata_filters else {})
     )
 
 # Guide retrieval with additional context — prepend context to the query string
@@ -466,7 +480,8 @@ def search_with_context(query: str, tenant_id: str, context: str):
         query=f"{context}\n\n{query}" if context else query,
         tenant_id=tenant_id,
         max_results=10,
-        mode="fast",
+        mode="thinking",
+        search_apps=True,
         alpha=0.5,
         recency_bias=0.3,
     )
@@ -482,7 +497,8 @@ def conversational_search(query: str, tenant_id: str, conversation_history: list
         query=enriched_query,
         tenant_id=tenant_id,
         max_results=10,
-        mode="fast",
+        mode="thinking",
+        search_apps=True,
         alpha=0.5,
         recency_bias=0.3,
     )
@@ -557,11 +573,12 @@ const searchWithMemory = async (query: string, tenantId: string, userId: string)
     tenant_id: tenantId,
     sub_tenant_id: userId,
     max_results: 10,
-    mode: userProfile.preferredMode || "fast",
+    mode: userProfile.preferredMode || "thinking",
+    search_apps: true,
     alpha: 0.5,
     recency_bias: 0.3,
     ...(userProfile.preferredSourceTypes?.length > 0 && {
-      metadata: { source_type: userProfile.preferredSourceTypes }
+      metadata_filters: { source: userProfile.preferredSourceTypes[0] }
     })
   });
 
@@ -641,12 +658,13 @@ def search_with_memory(query: str, tenant_id: str, user_id: str):
         tenant_id=tenant_id,
         sub_tenant_id=user_id,
         max_results=10,
-        mode=profile["preferred_mode"] or "fast",
+        mode=profile["preferred_mode"] or "thinking",
+        search_apps=True,
         alpha=0.5,
         recency_bias=0.3,
     )
     if profile["preferred_source_types"]:
-        kwargs["metadata"] = {"source_type": profile["preferred_source_types"]}
+        kwargs["metadata_filters"] = {"source": profile["preferred_source_types"][0]}
 
     search_results = client.recall.full_recall(**kwargs)
 
@@ -1127,26 +1145,70 @@ class DataSyncManager {
   }
 
   normalizeData(item, sourceType) {
+    const createdAt = item.timestamp || item.created_at || new Date().toISOString();
+
+    if (sourceType === "slack") {
+      return {
+        id: `slack_${item.channel}_${item.id}`,
+        kind: "message",
+        provider: "slack",
+        external_id: item.id,
+        fields: {
+          kind: "message",
+          body: item.text,
+          author: item.user,
+          thread_id: item.thread_ts || item.id,
+          parent_id: item.thread_ts && item.thread_ts !== item.id ? item.thread_ts : undefined,
+          created_at: createdAt,
+          url: item.url
+        },
+        metadata: {
+          container_type: "channel",
+          container_id: item.channel,
+          container_name: item.channel_name,
+          source: "slack"
+        },
+        attachments: item.attachments || [],
+        relations: item.relations || []
+      };
+    }
+
+    if (sourceType === "gmail") {
+      return {
+        id: `gmail_${item.id}`,
+        kind: "email",
+        provider: "gmail",
+        external_id: item.id,
+        fields: {
+          kind: "email",
+          subject: item.subject,
+          body: item.body,
+          from: item.from,
+          to: item.to || [],
+          thread_id: item.thread_id,
+          reply_to_id: item.reply_to_id,
+          created_at: createdAt,
+          url: item.url
+        },
+        metadata: { container_type: "mailbox", source: "gmail" },
+        attachments: item.attachments || [],
+        relations: item.relations || []
+      };
+    }
+
     return {
       id: `${sourceType}_${item.id}`,
-      title: item.title || item.subject || item.text?.substring(0, 100),
-      source: sourceType,
-      timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-      content: {
-        text: item.text || item.body || item.content,
-        html_base64: item.html ? btoa(item.html) : '',
-        markdown: item.markdown || ''
+      kind: "custom",
+      provider: sourceType,
+      external_id: item.id,
+      fields: {
+        kind: "custom",
+        thread_id: item.thread_id,
+        data: item
       },
-      url: item.url,
-      description: item.description,
-      metadata: {},
-      additional_metadata: {
-        id: item.id,
-        author: item.author || item.user,
-        tags: item.tags || [],
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }
+      metadata: { source: sourceType },
+      relations: item.relations || [],
+      attachments: item.attachments || []
     };
   }
 }
@@ -1168,18 +1230,25 @@ app.post("/webhooks/slack", async (req, res) => {
 
   if (event.type === "message") {
     const normalizedData = {
-      id: `slack_${event.ts}`,
+      id: `slack_${event.channel}_${event.ts}`,
       tenant_id: process.env.TENANT_ID!,
-      sub_tenant_id: process.env.SUB_TENANT_ID!,
-      title: `Message in ${event.channel}`,
-      source: "slack_message",
-      content: { text: event.text },
-      metadata: {},
-      additional_metadata: {
-        id: event.ts,
+      sub_tenant_id: process.env.SUB_TENANT_ID || "workspace",
+      kind: "message",
+      provider: "slack",
+      external_id: event.ts,
+      fields: {
+        kind: "message",
+        body: event.text,
         author: event.user,
-        created_at: new Date(event.ts * 1000).toISOString(),
-        channel: event.channel
+        thread_id: event.thread_ts || event.ts,
+        parent_id: event.thread_ts && event.thread_ts !== event.ts ? event.thread_ts : undefined,
+        created_at: new Date(Number(event.ts) * 1000).toISOString(),
+        url: `https://slack.com/archives/${event.channel}/p${event.ts.replace('.', '')}`
+      },
+      metadata: {
+        container_type: "channel",
+        container_id: event.channel,
+        source: "slack"
       }
     };
 
@@ -1208,18 +1277,25 @@ def slack_webhook():
     if event.get("type") == "message":
         from datetime import datetime
         normalized_data = {
-            "id": f"slack_{event['ts']}",
+            "id": f"slack_{event['channel']}_{event['ts']}",
             "tenant_id": os.environ["TENANT_ID"],
-            "sub_tenant_id": os.environ["SUB_TENANT_ID"],
-            "title": f"Message in {event['channel']}",
-            "source": "slack_message",
-            "content": {"text": event["text"]},
-            "metadata": {},
-            "additional_metadata": {
-                "id": event["ts"],
+            "sub_tenant_id": os.environ.get("SUB_TENANT_ID", "workspace"),
+            "kind": "message",
+            "provider": "slack",
+            "external_id": event["ts"],
+            "fields": {
+                "kind": "message",
+                "body": event["text"],
                 "author": event["user"],
+                "thread_id": event.get("thread_ts", event["ts"]),
+                "parent_id": event.get("thread_ts") if event.get("thread_ts") != event["ts"] else None,
                 "created_at": datetime.utcfromtimestamp(float(event["ts"])).isoformat(),
-                "channel": event["channel"]
+                "url": f"https://slack.com/archives/{event['channel']}/p{event['ts'].replace('.', '')}"
+            },
+            "metadata": {
+                "container_type": "channel",
+                "container_id": event["channel"],
+                "source": "slack"
             }
         }
 
@@ -1540,8 +1616,9 @@ class SearchAnalytics {
 
 - **Query Preprocessing**: Clean and normalize user queries
 - **Result Ranking**: Use `alpha` and `recency_bias` for fine-tuning
-- **Metadata Filtering**: Use `source_title` and `source_type` for targeted searches
-- **Thinking Mode**: Use `mode: "thinking"` for complex queries that benefit from multi-query retrieval with reranking
+- **App-Aware Recall**: Set `search_apps: true` for Slack/Gmail/Jira/Notion-style sources so HydraDB can use provider IDs, actors, threads, parents, and explicit relations.
+- **Metadata Filtering**: Use `metadata_filters` only for metadata keys you stored at ingestion, such as `source`, `container_id`, project, space, or region.
+- **Thinking Mode**: Use `mode: "thinking"` for complex queries that benefit from multi-query retrieval, relation expansion, and reranking
 - **Caching**: Cache frequent queries and results
 
 ### 3. Security Considerations

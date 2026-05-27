@@ -31,7 +31,7 @@ Step 3 is async - HydraDB parses, chunks, embeds, and graphs your content in the
 - A backend that can make HTTP calls, or one of the HydraDB SDKs
 
 **Base URL:** `https://api.hydradb.com`  
-**Authentication:** `Authorization: Bearer <your_api_key>` on every request
+**Authentication:** `Authorization: Bearer $HYDRA_DB_API_KEY` on every request (substitute the actual key value)
 
 ### Install the SDK (optional)
 
@@ -108,10 +108,6 @@ response = client.tenant.create(tenant_id="my_first_tenant")
 Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
 </Info>
 
-<Info>
-Receiving a `"status": "accepted"` response indicates that the creation process has successfully started, but it does not imply that the tenant is fully provisioned.
-</Info>
-
 Tenant creation is **asynchronous**. Poll until provisioning completes before ingesting:
 
 <CodeGroup>
@@ -144,10 +140,10 @@ status = client.tenant.get_infra_status(tenant_id="my_first_tenant")
 }
 ```
 
-Wait until `graph_status` is `true` and both values in `vectorstore_status` are `true`.
+Wait until `infra.scheduler_status`, `infra.graph_status`, and **both** values in `infra.vectorstore_status` are `true` before ingesting.
 
 <Note>
-  Tenant creation typically takes 1–2 minutes for Free and Ship plans. For Enterprise plans, provisioning can take 4–5 minutes due to complete physical isolation.
+**Typical provisioning time depends on plan:** 1–2 minutes for Free and Ship plans, 4–5 minutes for Enterprise plans (which provision physically-isolated infrastructure). Allow up to ~5 minutes in any polling loop you write.
 </Note>
 
 </Step>

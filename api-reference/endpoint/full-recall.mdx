@@ -83,8 +83,8 @@ result = client.recall.full_recall(
 This field matches OpenAPI schema **`RecallSearchRequest.metadata_filters`** (see [`api-reference/openapi.json`](/api-reference/openapi.json)).
 
 - Optional object for **exact-match** metadata scoping; all conditions are **AND**ed.
-- **Tenant-level:** top-level keys (except the reserved nested object below) must match tenant metadata field names declared with **`enable_match`** in `tenant_metadata_schema`; values use **plain equality** to stored tenant metadata.
-- **Document-level:** nest an object under the key **`additional_metadata`**; keys and values use **plain equality** to per-source document metadata.
+- **Tenant-level:** top-level keys (except the reserved nested object below) must match tenant metadata field names declared with **`enable_match`** in `tenant_metadata_schema`. Values use **plain equality** to stored tenant metadata. These are pre-filtered in the vector store, so they are fast.
+- **Document-level:** nest an object under the key **`additional_metadata`** (matches the ingestion field name). Keys and values use **plain equality** to the per-source data you sent as `additional_metadata` at ingestion. Applied **post-retrieval** -- the engine over-fetches (~3x) to compensate. `document_metadata` is also accepted as a legacy alias for the nested key.
 - **Not supported in this contract:** range operators, regular-expression operators, or Mongo-style operators such as `$gte`, `$lt`, `$in`, or `$regex`.
 
 ```json
@@ -93,6 +93,11 @@ This field matches OpenAPI schema **`RecallSearchRequest.metadata_filters`** (se
 
 ```json
 { "metadata_filters": { "additional_metadata": { "source": "account_plan" } } }
+```
+
+```json
+// Legacy alias - still accepted, but prefer `additional_metadata`.
+{ "metadata_filters": { "document_metadata": { "source": "account_plan" } } }
 ```
 
 ## Modes

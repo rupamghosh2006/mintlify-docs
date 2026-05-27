@@ -99,7 +99,7 @@ Fetch pages from Notion, format them into HydraDB's app source structure, and ba
 > **Batch limit:** Max **20 sources per request**. Wait **1 second between batches** to respect rate limits.
 
 ```python
-import json, time
+import os, json, time
 from notion_client import Client
 
 notion = Client(auth=os.environ["NOTION_TOKEN"])
@@ -116,19 +116,20 @@ def extract_text(page_id: str) -> str:
     return "\n\n".join(lines)
 
 
-def upload_batch(sources: list, sub_tenant_id: str = None) -> list:
-    """Upload up to 20 sources. Returns list of file IDs."""
-    if sub_tenant_id:
-        for s in sources:
-            s["sub_tenant_id"] = sub_tenant_id
+def upload_batch(sources: list, sub_tenant_id: str = "workspace") -> list:
+    """Upload up to 20 app sources. Returns HydraDB source IDs."""
+    for s in sources:
+        s["tenant_id"] = TENANT_ID
+        s["sub_tenant_id"] = sub_tenant_id or "workspace"
+
     result = client.upload.knowledge(
         tenant_id=TENANT_ID,
-        app_knowledge=json.dumps(sources),
+        app_knowledge=json.dumps(sources),  # multipart form field containing a JSON string
     )
     return [r.source_id for r in (result.results or []) if r.source_id]
 
 
-def ingest_notion_database(database_id: str, sub_tenant_id: str = None) -> list:
+def ingest_notion_database(database_id: str, sub_tenant_id: str = "workspace") -> list:
     pages   = notion.databases.query(database_id=database_id)["results"]
     batch   = []
     all_ids = []
@@ -141,16 +142,27 @@ def ingest_notion_database(database_id: str, sub_tenant_id: str = None) -> list:
         text       = extract_text(page["id"])
         author     = page["created_by"]["id"]
 
+        page_url = f"https://notion.so/{page['id'].replace('-','')}"
         batch.append({
-            "id":        page["id"],
-            "title":     title,
-            "type":      "notion_page",                    # required
-            "timestamp": page["last_edited_time"],         # required ISO
-            "content":   {"text": text},
-            "url":       f"https://notion.so/{page['id'].replace('-','')}",
+            "id":          f"notion_page_{page['id']}",
+            "kind":        "knowledge_base",
+            "provider":    "notion",
+            "external_id": page["id"],
+            "fields": {
+                "kind":       "knowledge_base",
+                "title":      title,
+                "body":       text,
+                "created_by": author,
+                "updated_by": page.get("last_edited_by", {}).get("id"),
+                "created_at": page.get("created_time"),
+                "updated_at": page["last_edited_time"],
+                "url":        page_url,
+            },
             "metadata": {
-                "author": author,
-                "tags":   ["notion", "knowledge"],
+                "container_type": "database",
+                "container_id":   database_id,
+                "container_name": "Notion database",
+                "source":         "notion",
             },
         })
 
@@ -166,9 +178,10 @@ def ingest_notion_database(database_id: str, sub_tenant_id: str = None) -> list:
 
 ### Confluence Connector
 
-Confluence pages follow the same upload format. Use `type: "confluence"` so HydraDB can distinguish sources during recall and apply metadata filtering.
+Confluence pages follow the same typed app-source format. Use `kind: "knowledge_base"`, `provider: "confluence"`, and the Confluence page ID as `external_id` so Recall can use page IDs and hierarchy safely.
 
 ```python
+import os
 from atlassian import Confluence
 from bs4 import BeautifulSoup
 
@@ -179,7 +192,7 @@ conf = Confluence(
     cloud=True,
 )
 
-def ingest_space(space_key: str, sub_tenant_id: str = None) -> list:
+def ingest_space(space_key: str, sub_tenant_id: str = "workspace") -> list:
     pages   = conf.get_all_pages_from_space(
         space_key, expand="body.storage,history,version"
     )
@@ -191,14 +204,25 @@ def ingest_space(space_key: str, sub_tenant_id: str = None) -> list:
         text = BeautifulSoup(html, "html.parser").get_text("\n\n")
 
         batch.append({
-            "id":        page["id"],
-            "title":     page["title"],
-            "type":      "confluence",                    # required
-            "timestamp": page["version"]["when"],         # required ISO
-            "content":   {"text": text},
+            "id":          f"confluence_page_{page['id']}",
+            "kind":        "knowledge_base",
+            "provider":    "confluence",
+            "external_id": page["id"],
+            "fields": {
+                "kind":       "knowledge_base",
+                "title":      page["title"],
+                "body":       text,
+                "created_by": page["history"]["createdBy"]["accountId"],
+                "updated_by": page.get("version", {}).get("by", {}).get("accountId"),
+                "created_at": page.get("history", {}).get("createdDate"),
+                "updated_at": page["version"]["when"],
+                "url":        f"{os.environ['CONFLUENCE_URL'].rstrip('/')}/pages/{page['id']}",
+            },
             "metadata": {
-                "author": page["history"]["createdBy"]["accountId"],
-                "tags":   ["confluence", space_key.lower()],
+                "container_type": "space",
+                "container_id":   space_key,
+                "container_name": space_key,
+                "source":         "confluence",
             },
         })
 
@@ -336,6 +360,7 @@ def recall_context(
         "max_results":   max_results,
         "mode":          "thinking",
         "graph_context": graph_context,
+        "search_apps":   True,        # enable provider IDs, actors, threads, and relations
         "alpha":         alpha,       # FIX: single key only
         "recency_bias":  recency_bias,
     }
@@ -384,6 +409,7 @@ def ask_workspace(
         "query":         question,
         "max_results":   max_results,
         "graph_context": True,
+        "search_apps":   True,
         "mode":          "thinking",
         "alpha":         alpha,
         "recency_bias":  recency_bias,
@@ -391,7 +417,9 @@ def ask_workspace(
     if sub_tenant_id:
         payload["sub_tenant_id"] = sub_tenant_id
     if source_filter:
-        payload["metadata_filters"] = {"source_type": source_filter}
+        # For hard filters, mirror a stable app scope into metadata at ingestion
+        # and declare that metadata key with enable_match on the tenant schema.
+        payload["metadata_filters"] = {"source": source_filter}
 
     return client.recall.full_recall(**payload)
 
@@ -411,10 +439,10 @@ print(build_context(result)[:1000])
 result2 = ask_workspace("What were the tradeoffs they considered?")
 print(build_context(result2)[:1000])
 
-# Filter to only Notion pages
+# Filter to only Notion app sources (requires metadata.source to be filterable)
 notion_result = ask_workspace(
     "What's in our engineering RFC library?",
-    source_filter="notion_page",
+    source_filter="notion",
 )
 ```
 
@@ -492,15 +520,25 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ```json
 [{
-  "id":        "page-uuid",
-  "title":     "RFC-041 Database Migration",
-  "type":      "notion_page",                    // required
-  "timestamp": "2024-09-01T08:00:00Z",          // required ISO
-  "content":   { "text": "We chose Postgres because..." },
-  "url":       "https://notion.so/...",
+  "id": "notion_page_page-uuid",
+  "tenant_id": "notion-ai-workspace",
+  "sub_tenant_id": "workspace",
+  "kind": "knowledge_base",
+  "provider": "notion",
+  "external_id": "page-uuid",
+  "fields": {
+    "kind": "knowledge_base",
+    "title": "RFC-041 Database Migration",
+    "body": "We chose Postgres because...",
+    "created_by": "alice@company.com",
+    "updated_at": "2024-09-01T08:00:00Z",
+    "url": "https://notion.so/..."
+  },
   "metadata": {
-    "author": "alice@company.com",
-    "tags":   ["rfc", "database"]
+    "container_type": "database",
+    "container_id": "engineering-rfcs",
+    "container_name": "Engineering RFCs",
+    "source": "notion"
   }
 }]
 ```
@@ -532,6 +570,7 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   "max_results":   10,
   "mode":          "thinking",
   "graph_context": true,
+  "search_apps":   true,
   "alpha":         0.8,
   "recency_bias":  0.3
 }
@@ -548,9 +587,10 @@ curl -X POST 'https://api.hydradb.com/ingestion/upload_knowledge' \
   "max_results":      10,
   "mode":             "thinking",
   "graph_context":    true,
+  "search_apps":      true,
   "alpha":            0.5,
   "recency_bias":     0.3,
-  "metadata_filters": { "source_type": "notion_page" }
+  "metadata_filters": { "source": "notion" }
 }
 ```
 

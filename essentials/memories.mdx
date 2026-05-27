@@ -164,8 +164,8 @@ Ingestion is asynchronous - memories aren't immediately searchable. Poll [`/inge
 | `user_name` | string | The user's name. Used during inference and personalization workflows. Default `"User"`. |
 | `title` | string | Display title for this memory. |
 | `expiry_time` | integer | TTL in seconds. After expiry, the memory is no longer returned by recall. |
-| `metadata` | object | Filterable fields aligned with the tenant metadata schema. Keys defined in `tenant_metadata_schema` are matchable at recall time. |
-| `additional_metadata` | object | Free-form key-value pairs attached to the memory. Not matchable; useful for display and bookkeeping. |
+| `metadata` | object | Tenant-level fields aligned with the tenant metadata schema. Keys defined in `tenant_metadata_schema` with `enable_match: true` are matchable via top-level keys in `metadata_filters` (pre-filtered, fast). |
+| `additional_metadata` | object | Document-level free-form key-value pairs attached to the memory. Matchable at recall by nesting under `additional_metadata` (canonical) or `document_metadata` (legacy alias) inside `metadata_filters`. Applied post-retrieval. See [Full recall → Metadata filters](/api-reference/endpoint/full-recall#metadata-filters). |
 | `relations` | object | Optional relation metadata for linking this memory to other stored context. |
 
 ---

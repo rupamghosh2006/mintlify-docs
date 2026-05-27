@@ -30,7 +30,7 @@ curl -X POST 'https://api.hydradb.com/list/data' \
     "page": 1,
     "page_size": 25,
     "filters": {
-      "metadata": { "category": "engineering" },
+      "tenant_metadata": { "category": "engineering" },
       "additional_metadata": { "author": "Alice Smith" }
     },
     "include_fields": ["title", "type", "url", "timestamp"]
@@ -43,7 +43,7 @@ const result = await client.fetch.listData({
   page: 1,
   page_size: 25,
   filters: {
-    metadata: { category: "engineering" },
+    tenant_metadata: { category: "engineering" },
     additional_metadata: { author: "Alice Smith" }
   },
   include_fields: ["title", "type", "url", "timestamp"]
@@ -56,7 +56,7 @@ result = client.fetch.list_data(
     page=1,
     page_size=25,
     filters={
-        "metadata": {"category": "engineering"},
+        "tenant_metadata": {"category": "engineering"},
         "additional_metadata": {"author": "Alice Smith"},
     },
     include_fields=["title", "type", "url", "timestamp"],
@@ -81,20 +81,24 @@ result = client.fetch.list_data(
 
 Filters narrow results using **AND logic** – every key-value pair must match.
 
-| Filter category | Key (all SDKs) | Targets |
-|---|---|---|
-| Tenant-level metadata | `metadata` | Fields defined in `tenant_metadata_schema` |
-| Document-level metadata | `additional_metadata` | Fields attached per-document at ingestion |
-| Source-level fields | `source_fields` | Top-level source fields |
+| Filter category | Key (canonical) | Aliases also accepted | Targets |
+|---|---|---|---|
+| Tenant-level metadata | `tenant_metadata` | `metadata` | Fields defined in `tenant_metadata_schema` |
+| Document-level metadata | `additional_metadata` | `document_metadata` | Fields you sent as `additional_metadata` at ingestion |
+| Source-level fields | `source_fields` | - | Top-level source fields |
+
+<Note>
+Canonical filter keys match the ingestion field names. `metadata` / `document_metadata` are accepted as legacy aliases (back-compat with earlier API versions) - both names route to the same filter.
+</Note>
 
 **Allowed `source_fields` keys:** `description`, `timestamp`, `title`, `type`, `url`.
 
 ```json
 {
   "filters": {
-    "metadata":           { "department": "Finance" },
+    "tenant_metadata":     { "department": "Finance" },
     "additional_metadata": { "author": "Alice Smith" },
-    "source_fields":      { "type": "slack", "title": "standup notes" }
+    "source_fields":       { "type": "slack", "title": "standup notes" }
   }
 }
 ```

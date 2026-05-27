@@ -132,7 +132,7 @@ Polling for readiness...
 
 **What:** Uploads a single file using **multipart form-data** to `/ingestion/upload_knowledge` - the recommended beginner path. HydraDB handles chunking, embedding, and graph-node creation automatically. The returned `source_id` is what you use in Step 3 to verify indexing.
 
-> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/ingestion/upload_knowledge`** - the tested beginner path. An advanced JSON body mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
+> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/ingestion/upload_knowledge`** - the tested beginner path. An advanced app-source mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
 
 First, create a sample document:
 
@@ -338,7 +338,7 @@ Sources: ['auth_middleware.md']
 
 ## Phase 1 - Improve Retrieval · 15–20 minutes
 
-Ingest multiple files with structured metadata, use collections to organise content, and tune recall parameters. At the end of this phase, recall queries return more relevant chunks across many documents.
+Ingest multiple files with structured app-source metadata and tune recall parameters. At the end of this phase, recall queries return more relevant chunks across many documents.
 
 **Goal:** 50+ files indexed with metadata, scoped recall working.
 
@@ -370,17 +370,17 @@ The response also includes a `sources` array - a deduplicated list of the origin
 | `0.40–0.65` | Weak match - tangentially related | Include only if few high-score results |
 | `below 0.40` | Low match - probably not relevant | Drop from context to reduce noise |
 
-**How graph context changes recall:** When you add `"graph_context": true` to your recall request, HydraDB walks the explicit `relations.hydradb_source_ids` edges you set at ingestion time for every high-scoring chunk. A source file chunk can pull in the PR that last changed it. That PR can pull in the RFC it referenced. This multi-hop traversal is what makes "why" questions answerable.
+**How graph context changes recall:** When you add `"graph_context": true` and `"search_apps": true` to your recall request, HydraDB can use explicit `relations[]`, provider IDs, parent links, threads, and actors around high-scoring chunks. A source file chunk can pull in the PR that last changed it. That PR can pull in the RFC or Slack thread it referenced. This multi-hop traversal is what makes "why" questions answerable.
 
 > 💡 **Always safe to add to Phase 0.** `"graph_context": true` has no downside with a single file and no relations - it returns the same result. Turn it on now.
 
 ---
 
-### P1 · Step 1 - Batch Upload with Explicit IDs (JSON Ingestion)
+### P1 · Step 1 - Batch Upload with Explicit IDs (App-Source Ingestion)
 
-**What:** Switches to **JSON body ingestion** via `/ingestion/upload_knowledge` with `app_knowledge` field - the advanced ingestion path. This gives you full control over IDs, timestamps, collections, metadata, and (in Phase 2) explicit graph `relations`. The `{repo_name}/{relative_path}` ID convention is required for Phase 2 graph linking.
+**What:** Switches to **multipart app-source ingestion** via `/ingestion/upload_knowledge` with `app_knowledge` as a JSON-stringified form field. This gives you full control over stable IDs, provider namespaces, structured fields, metadata, and (in Phase 2) explicit `relations[]`. The `{repo_name}/{relative_path}` external ID convention is required for Phase 2 linking.
 
-> ⚠️ **Advanced path - stricter validation.** JSON ingestion requires well-formed payloads with `id`, `type`, and `content.text` on every item. Malformed requests are rejected outright. Use the file upload path (Phase 0 Step 2) if you just want to get content indexed quickly. Use JSON ingestion when you need stable IDs and graph relations.
+> ⚠️ **Advanced path - stricter validation.** App-source ingestion requires well-formed payloads with `id`, `tenant_id`, `sub_tenant_id`, `kind`, `provider`, `external_id`, and `fields` on every item. Malformed requests are rejected outright. Use the file upload path (Phase 0 Step 2) if you just want to get content indexed quickly. Use app-source ingestion when you need stable IDs and graph relations.
 
 ```python
 import sys, os, json, time, subprocess, pathlib
@@ -421,14 +421,25 @@ def ingest_directory(repo_path: str, repo_name: str) -> list:
         try: content = f.read_text(encoding="utf-8", errors="ignore")
         except: continue
         batch.append({
-            "id":          f"{repo_name}/{rel}",   # Phase 2 PR relations reference this ID
-            "title":       rel,
-            "type":        "document",
-            "timestamp":   git_timestamp(str(root), rel),
-            "content":     {"text": content},
-            "collections": ["codebase", repo_name, f.suffix.lstrip(".")],
-            "metadata": {"doc_type":"source_file","repo":repo_name,
-                      "language":f.suffix.lstrip("."),"tags":["codebase",repo_name]},
+            "id":          f"github_{repo_name}_{rel.replace('/', '_')}",
+            "tenant_id":   TENANT_ID,
+            "sub_tenant_id": "code",
+            "kind":        "custom",
+            "provider":    "github",
+            "external_id": f"{repo_name}/{rel}",   # Phase 2 relations reference this external_id
+            "fields": {
+                "kind": "custom",
+                "data": {
+                    "record_type": "source_file",
+                    "path": rel,
+                    "body": content,
+                    "language": f.suffix.lstrip("."),
+                    "updated_at": git_timestamp(str(root), rel),
+                },
+            },
+            "metadata": {"container_type":"repository","container_id":repo_name,
+                      "source":"github","doc_type":"source_file","repo":repo_name,
+                      "language":f.suffix.lstrip(".")},
         })
         if len(batch) == 20:
             all_ids += upload_batch(batch); batch = []; time.sleep(1)
@@ -454,24 +465,30 @@ Verifying 54 files...
 
 ---
 
-### P1 · Step 2 - Metadata and Collections
+### P1 · Step 2 - Metadata for Scoping and Citations
 
-**What:** `collections` are labels you define for scoping recall. `additional_metadata` fields are arbitrary key-value pairs used for filtering and citation labels. No extra API calls needed - these fields go in the ingestion payload.
+**What:** App-source identity belongs in `provider` and `external_id`; searchable structure belongs in `fields`; stable scoping values belong in `metadata`. Use `metadata` for repo, channel, space, project, doc type, or other filters you want available at recall time.
 
 ```json
 {
-  "collections": ["codebase", "myrepo", "py"],
-  // [0] source type:  "codebase" | "pull-requests" | "slack" | "wikis"
-  // [1] repo/channel: "myrepo" | "eng-architecture"
-  // [2] sub-category: extension, doc_type, etc.
-
+  "provider": "github",
+  "external_id": "myrepo/auth/middleware.py",
+  "fields": {
+    "kind": "custom",
+    "data": {
+      "record_type": "source_file",
+      "path": "auth/middleware.py",
+      "body": "full content here",
+      "language": "py"
+    }
+  },
   "metadata": {
+    "container_type": "repository",
+    "container_id": "myrepo",
+    "source": "github",
     "doc_type": "source_file",
-    // Recommended values:
-    // source_file | pull_request | slack_thread | rfc | adr | wiki | runbook
-    "repo":     "myrepo",
-    "language": "py",
-    "tags":     ["codebase", "auth"]
+    "repo": "myrepo",
+    "language": "py"
   }
 }
 ```
@@ -493,6 +510,7 @@ def tuned_recall(query: str, scope: str = None, max_results: int = 15):
         "max_results":   max_results,
         "mode":          "thinking",
         "graph_context": True,
+        "search_apps":   True,
         "alpha":         0.75,
         "recency_bias":  0.2,
     }
@@ -527,13 +545,13 @@ def build_context(chunks: list, min_score: float = 0.5) -> tuple[str, list]:
 
 ## Phase 2 - Multi-source Context · 20–30 minutes
 
-Connect GitHub source files to their pull requests, Slack decision threads, and internal wikis. Use explicit `relations.hydradb_source_ids` to guarantee graph edges. When a developer asks "why?", the answer now travels across all four source types in a single query.
+Connect GitHub source files to their pull requests, Slack decision threads, and internal wikis. Use explicit `relations[]` with provider-scoped `external_id` targets to guarantee graph edges. When a developer asks "why?", the answer now travels across all four source types in a single query.
 
 **Goal:** A "why" question returns code + PR + Slack + RFC in one response.
 
 **Pipeline:** Source files → Pull requests → Slack threads → Wikis & RFCs → Graph built
 
-> 💡 **Explicit vs. automatic graph edges.** Setting `relations.hydradb_source_ids` *guarantees* a graph link every time. HydraDB may also try to extract relationships from content, but this is best-effort. Always use explicit relations for links that matter.
+> 💡 **Explicit vs. automatic graph edges.** Setting explicit `relations[]` *guarantees* a graph link every time. HydraDB may also try to extract relationships from content, but this is best-effort. Always use explicit relations for links that matter.
 
 ### Why Each Source Type Matters
 
@@ -542,7 +560,7 @@ A developer asking "why does the auth middleware skip token validation for inter
 | Source | Answers | Role | Without it |
 |---|---|---|---|
 | **Source files** | *What* the code does | Anchors the query. Entry node for graph traversal. | No traversal starting point |
-| **Pull requests** | *Why* the change happened | Intent and debate behind the change. Review comments capture rejected alternatives. Set `relations.hydradb_source_ids` to the changed file IDs. | Code exists but has no rationale |
+| **Pull requests** | *Why* the change happened | Intent and debate behind the change. Review comments capture rejected alternatives. Set `relations[]` to the changed file external IDs. | Code exists but has no rationale |
 | **Slack threads** | Discussion and trade-offs | Captures informal approvals and decisions never written up in docs. | Informal approvals are invisible |
 | **Wikis & RFCs** | Formal decision record | Authoritative rationale and approval chain. An RFC directly answers a whole class of "why" questions. | Missing the authoritative "because" |
 
@@ -561,7 +579,7 @@ When those sources share stable IDs and explicit relations, the assistant can mo
 
 ### P2 · Step 1 - Ingest GitHub Source Files with Consistent IDs
 
-**What:** Ingests source files using the `{repo_name}/{relative_path}` ID convention. These IDs are what PR ingestion will reference in `relations.hydradb_source_ids`. The IDs must match exactly - `myrepo/auth/middleware.py`, not `auth/middleware.py`.
+**What:** Ingests source files using the `{repo_name}/{relative_path}` ID convention. These external IDs are what PR ingestion will reference in `relations[].target.external_id`. The IDs must match exactly - `myrepo/auth/middleware.py`, not `auth/middleware.py`.
 
 Use `ingest_directory()` from Phase 1 Step 1. If you already ran Phase 1, your files are already indexed.
 
@@ -577,7 +595,7 @@ ingest_directory('/path/to/your/repo', 'myrepo')
 
 ### P2 · Step 2 - Ingest Pull Requests with Explicit Graph Relations
 
-**What:** Fetches merged PRs and turns each into one document: title + description + review comments + changed-file list. The `relations.hydradb_source_ids` field guarantees graph edges form between the PR and every source file it changed.
+**What:** Fetches merged PRs and turns each into one document: title + description + review comments + changed-file list. The `relations[]` list guarantees graph edges form between the PR and every source file it changed.
 
 **Before:** A GitHub token with `repo` scope. Create at `github.com/settings/tokens` → New classic token → check `repo` → add to `.env` as `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`.
 
@@ -621,7 +639,7 @@ def ingest_pull_requests(prs: list, repo_name: str) -> list:
         changed  = [f["filename"] for f in pr.get("files", [])]
         reviews  = "\n\n".join(r["body"] for r in pr.get("reviews",[]) if r.get("body"))
         comments = "\n\n".join(c["body"] for c in pr.get("comments",[]) if c.get("body"))
-        # IDs must exactly match those set in ingest_directory()
+        # External IDs must exactly match those set in ingest_directory()
         source_ids = [f"{repo_name}/{fname}" for fname in changed]
         content = (
             f"PR #{pr['number']}: {pr['title']}\n"
@@ -632,15 +650,30 @@ def ingest_pull_requests(prs: list, repo_name: str) -> list:
             f"Inline comments:\n{comments or '(none)'}"
         )
         batch.append({
-            "id":          f"pr-{pr['number']}",
-            "title":       f"PR #{pr['number']}: {pr['title']}",
-            "type":        "document",
-            "timestamp":   pr["merged_at"],
-            "content":     {"text": content},
-            "collections": ["pull-requests"],
-            "relations":   {"hydradb_source_ids": source_ids},
-            "metadata": {"doc_type":"pull_request","pr_number":pr["number"],
-                      "author":pr["user"]["login"],"changed_files":changed},
+            "id":          f"github_pr_{pr['number']}",
+            "tenant_id":   TENANT_ID,
+            "sub_tenant_id": "github",
+            "kind":        "custom",
+            "provider":    "github",
+            "external_id": f"{repo_name}/pull/{pr['number']}",
+            "fields": {
+                "kind": "custom",
+                "data": {
+                    "record_type": "pull_request",
+                    "title": f"PR #{pr['number']}: {pr['title']}",
+                    "body": content,
+                    "author": pr["user"]["login"],
+                    "merged_at": pr["merged_at"],
+                    "changed_files": changed,
+                },
+            },
+            "relations": [
+                {"predicate": "linked_to", "target": {"external_id": sid, "provider": "github"}}
+                for sid in source_ids
+            ],
+            "metadata": {"container_type":"repository","container_id":repo_name,
+                      "source":"github","doc_type":"pull_request","pr_number":pr["number"],
+                      "author":pr["user"]["login"]},
         })
         if len(batch)==20: all_ids+=upload_batch(batch); batch=[]; time.sleep(1)
     if batch: all_ids+=upload_batch(batch)
@@ -657,7 +690,7 @@ if __name__ == "__main__":
 
 ### P2 · Step 3 - Ingest Slack Threads
 
-**What:** Groups messages by `thread_ts` so each conversation thread becomes one document. Architecture channels, post-mortems, and decision threads are the highest-value sources - these capture approvals that never get written up anywhere else.
+**What:** Ingests each Slack message as a typed `message` app source. Messages share `thread_id`, and replies set `parent_id` to the root thread timestamp. Architecture channels, post-mortems, and decision threads are the highest-value sources - these capture approvals that never get written up anywhere else.
 
 **Before:** A Slack export ZIP. Go to `your-workspace.slack.com/services/export` (requires admin), export, and unzip. Structure: `{export_dir}/{channel_name}/{YYYY-MM-DD}.json`.
 
@@ -665,6 +698,7 @@ if __name__ == "__main__":
 import sys, os, json, time, pathlib
 from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from config import TENANT_ID
 from phase1.batch_upload import upload_batch, verify_batch
 
 def ingest_slack_export(export_dir: str, channels: list[str]) -> list:
@@ -683,22 +717,28 @@ def ingest_slack_export(export_dir: str, channels: list[str]) -> list:
             key = msg.get("thread_ts") or msg["ts"]
             threads.setdefault(key, []).append(msg)
         for thread_ts, msgs in threads.items():
-            text = "\n".join(
-                f"[{m.get('user','?')}]: {m.get('text','')}"
-                for m in msgs if m.get("text"))
-            if not text.strip(): continue
-            ts_dt = datetime.fromtimestamp(float(thread_ts)).isoformat() + "Z"
-            batch.append({
-                "id":          f"slack-{channel}-{thread_ts}",
-                "title":       f"Slack - #{channel} - {ts_dt[:10]}",
-                "type":        "document",
-                "timestamp":   ts_dt,
-                "content":     {"text": f"Channel: #{channel}\n\n{text}"},
-                "collections": ["slack", channel],
-                "metadata": {"doc_type":"slack_thread","channel":channel,
-                          "message_count":len(msgs)},
-            })
-            if len(batch)==20: all_ids+=upload_batch(batch); batch=[]; time.sleep(1)
+            for msg in msgs:
+                if not msg.get("text"): continue
+                ts_dt = datetime.fromtimestamp(float(msg["ts"])).isoformat() + "Z"
+                batch.append({
+                    "id":          f"slack_{channel}_{msg['ts']}",
+                    "tenant_id":   TENANT_ID,
+                    "sub_tenant_id": "slack",
+                    "kind":        "message",
+                    "provider":    "slack",
+                    "external_id": msg["ts"],
+                    "fields": {
+                        "kind": "message",
+                        "body": msg["text"],
+                        "author": msg.get("user"),
+                        "thread_id": thread_ts,
+                        "parent_id": thread_ts if msg["ts"] != thread_ts else None,
+                        "created_at": ts_dt,
+                    },
+                    "metadata": {"container_type":"channel","container_id":channel,
+                              "container_name":channel,"source":"slack","doc_type":"slack_message"},
+                })
+                if len(batch)==20: all_ids+=upload_batch(batch); batch=[]; time.sleep(1)
         print(f"  Processed #{channel}: {len(threads)} threads")
     if batch: all_ids+=upload_batch(batch)
     verify_batch(all_ids)
@@ -721,6 +761,7 @@ if __name__ == "__main__":
 ```python
 import sys, os, time, pathlib
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from config import TENANT_ID
 from phase1.batch_upload import upload_batch, verify_batch
 
 def ingest_wikis(pages: list) -> list:
@@ -732,15 +773,24 @@ def ingest_wikis(pages: list) -> list:
     """
     batch, all_ids = [], []
     for page in pages:
+        provider = page.get("provider", "notion" if "notion" in page.get("url", "") else "confluence")
         batch.append({
-            "id":          f"wiki-{page['id']}",
-            "title":       page["title"],
-            "type":        "document",
-            "timestamp":   page["last_updated"],
-            "content":     {"text": page["content"]},
-            "url":         page.get("url", ""),
-            "collections": ["wikis", page["doc_type"]],
-            "metadata": {"doc_type":page["doc_type"],"author":page.get("author","")},
+            "id":          f"{provider}_page_{page['id']}",
+            "tenant_id":   TENANT_ID,
+            "sub_tenant_id": "docs",
+            "kind":        "knowledge_base",
+            "provider":    provider,
+            "external_id": page["id"],
+            "fields": {
+                "kind": "knowledge_base",
+                "title": page["title"],
+                "body": page["content"],
+                "updated_at": page["last_updated"],
+                "url": page.get("url", ""),
+                "updated_by": page.get("author", ""),
+            },
+            "metadata": {"container_type":"space","container_id":page.get("space", "engineering"),
+                      "source":provider,"doc_type":page["doc_type"],"author":page.get("author","")},
         })
         if len(batch)==20: all_ids+=upload_batch(batch); batch=[]; time.sleep(1)
     if batch: all_ids+=upload_batch(batch)
@@ -778,6 +828,7 @@ def multi_source_recall(question: str):
         max_results=15,
         mode="thinking",
         graph_context=True,
+        search_apps=True,
         alpha=0.65,
         recency_bias=0.15,
     )
@@ -922,6 +973,7 @@ def full_recall(
         "max_results":   max_results,
         "mode":          "thinking",
         "graph_context": graph_context,
+        "search_apps":   True,
         "alpha":         RECALL_ALPHA,
         "recency_bias":  recency_bias,
     }
@@ -1255,7 +1307,7 @@ Detailed implementation coming in the next revision. Everything in Phase 4 is pa
 ### If Your Retrieval Quality Is Weak
 
 - **Fix your IDs and metadata.** Weak retrieval often starts upstream. Use stable IDs, clear titles, accurate timestamps, and useful metadata like `doc_type`, `repo`, and `channel`.
-- **Add explicit relations.** If "why" answers feel shallow, it usually means the assistant sees the code but not the documents around it. Add `relations.hydradb_source_ids` between code, PRs, Slack, and RFCs.
+- **Add explicit relations.** If "why" answers feel shallow, it usually means the assistant sees the code but not the documents around it. Add explicit `relations[]` between code, PRs, Slack, and RFCs.
 - **Improve source formatting.** A PR with only a title is weak. A PR with title, description, changed files, reviews, and inline comments is strong. Rich documents produce better chunks.
 - **Add relevancy_score filtering.** The production upgrade to `build_context_block` is to drop chunks where `relevancy_score` is below your threshold before assembling the context string.
 
@@ -1283,13 +1335,13 @@ A good progression: Phase 0 recall in the terminal → FastAPI `/ask` in Postman
 
 **Cause:** The endpoint path has a typo, extra slash, or missing segment. Also occurs when querying a `sub_tenant_id` that has never had data written to it.
 
-**Fix:** Correct paths: `/ingestion/upload_knowledge` (file upload or JSON batch with `app_knowledge`), `/recall/full_recall`, `/ingestion/verify_processing`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
+**Fix:** Correct paths: `/ingestion/upload_knowledge` (file upload or app-source batch with `app_knowledge`), `/recall/full_recall`, `/ingestion/verify_processing`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
 
 ### 400 - Provide at least one of: files or app_knowledge
 
-**Cause:** For file upload: the field name is wrong (`file` instead of `files`), or `Content-Type: application/json` was manually set (which breaks multipart). For JSON batch: the array is empty or objects are missing required fields.
+**Cause:** For file upload: the field name is wrong (`file` instead of `files`), or `Content-Type: application/json` was manually set (which breaks multipart). For app-source batch: the array is empty or objects are missing required fields.
 
-**Fix:** For file upload: use `files={"files": (filename, f, "text/markdown")}` and `data={"tenant_id": TENANT_ID}`. Do NOT set `Content-Type` manually. For JSON batch: confirm each item has `id`, `type`, and `content.text`.
+**Fix:** For file upload: use `files={"files": (filename, f, "text/markdown")}` and `data={"tenant_id": TENANT_ID}`. Do NOT set `Content-Type` manually. For app-source batch: confirm each item has `id`, `tenant_id`, `sub_tenant_id`, `kind`, `provider`, `external_id`, and `fields`.
 
 ### Empty Recall - chunks: []
 
@@ -1318,14 +1370,14 @@ def stream_answer(question: str, context: str):
 
 ## Production Notes
 
-- **Batch size and rate limits.** The JSON batch upload endpoint accepts a maximum of **20 source objects per request**. Always sleep 1 second between batches. For large repos (1,000+ files), expect ingestion to take 10–30 minutes total.
+- **Batch size and rate limits.** The app-source batch upload path accepts a maximum of **20 source objects per request**. Always sleep 1 second between batches. For large repos (1,000+ files), expect ingestion to take 10–30 minutes total.
 - **Indexing delays.** Indexing is async. Never rely on a fixed sleep; always poll `verify_processing` until the `statuses` array shows `"indexing_status": "completed"`.
 - **Consistency and upserts.** HydraDB upserts by `id` - re-uploading replaces the existing document. There is a brief window where recall may return stale chunks. Run verify on new IDs before marking a deployment complete.
 - **LLM context window.** The basic `build_context_block` assembles all chunk text. For production, add a `relevancy_score` filter and a character cap (e.g. 12,000 chars) to prevent exceeding GPT-4o's context window.
 - **Graph edge consistency.** Graph edges only form if both sides exist and are indexed. Always ingest source files first, then PRs. Re-ingest affected PRs if you add new files after initial ingestion.
 - **API key security.** The HydraDB API key grants full access to all tenant data. Never commit it to git. Use environment secrets in production. Rotate immediately if you suspect exposure.
 - **OpenAI token costs.** Each question sends context + system prompt + question to GPT-4o. For a 50-engineer team asking 200 questions/day, budget $2–4/day. Use `gpt-4o-mini` for factual lookups to reduce cost.
-- **Recall quality monitoring.** Log the `relevancy_score` value of each chunk included in a response. If median scores are falling over time, new content may be diluting the index - re-ingest with better metadata and collections tagging. Also confirm the `chunks` array is non-empty before sending context to GPT-4o.
+- **Recall quality monitoring.** Log the `relevancy_score` value of each chunk included in a response. If median scores are falling over time, new content may be diluting the index - re-ingest with better metadata and app-source fields. Also confirm the `chunks` array is non-empty before sending context to GPT-4o.
 
 ---
 
@@ -1375,9 +1427,9 @@ client.upload.knowledge(
 }
 ```
 
-### Upload Sources - JSON Body (Advanced)
+### Upload App Sources - Advanced
 
-**POST** `/ingestion/upload_knowledge` - Max 20 items · body field `app_knowledge` (JSON string) · supports relations
+**POST** `/ingestion/upload_knowledge` - Max 20 items · multipart field `app_knowledge` (JSON string) · supports typed fields and relations
 
 ```python
 import json
@@ -1385,18 +1437,30 @@ import json
 client.upload.knowledge(
     tenant_id="engineering-docs",
     app_knowledge=json.dumps([{
-        "id":          "myrepo/auth/middleware.py",
-        "title":       "auth/middleware.py",
-        "type":        "document",
-        "timestamp":   "2025-11-14T10:22:00Z",
-        "content":     {"text": "full content here"},
-        "collections": ["codebase", "myrepo"],
-        "relations":   {"hydradb_source_ids": ["pr-42"]},
-        "metadata":   {"doc_type": "source_file", "repo": "myrepo"},
+        "id": "github_myrepo_auth_middleware_py",
+        "tenant_id": "engineering-docs",
+        "sub_tenant_id": "code",
+        "kind": "custom",
+        "provider": "github",
+        "external_id": "myrepo/auth/middleware.py",
+        "fields": {
+            "kind": "custom",
+            "data": {
+                "record_type": "source_file",
+                "path": "auth/middleware.py",
+                "body": "full content here",
+                "language": "py",
+                "updated_at": "2025-11-14T10:22:00Z"
+            }
+        },
+        "relations": [
+            {"predicate": "linked_to", "target": {"external_id": "myrepo/pull/42", "provider": "github"}}
+        ],
+        "metadata": {"container_type": "repository", "container_id": "myrepo", "source": "github"}
     }]),
 )
 
-# Response: { "ids": ["myrepo/auth/middleware.py"] }
+# Response results include source_id values for verification/deletes.
 ```
 
 ### Verify Indexing
@@ -1443,6 +1507,7 @@ client.upload.knowledge(
   "max_results":   15,
   "mode":          "thinking",
   "graph_context": true,
+  "search_apps":   true,
   "alpha":         0.65,
   "recency_bias":  0.15
 }

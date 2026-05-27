@@ -147,12 +147,20 @@ Use it when the filter value is known exactly. Operators such as range, contains
 
 ### `metadata` vs `additional_metadata`
 
-HydraDB exposes two metadata fields on every source object:
+HydraDB exposes two metadata fields on every source object. **Both are filterable at recall**, but via different keys in `metadata_filters` and with different performance characteristics:
 
-- **`metadata`** - schema-aligned fields intended for deterministic filtering. If a field is declared in the tenant metadata schema and match-enabled, it can be used in `metadata_filters`.
-- **`additional_metadata`** - free-form fields for display, bookkeeping, or downstream application use. Do not rely on these for deterministic filtering.
+- **`metadata`** -- schema-aligned tenant-level fields. Each key must be declared in `tenant_metadata_schema` with `enable_match: true` at tenant creation. Filter via **top-level keys** in `metadata_filters`. Pre-filtered in the vector store, so this is the fast path.
+- **`additional_metadata`** -- free-form document-level fields. Filter by nesting under the **`additional_metadata`** key inside `metadata_filters` (canonical) or `document_metadata` (legacy alias). Applied post-retrieval, with the engine over-fetching (~3x) to compensate -- slower than tenant-level filters.
 
-If a field needs to be filterable at recall time, put it in `metadata` and plan it in the tenant metadata schema. Otherwise, prefer `additional_metadata`.
+```json
+{
+  "metadata_filters": {
+    "environment": "production",
+    "additional_metadata": { "author": "alice" }
+  }
+}
+
+If a field will be filtered on every query (hot path), put it in `metadata` and declare it in the tenant schema with `enable_match: true`. For ad-hoc or per-document fields, use `additional_metadata`.
 
 ### Metadata filtering vs `sub_tenant_id`
 

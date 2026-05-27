@@ -175,19 +175,88 @@ Controls the semantic-vs-keyword balance on `full_recall`:
 | `fast` | Single semantic query | Lower | Simple lookups, real-time UIs |
 | `thinking` | Multi-query + graph traversal + forceful relations | Higher | Complex / multi-hop queries; best for app-source ID/thread/relation expansion |
 
-### 3.8 App sources (summary)
+### 3.8 App sources
 
-Pre-parsed records from business apps. One `app_knowledge` item = one HydraDB source.
+Pre-parsed records from business apps (Slack, Gmail, Jira, Notion, Linear, CRM, etc.). One `app_knowledge` item = one HydraDB source. Enable at recall with `search_apps: true`.
+
+#### Shape overview
 
 | Layer | Fields | Purpose |
 |---|---|---|
 | Envelope | `id`, `tenant_id`, `sub_tenant_id` | Required on every item |
-| Identity | `kind`, `provider`, `external_id` | `email`, `message`, `ticket`, `knowledge_base`, `custom` |
-| Content | `fields` | Searchable body/title/status/thread IDs - match `fields.kind` to top-level `kind` |
-| Scope | `metadata` | Channel, project, space, pipeline (`container_type`, `container_id`, …) |
-| Structure | `relations`, `comments`, `attachments` | Cross-source links, discussion, extracted file text |
+| Identity | `kind`, `provider`, `external_id` | Type (`email`, `message`, `ticket`, `knowledge_base`, `comment`, `custom`), source system, and stable provider ID |
+| Content | `fields` | Searchable body/title/status/thread IDs - keys depend on `kind` (see table below). `fields.kind` must match top-level `kind` |
+| Scope | `metadata` | Channel, project, space, pipeline (`container_type`, `container_id`, `container_name`, …) |
+| Structure | `relations`, `comments`, `attachments` | Cross-source links, embedded snapshot discussion, extracted file text |
 
-Full field reference, scenarios, and mistakes: [App Sources](/essentials/app-sources).
+#### Kind-specific `fields`
+
+| `kind` | Key fields | Notes |
+|---|---|---|
+| `email` | `subject`, `body`, `from`, `to`, `cc`, `bcc`, `thread_id`, `reply_to_id` | `thread_id` groups the conversation; `reply_to_id` is the immediate parent email |
+| `message` | `body`, `author`, `thread_id`, `parent_id`, `mentions` | For Slack-like threads, `thread_id` and `parent_id` can be the same when replying to the root |
+| `ticket` | `title`, `description`, `status`, `priority`, `assignee`, `reporter`, `parent_id`, `linked_issue_ids` | `parent_id` = epic or parent ticket `external_id` |
+| `knowledge_base` | `title`, `body`, `parent_id`, `created_by`, `updated_by` | Pages and wiki articles; space/project scope goes in `metadata` |
+| `comment` | `body`, `author`, `parent_id`, `thread_id` | First-class comment source; `parent_id` = the parent ticket/page `external_id`. HydraDB auto-derives `comment_on` |
+| `custom` | `data` (free-form object with `record_type`, `stage`, `owner`, …) | CRM deals, pipeline records, and other non-standard objects |
+
+All kinds also accept `url`, `created_at`, `updated_at`, and `tags`.
+
+#### Example: Slack message
+
+```json
+{
+  "id": "slack_msg_123_000100",
+  "tenant_id": "acme",
+  "sub_tenant_id": "default",
+  "kind": "message",
+  "provider": "slack",
+  "external_id": "1234567890.000100",
+  "fields": {
+    "kind": "message",
+    "body": "Can someone review the auth rollback?",
+    "author": "alice",
+    "thread_id": "1234567890.000100",
+    "created_at": "2026-05-20T10:30:00Z",
+    "url": "https://acme.slack.com/archives/C01/p1234567890000100"
+  },
+  "metadata": {
+    "container_type": "channel",
+    "container_id": "C01",
+    "container_name": "engineering",
+    "workspace": "acme"
+  }
+}
+```
+
+#### Incremental ingestion
+
+Use the same `POST /ingestion/upload_knowledge` endpoint for both initial sync and live updates. The key decision is whether the provider event represents an **updated existing source** or a **new source**.
+
+| Provider event | Action | Why |
+|---|---|---|
+| Ticket title/status/description changed | Re-ingest the same `ticket` source (same `id` + `external_id`), `upsert: true` | The ticket itself changed |
+| New ticket comment (Linear, Jira, Zendesk) | Ingest a **new** `kind: "comment"` source with `fields.parent_id` pointing to ticket `external_id` | Comment is a distinct object - no need to re-ingest the ticket |
+| Edited ticket comment | Re-ingest the same `comment` source (same `id` + `external_id`), `upsert: true` | Same comment changed |
+| Deleted ticket comment | `DELETE /ingestion/delete_knowledge` by HydraDB source `id` | Remove from recall |
+| New Slack/Teams message | Ingest a new `message` source | Messages are standalone; linked via `thread_id` / `parent_id` |
+| New email reply | Ingest a new `email` source | Reply has its own provider message ID, body, sender |
+| New wiki page | Ingest a new `knowledge_base` source | Pages are standalone documents |
+| Existing wiki page edited | Re-ingest the same `knowledge_base` source, `upsert: true` | Page content changed |
+
+> **Do not** send only a new embedded `comments[]` entry on a ticket upsert - `upsert` replaces the entire source. For live webhooks, model each new comment as `kind: "comment"` instead.
+
+#### Common mistakes
+
+| Mistake | Fix |
+|---|---|
+| Using `content` instead of `fields` for app data | Put searchable text in `fields` (`body`, `title`, `description`, etc.) |
+| Missing `fields.kind` | Must match top-level `kind` |
+| Putting channel/project/space in `fields` | Use `metadata` (`container_type`, `container_id`) |
+| Re-ingesting full ticket just to add a comment | Ingest the comment as `kind: "comment"` with `parent_id` |
+| Using HydraDB `id` as `parent_id` | Use the parent's provider `external_id` instead |
+
+Deep-dive with full field reference, payloads, relations, and more scenarios: [App Sources](/essentials/app-sources).
 
 ---
 

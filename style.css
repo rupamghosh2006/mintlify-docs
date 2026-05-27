@@ -24,6 +24,10 @@
     overflow: hidden !important;
 }
 
+/* Field reference requirement indicators */
+.field-req { color: #ef4444; font-weight: bold; cursor: default; }
+.field-rec { color: #eab308; font-size: 0.6em; vertical-align: middle; cursor: default; }
+
 @media (min-width: 1280px) {
     #content-container {
         overflow-x: clip;

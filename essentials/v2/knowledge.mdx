@@ -3,6 +3,8 @@ title: "Knowledge"
 description: "What Knowledge is, how it differs from Memories, and how to ingest it correctly."
 ---
 
+import { Field } from "/snippets/field.jsx";
+
 ## 1. What it is
 
 Knowledge is the shared, tenant-wide context that every user and agent in a tenant can search  -  product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and anything else that ought to be reusable across the workspace.
@@ -298,37 +300,43 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 
 ### File metadata (`file_metadata` array items)
 
-| Field | Type | Description |
-|---|---|---|
-| `file_id` | string | Optional stable identifier. Used as upsert key when `upsert: true`. |
-| `tenant_metadata` | object | Filterable fields. Keys must match the tenant metadata schema. Also accepted as `metadata`. |
-| `document_metadata` | object | Free-form fields for display and bookkeeping. Filterable only when nested under `document_metadata` in `metadata_filters`. Also accepted as `additional_metadata`. |
+| Field | Description |
+|---|---|
+| <Field name="file_id" type="string" /> | Optional stable identifier. Used as upsert key when `upsert: true`. |
+| <Field name="tenant_metadata" type="object" /> | Filterable fields. Keys must match the tenant metadata schema. Also accepted as `metadata`. |
+| <Field name="document_metadata" type="object" /> | Free-form fields for display and bookkeeping. Filterable only when nested under `document_metadata` in `metadata_filters`. Also accepted as `additional_metadata`. |
+| <Field name="title" type="string" /> | Override the source title shown in search results. |
+| <Field name="type" type="string" /> | Override the source type shown in search results. |
+| <Field name="url" type="string" /> | Override the canonical URL. |
+| <Field name="timestamp" type="ISO-8601 datetime" /> | Override the source timestamp. |
+| <Field name="relations" type="object" /> | Forcefully connect this source to others with `{ "cortex_source_ids": [...] }`. |
 
 ### App source model (`app_knowledge` array items)
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | string | Unique identifier for the source. Upsert key. |
-| `title` | string | Short title or subject. |
-| `type` | string | Source category (e.g., `slack`, `notion`, `gmail`, `webpage`). |
-| `description` | string | Optional long-form description. |
-| `url` | string | Canonical URL or reference link. |
-| `timestamp` | string | ISO-8601 timestamp (creation or last-updated). |
-| `content` | object | Content payload. Use `{"text": "..."}` for plain text. |
-| `tenant_metadata` | object | Filterable fields matching the tenant schema. Also accepted as `metadata`. |
-| `document_metadata` | object | Free-form fields. Filterable only when nested under `document_metadata` in `metadata_filters`. Also accepted as `additional_metadata`. |
-| `attachments` | array | Optional related attachments. |
-| `relations` | object | Forcefully connect this source to others. |
+| Field | Description |
+|---|---|
+| <Field name="id" type="string" recommended /> | Unique identifier for the source. Upsert key. |
+| <Field name="title" type="string" recommended /> | Short title or subject. |
+| <Field name="type" type="string" recommended /> | Source category, such as `slack`, `notion`, `gmail`, or `webpage`. |
+| <Field name="description" type="string" /> | Optional long-form description. |
+| <Field name="url" type="string" /> | Canonical URL or reference link. |
+| <Field name="timestamp" type="ISO-8601 datetime" /> | Creation or last-updated time. |
+| <Field name="content" type="object" required /> | Content payload. Use `{ "text": "..." }` for plain text or `{ "markdown": "..." }` for Markdown. |
+| <Field name="tenant_metadata" type="object" /> | Filterable fields matching the tenant schema. Also accepted as `metadata`. |
+| <Field name="document_metadata" type="object" /> | Free-form fields. Filterable only when nested under `document_metadata` in `metadata_filters`. Also accepted as `additional_metadata`. |
+| <Field name="attachments" type="array" /> | Optional related attachments. |
+| <Field name="relations" type="object" /> | Forcefully connect this source to others. |
 
 ### Request-level fields
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `tenant_id` | string | - *(required)* | Target tenant. |
-| `sub_tenant_id` | string | none | Scope this knowledge to a sub-tenant. If omitted, knowledge is available to all sub-tenants. |
-| `upsert` | boolean | `true` | Replace existing items with the same `source_id` / `file_id`. |
+| Field | Default | Description |
+|---|---|---|
+| <Field name="tenant_id" type="string" required /> | — | Target tenant. |
+| <Field name="sub_tenant_id" type="string" /> | none | Scope this knowledge to a sub-tenant. If omitted, knowledge is available to all sub-tenants. |
+| <Field name="upsert" type="boolean" /> | `true` | Replace existing items with the same `source_id` / `file_id`. |
 
 ---
+
 ## 7 - ForceFul relations
 
 Forceful relations let you **declare** links between Knowledge sources at ingestion time. When a query matches a source that has forceful relations attached, HydraDB pulls the linked sources into the `additional_context` field of the search response alongside the primary chunks.

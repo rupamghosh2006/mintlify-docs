@@ -6,8 +6,6 @@ openapi: "GET /source/relations"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Inspect the entity-and-relationship graph HydraDB built during ingestion. Common uses:
 
 - **Graph visualizations**  -  render a knowledge graph for a specific document or for the whole sub-tenant.
@@ -16,13 +14,6 @@ Inspect the entity-and-relationship graph HydraDB built during ingestion. Common
 - **Audit**  -  confirm that key entities were extracted from your ingested content.
 
 Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `is_memory=true` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-- **Pagination:** Cursor-based. `limit` clamped to `1 ≤ x ≤ 10000`; default `5000`. Pass the response's `next_cursor` to fetch the next page.
 
 <RequestExample>
 ```bash cURL
@@ -49,18 +40,27 @@ relations = client.source.relations(
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+- **Pagination:** Cursor-based. `limit` clamped to `1 ≤ x ≤ 10000`; default `5000`. Pass the response's `next_cursor` to fetch the next page.
+
+</Accordion>
+
 ## Query parameters
 
-Required fields are marked with `*`.
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Owning tenant. |
-| <Field name="source_id" /> | string \| null | When provided, returns relations for that specific source. When omitted, returns all relations across the sub-tenant. (default=`null`) |
-| <Field name="is_memory" /> | boolean | Set `true` to fetch relations for a memory item instead of a knowledge source. (default=`false`) |
-| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| <Field name="limit" /> | integer | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
-| <Field name="cursor" /> | number \| null | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Owning tenant. |
+| <Field name="source_id" type="string or null" /> | When provided, returns relations for that specific source. When omitted, returns all relations across the sub-tenant. (default=`null`) |
+| <Field name="is_memory" type="boolean" /> | Set `true` when `source_id` belongs to a memory item. The default searches the Knowledge graph. (default=`false`) |
+| <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="limit" type="integer" /> | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
+| <Field name="cursor" type="number or null" /> | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
 
 ## Response
 
@@ -96,12 +96,36 @@ Required fields are marked with `*`.
 
 | Field | Description |
 |---|---|
-| <Field name="relations[]" /> | Array  -  each entry is a `ScoredPathResponse` containing `triplets`, `relevancy_score`, and `group_id`. |
-| <Field name="relations[].triplets" /> | Array  -  source → relation → target hops. |
-| <Field name="relations[].triplets[].source / .target" /> | Entity object: `{ name, type, namespace, entity_id, identifier }`. |
-| <Field name="relations[].triplets[].relation" /> | Relation object: `{ canonical_predicate, raw_predicate, context, confidence, temporal_details, ... }`. |
-| <Field name="is_truncated" /> | Boolean  -  `true` when more results exist beyond `limit`. |
-| <Field name="next_cursor" /> | Opaque pagination cursor (number, or `null`). Pass to the next call's `cursor`. `null` when there are no more results. |
+| <Field name="relations[]" type="ScoredPathResponse[]" /> | Array  -  each entry is a `ScoredPathResponse` containing `triplets`, `relevancy_score`, and `group_id`. |
+| <Field name="relations[].triplets" type="array" /> | Array  -  source → relation → target hops. |
+| <Field name="relations[].triplets[].source / .target" type="Entity" /> | Entity object. Common fields: `name`, `type`, `namespace`, `entity_id`, `identifier`. `name` and `type` are the most useful display fields. |
+| <Field name="relations[].triplets[].relation" type="Relation" /> | Relation object. Common fields: `canonical_predicate`, `raw_predicate`, `context`, `confidence`, and `temporal_details`. |
+| <Field name="relations[].relevancy_score" type="float" /> | Relevance score for the relation group. Higher values are more relevant within the same response. |
+| <Field name="relations[].group_id" type="string" /> | Stable group identifier for the returned relation group. |
+| <Field name="is_truncated" type="boolean" /> | Boolean  -  `true` when more results exist beyond `limit`. |
+| <Field name="next_cursor" type="number or null" /> | Opaque pagination cursor (number, or `null`). Pass to the next call's `cursor`. `null` when there are no more results. |
+
+```json Truncated response
+{
+  "relations": [
+    {
+      "triplets": [
+        {
+          "source": { "name": "PaymentsWorker", "type": "Service" },
+          "relation": { "canonical_predicate": "DEPENDS_ON" },
+          "target": { "name": "OrdersDB", "type": "Database" }
+        }
+      ],
+      "relevancy_score": 0.88,
+      "group_id": "p_43"
+    }
+  ],
+  "is_truncated": true,
+  "next_cursor": 0.88,
+  "success": true,
+  "message": "Relations retrieved successfully"
+}
+```
 
 ## Pagination pattern
 
@@ -133,7 +157,11 @@ while True:
 </Info>
 
 <Info>
-**Knowledge vs memory.** `is_memory=true` looks up the relations in the Memories graph rather than the Knowledge graph. The two graphs are separate.
+**Knowledge vs memory.** If the `source_id` belongs to a memory, set `is_memory=true`; otherwise the endpoint searches the Knowledge graph. The two graphs are separate.
+</Info>
+
+<Info>
+**Ordering.** Treat `relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare scores across unrelated queries as absolute probabilities.
 </Info>
 
 <Info>
@@ -148,6 +176,6 @@ while True:
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Context Graphs](/essentials/v2/context-graphs)

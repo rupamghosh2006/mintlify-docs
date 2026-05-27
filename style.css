@@ -16,3 +16,47 @@
 /* Field reference requirement indicators */
 .field-req { color: #ef4444; font-weight: bold; cursor: default; }
 .field-rec { color: #eab308; font-size: 0.6em; vertical-align: middle; cursor: default; }
+.field-wrap { display: inline-block; outline: none; }
+.field-name-row { display: inline-block; }
+.field-type {
+    display: inline-block;
+    margin-left: 0.35rem;
+    color: #475569;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+.dark .field-type,
+[data-theme="dark"] .field-type {
+    color: #cbd5e1;
+}
+.field-type::before { content: "("; }
+.field-type::after { content: ")"; }
+.field-tip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    z-index: 50;
+    display: none;
+    padding: 2px 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    background: #1f2937;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    color: #e5e7eb;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.2;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.has-field-tip:hover .field-tip,
+.has-field-tip:focus .field-tip,
+.has-field-tip:focus-within .field-tip { display: inline-block; }
+
+/* Mintlify content width override: treat max-w-8xl layout as max-w-10xl. */
+.peer.is-not-custom.is-not-center ~ [class~="peer-[.is-not-custom]:peer-[.is-not-center]:max-w-8xl"] {
+    max-width: 104rem !important;
+}

@@ -6,17 +6,9 @@ openapi: "GET /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Discover the tenants your API key has access to  -  useful for admin tooling, debug dashboards, populating a tenant picker in a UI, or selecting a target tenant before ingestion or search.
 
 The response separates **active/provisioning** tenants (in `tenant_ids`) from tenants whose provisioning **failed** (in `failed_tenant_ids`). Re-create a failed tenant to retry provisioning.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
 
 <RequestExample>
 ```bash cURL
@@ -32,6 +24,14 @@ response = client.tenants.list()
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+
+</Accordion>
+
 ## Response
 
 <ResponseExample>
@@ -46,16 +46,35 @@ response = client.tenants.list()
 
 </ResponseExample>
 
+If provisioning failed for a tenant, `failed_tenant_ids` contains diagnostic entries:
+
+```json Failed tenant example
+{
+  "tenant_ids": ["acme_corp"],
+  "failed_tenant_ids": [
+    {
+      "tenant_id": "staging_import",
+      "error": "Provisioning failed. Re-create the tenant to retry."
+    }
+  ],
+  "message": "Successfully retrieved tenant IDs"
+}
+```
+
 | Field | Description |
 |---|---|
-| <Field name="tenant_ids" /> | Array of string IDs of active or provisioning tenants. |
-| <Field name="failed_tenant_ids" /> | Array of `{ tenant_id, error }` entries, or `null` when no failures. Re-create the tenant to retry provisioning. |
-| <Field name="message" /> | Human-readable status string. |
+| <Field name="tenant_ids" type="string[]" /> | Array of string IDs of active or provisioning tenants. |
+| <Field name="failed_tenant_ids" type="array or null" /> | Array of `{ tenant_id, error }` entries, or `null` when no failures. Re-create the tenant to retry provisioning. |
+| <Field name="message" type="string" /> | Human-readable status string. |
 
 ## Behavior notes
 
 <Info>
 **Includes provisioning tenants.** Tenants returned in `tenant_ids` may still be provisioning. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to confirm readiness before ingestion.
+</Info>
+
+<Info>
+**Retry failed tenants.** If a tenant appears in `failed_tenant_ids`, re-create that tenant with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
 </Info>
 
 ## Related endpoints
@@ -66,6 +85,6 @@ response = client.tenants.list()
 
 ## Errors
 
-Common codes: `401 UNAUTHORIZED`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `401 UNAUTHORIZED`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)

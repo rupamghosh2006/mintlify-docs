@@ -8,7 +8,7 @@
 		"hygiene:strict": "npm run hygiene:ensure && ./bin/mintlify-hygiene check --deny-warnings"
 	},
 	"dependencies": {
-		"@hydradb/sdk": "^0.0.2",
+		"@hydradb/sdk": "^0.0.3",
 		"@types/node": "^25.7.0",
 		"mintlify": "^4.2.0",
 		"ts-node": "^10.9.2",

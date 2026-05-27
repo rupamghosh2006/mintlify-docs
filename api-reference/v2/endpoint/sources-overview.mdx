@@ -22,8 +22,9 @@ flowchart LR
     SI --> Q([queued])
     Q --> P([processing])
     P --> G([graph_creation])
+    G --> R([Search ready])
     G --> C([completed])
-    C --> R([Search ready])
+    C --> GR([Graph ready])
 
     P -. failure .-> E([errored])
     G -. failure .-> E
@@ -37,6 +38,7 @@ flowchart LR
     style G fill:#4c1d95,stroke:#8b5cf6,stroke-width:3px,color:#ffffff,font-weight:bold
     style C fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc
     style R fill:#0f172a,stroke:#10b981,stroke-width:3px,color:#f8fafc
+    style GR fill:#0f172a,stroke:#10b981,stroke-width:3px,color:#f8fafc
     style E fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc
 ```
 
@@ -82,16 +84,20 @@ So `type=knowledge` + `app_knowledge` means "this is knowledge, and I've already
 
 Use `knowledge` when the content is an external or shared source of truth. Use `memory` when the content describes a user or should shape the answer for that user.
 
+<Info>
+**Naming rule:** ingestion and deletion use singular `type: "memory"` because you are writing to one bucket. Listing and search use plural `"memories"` for `kind` or `source` because you are querying a collection.
+</Info>
+
 ## File metadata
 
 `file_metadata` is a JSON string that lets you attach metadata to each uploaded file. Use it when you want HydraDB to preserve source IDs, titles, metadata, or relationships instead of treating files as anonymous uploads.
 
 | Field | Why use it? | Example |
 |---|---|---|
-| <Field name="file_id" /> | Sets a stable source ID you can use later for status checks, fetch, list, delete, or relations. | `contract_q4_2026` |
-| <Field name="metadata" /> | Tenant-level metadata for filtering and search. These keys should match your tenant metadata schema when you want reliable filters. | `{ "department": "legal", "region": "us" }` |
-| <Field name="additional_metadata" /> | Document-level details that are useful to display or inspect but may not be part of the tenant-wide schema. | `{ "author": "Finance Team", "version": "final" }` |
-| <Field name="relations" /> | Explicitly connects this file to other sources for graph context. | Link a contract to its account plan. |
+| <Field name="file_id" type="string" /> | Sets a stable source ID you can use later for status checks, fetch, list, delete, or relations. | `contract_q4_2026` |
+| <Field name="tenant_metadata" type="object" /> | Tenant-level metadata for filtering and search. These keys should match your tenant metadata schema when you want reliable filters. | `{ "department": "legal", "region": "us" }` |
+| <Field name="document_metadata" type="object" /> | Document-level details that are useful to display or inspect but may not be part of the tenant-wide schema. | `{ "author": "Finance Team", "version": "final" }` |
+| <Field name="relations" type="object" /> | Explicitly connects this file to other sources for graph context. | Link a contract to its account plan. |
 
 For multiple file uploads, send one `file_metadata` entry per file in the same order as the `files` array.
 
@@ -99,11 +105,11 @@ For multiple file uploads, send one `file_metadata` entry per file in the same o
 
 ## Source IDs
 
-`source_ids` are stable identifiers for ingested knowledge sources or memories.
+`source_id` values are stable identifiers for ingested knowledge sources or memories.
 
 | Where they come from | How to use them |
 |---|---|
-| The response from `/source/ingest` includes IDs for queued items. | Poll `/source/status`, fetch content, delete data, or inspect relations. |
+| The response from `/source/ingest` includes `results[].source_id` for queued items. | Poll `/source/status`, fetch content, delete data, or inspect relations. |
 | If you set `file_id` in `file_metadata`, that value becomes the source ID for that file. | Use your own app's document ID as the HydraDB source ID. |
 | `/source/list` returns existing source IDs. | Discover IDs after ingestion or list a filtered subset. |
 
@@ -116,31 +122,31 @@ For `DELETE /source`, send the IDs inside the `request` object and use the sibli
 ## Typical call sequence
 
 ```
-1. POST /source/ingest  -> returns source_ids, status: queued
-2. GET  /source/status  -> poll until status: completed
-3. POST /search         -> content is now retrievable
+1. POST /source/ingest  -> returns results[].source_id, status: queued
+2. GET  /source/status  -> poll until graph_creation for search, or completed for graph operations
+3. POST /search         -> content is retrievable once graph_creation is reached
 ```
 
 For batched uploads with mixed content:
 
 ```
 1. POST /source/ingest with files=[...] AND app_knowledge=[...]
-   -> single request, multiple source_ids in response
-2. GET /source/status with all source_ids
+   -> single request, multiple results[].source_id values in response
+2. GET /source/status with all source_id values
    -> check all statuses
 ```
 
 ## Status pipeline
 
-| Status | Searchable? |
-|---|---|
-| `queued` | No |
-| `processing` | No |
-| `graph_creation` | Yes - via `/search` |
-| `completed` | Yes - via `/search`, with full graph context |
-| `errored` | No - inspect `error_code` and `message` on the status object |
+| Status | Searchable? | What to do |
+|---|---|---|
+| `queued` | No | Work was accepted; keep polling. |
+| `processing` | No | HydraDB is parsing, chunking, and embedding; keep polling. |
+| `graph_creation` | Yes - via `/search` | Safe for normal retrieval. Graph context and relations may still be incomplete. |
+| `completed` | Yes - via `/search`, with full graph context | Safe for graph-heavy flows such as `/source/relations` and complete `graph_context`. |
+| `errored` | No | Inspect `error_code` and `message` on the status object. |
 
-Items in `graph_creation` are already retrievable. Wait for `completed` only when you specifically need full graph traversal.
+Compact rule: search at `graph_creation`; wait for `completed` when you need graph-ready results.
 
 ## Key concepts
 
@@ -160,8 +166,8 @@ Pick knowledge when the content is meant to be shared. Pick memory when the cont
 
 **`source_id`** - The unique identifier for any ingested item. Where it comes from:
 
-- Returned in the response from `POST /source/ingest` for every queued item.
-- Or set explicitly: pass `file_id` inside `file_metadata` for an uploaded file, or set `id` on each item in `app_knowledge` or `memories`. If you set it, HydraDB uses that value as the source ID  -  handy for mirroring your application's own document IDs.
+- Returned as `results[].source_id` from `POST /source/ingest` for every queued item.
+- Or set explicitly: pass `file_id` inside `file_metadata` for an uploaded file, set `id` on each item in `app_knowledge`, or set `source_id` on each item in `memories`. If you set it, HydraDB uses that value as the source ID  -  handy for mirroring your application's own document or memory IDs.
 
 Use a `source_id` to poll status (`/source/status`), fetch content (`/source/fetch`), delete an item (`DELETE /source`), inspect graph relations (`/source/relations`), or list a known subset (`/source/list` with `source_ids: [...]`).
 
@@ -188,4 +194,4 @@ Use a `source_id` to poll status (`/source/status`), fetch content (`/source/fet
 - [Essentials - Memories](/essentials/v2/memories) - memories vs knowledge, when to use which
 - [Essentials - Metadata](/essentials/v2/metadata) - tenant-level vs document-level metadata
 - [Essentials - Forceful Relations](/essentials/v2/knowledge) - linking sources at ingestion (see §7)
-- [API Reference v2 - Search](/api-reference/v2/endpoint/search-overview) - retrieve ingested content
+- [Search](/api-reference/v2/endpoint/search-overview) - retrieve ingested content

@@ -6,8 +6,6 @@ openapi: "POST /search"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 The single retrieval endpoint for everything. Use it any time you need to feed an LLM with grounded context, surface user preferences, or fetch chunks ranked by relevance.
 
 Two independent dimensions control behavior:
@@ -16,12 +14,6 @@ Two independent dimensions control behavior:
 - **`search_by`** picks **how** to match: `"hybrid"` (semantic + BM25, the default), `"text"` (BM25 only  -  pair with `operator`), or `"vector"` (pure dense vectors).
 
 Use `mode: "thinking"` for higher-quality multi-query retrieval; `"fast"` for low-latency single-pass. Turn on `graph_context: true` to surface entity/relation paths alongside chunks. Tune `alpha`, `recency_bias`, and `metadata_filters` to shape ranking and narrow the candidate set.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
 
 <RequestExample>
 
@@ -37,7 +29,6 @@ curl -X POST 'https://api.hydradb.com/search' \
     "source": "all",
     "search_by": "hybrid",
     "mode": "thinking",
-    "operator": "or",
     "max_results": 10,
     "alpha": "auto",
     "recency_bias": 0.2,
@@ -66,7 +57,6 @@ const result = await client.search.query({
 
   // Use mode for hybrid/vector. For search_by: "text", use operator instead.
   mode: "thinking",
-  operator: "or", // "or", "and", or "phrase"; only used for text search.
 
   max_results: 10,
   alpha: "auto", // Hybrid weight: 0.0 to 1.0, or "auto".
@@ -98,7 +88,6 @@ result = client.search.query(
 
     # Use mode for hybrid/vector. For search_by="text", use operator instead.
     mode="thinking",
-    operator="or",  # "or", "and", or "phrase"; only used for text search.
 
     max_results=10,
     alpha="auto",  # Hybrid weight: 0.0 to 1.0, or "auto".
@@ -121,7 +110,7 @@ result = client.search.query(
 ## Examples
 
 <AccordionGroup>
-  <Accordion title="Document Q&A" defaultOpen>
+  <Accordion title="Knowledge RAG - answer from shared documents" defaultOpen>
     <CodeGroup>
 
 ```bash cURL
@@ -164,7 +153,7 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
-  <Accordion title="Personalized Q&A - Knowledge + Memories">
+  <Accordion title="Personalized answer - combine knowledge with user memories">
     <CodeGroup>
 
 ```bash cURL
@@ -207,7 +196,7 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
-  <Accordion title="Exact-phrase lookup">
+  <Accordion title="Exact phrase lookup - BM25 for legal terms, SKUs, or IDs">
     <CodeGroup>
 
 ```bash cURL
@@ -249,33 +238,41 @@ result = client.search.query(
 </AccordionGroup>
 
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+
+</Accordion>
+
 ## Request body
 
-Required fields are marked with `*`.
 
-| Name | Type / values | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Owning tenant. |
-| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
-| <Field name="query" required /> | string | Search terms or natural-language question. Cannot be empty. |
-| <Field name="source" /> | `"sources" \| "memories" \| "all"` | What collection to search. `"all"` runs `sources` and `memories` in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
-| <Field name="search_by" /> | `"hybrid" \| "text" \| "vector"` | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
-| <Field name="operator" /> | `"or" \| "and" \| "phrase"` | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
-| <Field name="mode" /> | `"fast" \| "thinking"` | Retrieval pipeline. Applies to `hybrid` and `vector` only; ignored for `text`. (default=`"fast"`) |
-| <Field name="max_results" /> | integer \| null | Maximum chunks to return. Start with 10. (default=server default) |
-| <Field name="alpha" /> | float `0.0`–`1.0` \| `"auto"` | Hybrid weight (`1.0` = pure semantic, `0.0` = pure BM25). Applies to `search_by: "hybrid"` only. (default=`0.8`) |
-| <Field name="recency_bias" /> | float `0.0`–`1.0` | Boost newer content. (default=`0.0`) |
-| <Field name="graph_context" /> | boolean | When `true` (default), includes the entity/relation graph slice in the response under `graph_context`. Set to `false` to drop it. (default=`true`) |
-| <Field name="search_forceful_relations" /> | boolean | Pull author-declared related sources into `additional_context`. **Only takes effect when `mode: "thinking"`**  -  silently ignored in `fast` mode. (default=`true`) |
-| <Field name="additional_context" /> | string \| null | Free-form hint to guide retrieval (e.g., "user is on the billing page"). (default=`null`) |
-| <Field name="metadata_filters" /> | object \| null | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Owning tenant. |
+| <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
+| <Field name="query" type="string" required /> | Search terms or natural-language question. Cannot be empty. |
+| <Field name="source" type='"knowledge" or "memories" or "all"' /> | What collection to search. `"all"` runs knowledge and memories in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
+| <Field name="search_by" type='"hybrid" or "text" or "vector"' /> | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
+| <Field name="operator" type='"or" or "and" or "phrase"' /> | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
+| <Field name="mode" type='"fast" or "thinking"' /> | Retrieval pipeline. Applies to `hybrid` and `vector` only; ignored for `text`. (default=`"fast"`) |
+| <Field name="max_results" type="integer or null" /> | Maximum chunks to return. Default `10`; maximum `50`. Start with `10`, use `5` for tight prompts, and increase only when reranking downstream. |
+| <Field name="alpha" type='float 0.0–1.0 or "auto"' /> | Hybrid weight (`1.0` = pure semantic, `0.0` = pure BM25). Applies to `search_by: "hybrid"` only. (default=`0.8`) |
+| <Field name="recency_bias" type="float 0.0–1.0" /> | Boost newer content. (default=`0.0`) |
+| <Field name="graph_context" type="boolean" /> | When `true`, includes the entity/relation graph slice in the response under `graph_context`. (default=`false`) |
+| <Field name="search_forceful_relations" type="boolean" /> | Pull author-declared related sources into `additional_context`. **Only takes effect when `mode: "thinking"`**  -  silently ignored in `fast` mode. (default=`true`) |
+| <Field name="additional_context" type="string or null" /> | Request-time hint to guide retrieval (e.g., "user is on the billing page"). This is different from the response `additional_context` map. (default=`null`) |
+| <Field name="metadata_filters" type="object or null" /> | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
 
 ### Source selection
 
 | Value | Searches | Best for |
 |---|---|---|
 | `"knowledge"` *(default)* | Knowledge documents, files, and app sources | Document Q&A, RAG context. |
-| `"memory"` | User memories | Personalization and user preferences. |
+| `"memories"` | User memories | Personalization and user preferences. |
 | `"all"` | Both, merged in one ranked result set | Personalized answers grounded in both shared and user-specific context. |
 
 ### Search methods
@@ -325,9 +322,9 @@ For `search_by: "hybrid"` and `"vector"`:
 {
   "chunks": [
     {
-      "chunk_uuid": "policy_v2_chunk_3",
-      "source_title": "Compliance Policy v2",
-      "source_id": "policy_v2",
+      "chunk_uuid": "policy_main_chunk_3",
+      "source_title": "Compliance Policy",
+      "source_id": "policy_main",
       "chunk_content": "Refunds are issued within 30 days...",
       "relevancy_score": 0.91,
       "extra_context_ids": ["pref-tone"],
@@ -335,7 +332,7 @@ For `search_by: "hybrid"` and `"vector"`:
     }
   ],
   "sources": [
-    { "id": "policy_v2", "title": "Compliance Policy v2", "type": "pdf" }
+    { "id": "policy_main", "title": "Compliance Policy", "type": "pdf" }
   ],
   "graph_context": {
     "query_paths": [],
@@ -355,24 +352,35 @@ For `search_by: "hybrid"` and `"vector"`:
 
 | Field | Description |
 |---|---|
-| <Field name="chunks[]" /> | Array of ranked chunks. Preserve server order in your prompt. |
-| <Field name="chunks[].chunk_uuid" /> | Stable chunk identifier (string)  -  use to dedupe across calls. |
-| <Field name="chunks[].source_id" /> | The source this chunk belongs to (string). |
-| <Field name="chunks[].source_title" /> | Display title of the source (string). |
-| <Field name="chunks[].chunk_content" /> | The actual text snippet (string). |
-| <Field name="chunks[].relevancy_score" /> | Relevance score (float). Higher is more relevant. |
-| <Field name="chunks[].extra_context_ids" /> | Array of keys into `additional_context` for forceful-relation-linked content (`thinking` mode only). |
-| <Field name="sources[]" /> | Deduplicated source metadata corresponding to the returned chunks. |
-| <Field name="graph_context" /> | Graph slice object, included by default (`graph_context: true`). Set the request flag to `false` to omit. See [GraphContext fields](#graphcontext-fields). |
-| <Field name="additional_context" /> | Map keyed by chunk UUID containing related content from forceful relations (`thinking` mode only). |
+| <Field name="chunks[]" type="SearchChunk[]" /> | Array of ranked chunks. Preserve server order in your prompt. |
+| <Field name="chunks[].chunk_uuid" type="string" /> | Stable chunk identifier (string)  -  use to dedupe across calls. |
+| <Field name="chunks[].source_id" type="string" /> | The source this chunk belongs to (string). |
+| <Field name="chunks[].source_title" type="string" /> | Display title of the source (string). |
+| <Field name="chunks[].chunk_content" type="string" /> | The actual text snippet (string). |
+| <Field name="chunks[].relevancy_score" type="float" /> | Relevance score (float). Higher is more relevant within the same response; do not treat scores as stable probabilities across unrelated queries. |
+| <Field name="chunks[].extra_context_ids" type="string[]" /> | Array of keys into `additional_context` for forceful-relation-linked content (`thinking` mode only). |
+| <Field name="sources[]" type="SourceModel[]" /> | Deduplicated source metadata corresponding to the returned chunks. |
+| <Field name="graph_context" type="GraphContext or null" /> | Graph slice object, populated when `graph_context: true`. See [GraphContext fields](#graphcontext-fields). |
+| <Field name="additional_context" type="object" /> | Response-time map of related content from forceful relations (`thinking` mode only). Keys match values in `chunks[].extra_context_ids`, not necessarily chunk UUIDs. |
 
 ### `GraphContext` fields
 
 | Field | Description |
 |---|---|
-| <Field name="query_paths[]" /> | Entity-traversal paths derived from the query. Each path is a list of `{ source, relation, target }` triplets. |
-| <Field name="chunk_relations[]" /> | Per-chunk relations grouped by `group_id`. Attach to chunks via `chunk_id_to_group_ids`. |
-| <Field name="chunk_id_to_group_ids" /> | Maps each `chunk_uuid` to one or more `group_id`s in `chunk_relations`. |
+| <Field name="query_paths[]" type="array" /> | Entity-traversal paths derived from the query. Each path is a list of `{ source, relation, target }` triplets. |
+| <Field name="chunk_relations[]" type="array" /> | Per-chunk relations grouped by `group_id`. Attach to chunks via `chunk_id_to_group_ids`. |
+| <Field name="chunk_id_to_group_ids" type="object" /> | Maps each `chunk_uuid` to one or more `group_id`s in `chunk_relations`. |
+
+A zero-result search returns empty arrays/maps rather than an error:
+
+```json Zero results
+{
+  "chunks": [],
+  "sources": [],
+  "graph_context": null,
+  "additional_context": {}
+}
+```
 
 For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
 
@@ -394,6 +402,10 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 **`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under a `document_metadata` key.
 </Warning>
 
+<Warning>
+**Common mistakes.** Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before searching. If you omit `sub_tenant_id`, HydraDB searches the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
+</Warning>
+
 <Info>
 **Tuning heuristics.**
 <ul>
@@ -413,6 +425,6 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Search  -  Overview](/api-reference/v2/endpoint/search-overview)

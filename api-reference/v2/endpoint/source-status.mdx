@@ -6,21 +6,13 @@ openapi: "GET /source/status"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 `POST /source/ingest` is asynchronous. Use this endpoint to know when content is ready to be searched. Common patterns:
 
-- **Polling after ingest**  -  wait until status is `completed` before running searches
+- **Polling after ingest**  -  wait until status is `graph_creation` before running searches, or `completed` before graph-heavy flows
 - **Bulk progress tracking**  -  pass multiple `source_id`s in one call to check a whole batch
 - **Error inspection**  -  see why a specific item failed via `error_code` and `message`
 
 Works for both knowledge sources and memory items  -  pass the `source_id` you got from the ingest response.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
 
 <RequestExample>
 ```bash cURL
@@ -28,36 +20,51 @@ curl -G 'https://api.hydradb.com/source/status' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "API-Version: 2" \
   --data-urlencode "tenant_id=acme_corp" \
-  --data-urlencode "sub_tenant_id=default" \
-  --data-urlencode "file_ids=policy_v2" \
+  --data-urlencode "sub_tenant_id=team_docs" \
+  --data-urlencode "file_ids=policy_main" \
   --data-urlencode "file_ids=runbook_deploy"
 ```
 ```typescript TypeScript SDK
 const status = await client.source.status({
   tenant_id: "acme_corp",
-  sub_tenant_id: "default",
-  file_ids: ["policy_v2", "runbook_deploy"],
+  sub_tenant_id: "team_docs",
+  file_ids: ["policy_main", "runbook_deploy"],
 });
 ```
 ```python Python SDK
 status = client.source.status(
     tenant_id="acme_corp",
-    sub_tenant_id="default",
-    file_ids=["policy_v2", "runbook_deploy"],
+    sub_tenant_id="team_docs",
+    file_ids=["policy_main", "runbook_deploy"],
 )
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+
+</Accordion>
+
 ## Query parameters
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="file_id" /> | string | **Deprecated**  -  single ID. Use `file_ids` instead. |
-| <Field name="file_ids" /> | string[] | One or more `source_id` values returned at ingestion. Despite the name, accepts IDs of any source  -  files, app sources, memories. (default=`[]`) |
-| <Field name="tenant_id" /> | string | Tenant the items belong to. (default=`""`) |
-| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+ Provide `tenant_id` and at least one source ID using `file_ids` or the deprecated single `file_id`.
 
 <Info>
+For multiple IDs over raw HTTP, repeat the query parameter: `/source/status?tenant_id=acme_corp&file_ids=policy_main&file_ids=runbook_deploy`
+</Info>
+
+| Name | Description |
+| --- | --- |
+| <Field name="file_id" type="string" /> | **Deprecated**  -  single ID. Use `file_ids` instead. |
+| <Field name="file_ids" type="string[]" recommended /> | One or more `source_id` values returned at ingestion. Despite the name, accepts IDs of any source  -  files, app sources, memories. Required unless using deprecated `file_id`. |
+| <Field name="tenant_id" type="string" required /> | Tenant the items belong to. |
+| <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+
+<Info> 
+TODO: remove and fix api
 The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both file uploads and app sources and memories  -  not only file-backed sources.
 </Info>
 
@@ -71,7 +78,7 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 {
   "statuses": [
     {
-      "file_id": "policy_v2",
+      "file_id": "policy_main",
       "indexing_status": "completed",
       "error_code": "",
       "success": true,
@@ -92,12 +99,12 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 
 | Field | Description |
 |---|---|
-| <Field name="statuses[]" /> | Array  -  one entry per requested ID. |
-| <Field name="statuses[].file_id" /> | The ID being reported on (string). |
-| <Field name="statuses[].indexing_status" /> | Current status (enum). See [Status values](#status-values). |
-| <Field name="statuses[].error_code" /> | Diagnostic code if `errored`; empty string otherwise. |
-| <Field name="statuses[].success" /> | Boolean  -  `true` once the source reaches `completed`. |
-| <Field name="statuses[].message" /> | Detailed status message (string). |
+| <Field name="statuses[]" type="array" /> | Array  -  one entry per requested ID. |
+| <Field name="statuses[].file_id" type="string" /> | The ID being reported on (string). |
+| <Field name="statuses[].indexing_status" type="enum" /> | Current status (enum). See [Status values](#status-values). |
+| <Field name="statuses[].error_code" type="string" /> | Diagnostic code if `errored`; empty string otherwise. |
+| <Field name="statuses[].success" type="boolean" /> | Boolean indicating the status lookup succeeded for that ID. Use `indexing_status`  -  not this boolean  -  to decide whether the source is searchable or graph-ready. |
+| <Field name="statuses[].message" type="string" /> | Detailed status message (string). |
 
 ## Status values
 
@@ -135,28 +142,72 @@ flowchart LR
 | `graph_creation` | **Yes** | Indexed and retrievable; the knowledge graph is still being built. Already searchable via `/search`, but graph context may still be incomplete. |
 | `completed` | Yes | Fully indexed and graphed. Ready for all retrieval modes. |
 | `errored` | No | Processing failed. Inspect `error_code` and `message`. |
-| `success` | Yes | **Alias for `completed`** that may appear in some legacy responses. |
 
-## Polling pattern
+The normal progression is `queued` → `processing` → `graph_creation` → `completed`. Treat `errored` as terminal.
 
-```python
+## Polling patterns
+
+### Stop when content is searchable
+
+Use this for normal RAG/search flows. `graph_creation` means chunks are indexed and can be retrieved.
+
+<CodeGroup>
+```typescript TypeScript
+const sourceIds = ["policy_main", "runbook_deploy"];
+
+while (true) {
+  const response = await client.source.status({
+    tenant_id: "acme_corp",
+    sub_tenant_id: "team_docs",
+    file_ids: sourceIds,
+  });
+
+  const statuses = response.statuses.map((s) => s.indexing_status);
+  if (statuses.every((s) => s === "graph_creation" || s === "completed")) break;
+  if (statuses.some((s) => s === "errored")) throw new Error("Source processing failed");
+
+  await new Promise((r) => setTimeout(r, 5000));
+}
+```
+```python Python
 import time
 
-source_ids = ["policy_v2", "runbook_deploy"]
+source_ids = ["policy_main", "runbook_deploy"]
 
 while True:
     response = client.source.status(
         tenant_id="acme_corp",
-        sub_tenant_id="default",
+        sub_tenant_id="team_docs",
         file_ids=source_ids,
     )
     statuses = [s.indexing_status for s in response.statuses]
 
-    if all(s in ("completed", "success") for s in statuses):
+    if all(s in ("graph_creation", "completed") for s in statuses):
         break
     if any(s == "errored" for s in statuses):
-        # inspect response.statuses for which failed
+        raise RuntimeError("Source processing failed")
+
+    time.sleep(5)
+```
+</CodeGroup>
+
+### Stop when graph processing is complete
+
+Use this before graph-heavy operations such as `/source/relations` or when you require complete `graph_context`.
+
+```python
+while True:
+    response = client.source.status(
+        tenant_id="acme_corp",
+        sub_tenant_id="team_docs",
+        file_ids=["policy_main", "runbook_deploy"],
+    )
+    statuses = [s.indexing_status for s in response.statuses]
+
+    if all(s == "completed" for s in statuses):
         break
+    if any(s == "errored" for s in statuses):
+        raise RuntimeError("Graph processing failed")
 
     time.sleep(5)
 ```
@@ -184,6 +235,6 @@ Typical processing time:
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories)

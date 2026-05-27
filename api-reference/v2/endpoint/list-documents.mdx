@@ -6,20 +6,12 @@ openapi: "POST /source/list"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Browse what's in a tenant or sub-tenant  -  for admin dashboards, audit views, populating a "select source" picker, or fetching a known subset of sources by ID. Pick the bucket with `kind`:
 
 - `kind=knowledge` *(default)*  -  knowledge sources (files, app sources).
 - `kind=memories`  -  user memories.
 
 Supports pagination (`page`, `page_size`), structured filters on tenant and document metadata, source-field filters (title, type, url, etc.), and field projection (`include_fields`) for slim payloads.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
 
 <RequestExample>
 ```bash cURL
@@ -67,24 +59,32 @@ sources = client.source.list(
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+
+</Accordion>
+
 ## Request body
 
-Required fields are marked with `*`.
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Owning tenant. |
-| <Field name="sub_tenant_id" /> | string \| null | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| <Field name="kind" /> | `"knowledge" \| "memories"` | Bucket to list. (default=`"knowledge"`) |
-| <Field name="source_ids" /> | string[] \| null | When provided and non-empty, only items with these IDs are returned (pagination + filters still apply). (default=`null`) |
-| <Field name="page" /> | integer | Page number (1-indexed). (default=`1`) |
-| <Field name="page_size" /> | integer | Items per page. Clamped to a server-side maximum. (default=server default) |
-| <Field name="filters" /> | object | Structured filters. See [Filters](#filters). (default=`null`) |
-| <Field name="include_fields" /> | string[] \| null | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `kind=knowledge`. (default=`null`  -  all fields) |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Owning tenant. |
+| <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="kind" type='"knowledge" or "memories"' /> | Bucket to list. (default=`"knowledge"`) |
+| <Field name="source_ids" type="string[] or null" /> | When provided and non-empty, only items with these IDs are returned (pagination + filters still apply). (default=`null`) |
+| <Field name="page" type="integer" /> | Page number (1-indexed). (default=`1`) |
+| <Field name="page_size" type="integer" /> | Items per page, from `1` to `100`. (default=`50`) |
+| <Field name="filters" type="object" /> | Structured exact-match filters. See [Filters](#filters). (default=`null`) |
+| <Field name="include_fields" type="string[] or null" /> | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `kind=knowledge`. (default=`null`  -  all fields) |
 
 ### Filters
 
-`filters` is a structured object with three optional categories. **All provided pairs within and across categories combine with AND**  -  a document must satisfy every key to remain a candidate.
+`filters` is a structured object with three optional categories. Filters are exact-match constraints. **All provided pairs within and across categories combine with AND**  -  a document must satisfy every key to remain a candidate.
 
 ```json
 {
@@ -98,15 +98,17 @@ Required fields are marked with `*`.
 
 | Category | Matched against | Notes |
 |---|---|---|
-| <Field name="tenant_metadata" /> | Source's `tenant_metadata` payload | Keys must be declared in the tenant's `tenant_metadata_schema`. Undeclared keys are silently ignored. |
-| <Field name="document_metadata" /> | Source's `document_metadata` payload | Free-form per-document JSON. No schema declaration required. |
-| <Field name="source_fields" /> | Built-in source fields (`type`, `title`, `description`, `url`, `timestamp`) | Use for app-source categories or quick title lookups. |
+| <Field name="tenant_metadata" type="object" /> | Source's `tenant_metadata` payload | Keys must be declared in the tenant's `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. |
+| <Field name="document_metadata" type="object" /> | Source's `document_metadata` payload | Free-form per-document JSON. No schema declaration required. |
+| <Field name="source_fields" type="object" /> | Built-in source fields (`type`, `title`, `description`, `url`, `timestamp`) | Use for app-source categories or quick title lookups. |
+
+Filter values are matched against stored values as exact values. There are no range, contains, or OR operators on this endpoint; run multiple calls and merge client-side for OR behavior.
 
 ### `include_fields`
 
-When you don't need every field on every row, pass `include_fields` to keep response payloads small. Only the listed fields are populated; the rest are returned as defaults. `id`, `tenant_id`, and `sub_tenant_id` are always returned.
+When you don't need every field on every row, pass `include_fields` to keep response payloads small. Only the listed fields are populated; omitted fields should be treated as unavailable in that response. `id`, `tenant_id`, and `sub_tenant_id` are always returned.
 
-Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tenant_metadata`, `document_metadata`, `chunk_count`, and other built-in source fields. Omit or pass `null` to return everything.
+Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_metadata`, `document_metadata`, and `chunk_count`. Omit or pass `null` to return everything.
 
 `include_fields` only applies to `kind=knowledge`. It is ignored for `kind=memories`.
 
@@ -120,10 +122,10 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
   "message": "Sources retrieved successfully",
   "sources": [
     {
-      "id": "policy_v2",
+      "id": "policy_main",
       "tenant_id": "acme_corp",
-      "sub_tenant_id": "default",
-      "title": "Compliance Policy v2",
+      "sub_tenant_id": "team_docs",
+      "title": "Compliance Policy",
       "type": "pdf",
       "url": null,
       "timestamp": "2026-05-12T08:14:00Z"
@@ -145,11 +147,37 @@ Allowed values include `title`, `type`, `description`, `url`, `timestamp`, `tena
 
 | Field | Description |
 |---|---|
-| <Field name="sources[]" /> | One entry per source (or memory when `kind=memories`). Shape matches `SourceModel`. |
-| <Field name="total" /> | Total matching items across all pages. |
-| <Field name="pagination" /> | Standard `PaginationMeta` with `page`, `page_size`, `total`, `total_pages`, `has_next`, `has_previous`. |
+| <Field name="sources[]" type="SourceModel[]" /> | One entry per source (or memory when `kind=memories`). Shape matches `SourceModel`. |
+| <Field name="total" type="integer" /> | Total matching items across all pages. |
+| <Field name="pagination" type="PaginationMeta" /> | Standard `PaginationMeta` with `page`, `page_size`, `total`, `total_pages`, `has_next`, `has_previous`. |
 
 When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  -  same idea but with a `user_memories[]` array of memory items.
+
+```json Memories response
+{
+  "success": true,
+  "message": "Memories retrieved successfully",
+  "user_memories": [
+    {
+      "source_id": "mem_user_alex_tone",
+      "sub_tenant_id": "user_alex",
+      "title": "Communication preference",
+      "text": "Prefers concise answers and dark mode.",
+      "tenant_metadata": {},
+      "document_metadata": { "source": "profile" }
+    }
+  ],
+  "total": 1,
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_previous": false
+  }
+}
+```
 
 ## Behavior notes
 
@@ -169,6 +197,10 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 **Undeclared filter keys are silent.** Keys in `filters.tenant_metadata` that aren't declared in `tenant_metadata_schema` are silently ignored. If a filter doesn't narrow results as expected, verify the schema field exists and has `enable_match: true`.
 </Warning>
 
+<Warning>
+**Common mistakes.** `row_count` from [Tenant Stats](/api-reference/v2/endpoint/tenant-stats) counts chunks, not documents. Use this endpoint's `total` when you need distinct source or memory counts.
+</Warning>
+
 ## Related endpoints
 
 - **Ingest:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)
@@ -178,6 +210,6 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Metadata](/essentials/v2/metadata) · [Sources  -  Overview](/api-reference/v2/endpoint/sources-overview)

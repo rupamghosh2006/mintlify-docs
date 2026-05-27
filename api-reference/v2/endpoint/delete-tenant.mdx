@@ -6,17 +6,9 @@ openapi: "DELETE /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Tearing down a workspace  -  for customer offboarding, end-of-life environments, or cleanup after testing. Deletes the tenant **and all of its ingested data, memories, metadata schema, vector indices, graph, and infrastructure**.
 
 This action is irreversible. There is no soft-delete and no recovery window.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Calling on an already-deleted tenant returns `404 TENANT_NOT_FOUND`
-- **Async:** Yes  -  the response acknowledges the deletion; cleanup of vector indices, the graph, and storage objects runs in the background.
 
 <RequestExample>
 ```bash cURL
@@ -34,13 +26,21 @@ response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Calling on an already-deleted tenant returns `404 TENANT_NOT_FOUND`
+- **Async:** Yes  -  the response acknowledges the deletion; cleanup of vector indices, the graph, and storage objects runs in the background.
+
+</Accordion>
+
 ## Query parameters
 
-Required fields are marked with `*`.
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Identifier of the tenant to delete. |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Identifier of the tenant to delete. |
 
 ## Response
 
@@ -58,9 +58,15 @@ Required fields are marked with `*`.
 
 | Field | Description |
 |---|---|
-| <Field name="tenant_id" /> | The tenant that was deregistered. |
-| <Field name="status" /> | Always `deletion_scheduled` on success. Background workers continue removing data. |
-| <Field name="message" /> | Human-readable hint. |
+| <Field name="tenant_id" type="string" /> | The tenant that was deregistered. |
+| <Field name="status" type="enum" /> | Always `deletion_scheduled` on success. Background workers continue removing data. |
+| <Field name="message" type="string" /> | Human-readable hint. |
+
+## Deletion completion
+
+Deletion is asynchronous. Treat deletion as complete when the tenant no longer appears in `GET /tenants`, or when `GET /tenants/status?tenant_id=...` returns `TENANT_NOT_FOUND`.
+
+After deletion completes, the same `tenant_id` can be used in a new `POST /tenants` request. Until then, avoid recreating the tenant or retrying ingestion/search against it.
 
 ## Behavior notes
 
@@ -72,8 +78,12 @@ Required fields are marked with `*`.
 **Async cleanup.** The endpoint returns immediately after deregistering the tenant. Vector indices, MongoDB documents, the knowledge graph, and S3/MinIO objects are removed by background workers and may take a few minutes to fully disappear from infrastructure.
 </Info>
 
+<Warning>
+**Stop in-flight work first.** Stop ingestion, polling, search, and background jobs that target this tenant before deletion. Calls made after deregistration can fail with `TENANT_NOT_FOUND` even while infrastructure cleanup is still running.
+</Warning>
+
 <Info>
-**`tenant_id` reuse.** After deletion succeeds, the `tenant_id` is free to be re-used by a subsequent `POST /tenants` call.
+**Repeat calls.** Deleting an already-deleted tenant returns `404 TENANT_NOT_FOUND`. Deleting a tenant that is still provisioning or already deleting is treated as a request to tear down that tenant; use the deletion-completion checks above before recreating the same ID.
 </Info>
 
 ## Related endpoints
@@ -83,6 +93,6 @@ Required fields are marked with `*`.
 
 ## Errors
 
-Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)

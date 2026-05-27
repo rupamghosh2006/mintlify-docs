@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "HydraDB API v2",
+    "title": "HydraDB API",
     "version": "2.0.0",
-    "description": "Version 2 of the HydraDB API. Send `API-Version: 2` with each request."
+    "description": "HydraDB API reference. Send `API-Version: 2` with each request."
   },
   "servers": [
     {
@@ -564,7 +564,7 @@
           ],
           "default": "2"
         },
-        "description": "Use `2` to call the v2 API contract."
+        "description": "Use `2` to call this API contract."
       },
       "TenantIdQuery": {
         "name": "tenant_id",
@@ -596,7 +596,7 @@
     },
     "responses": {
       "V2Success": {
-        "description": "Successful v2 response.",
+        "description": "Successful response.",
         "content": {
           "application/json": {
             "schema": {
@@ -615,7 +615,7 @@
         }
       },
       "V2Error": {
-        "description": "Error v2 response.",
+        "description": "Error response.",
         "content": {
           "application/json": {
             "schema": {
@@ -681,7 +681,7 @@
           },
           "meta": {
             "$ref": "#/components/schemas/V2Meta",
-            "description": "System-provided attributes (e.g., app_name, local file size) not intended for search filtering."
+            "description": "Response metadata such as request identifiers and server-side latency."
           }
         }
       },

@@ -6,20 +6,12 @@ openapi: "DELETE /source"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Remove indexed content  -  for data-retention policies, deleting a specific user's memories on request, pruning stale documents, or cleaning up after a botched ingest. Pick the bucket with `type`:
 
 - `type=knowledge` *(default)*  -  delete knowledge sources.
 - `type=memory`  -  delete memories.
 
 Pass one or more IDs in `request.ids`. The body wraps two fields together: `request` (the actual delete payload) and `type` (the bucket).
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Deleting an already-deleted ID is a no-op for that ID  -  the rest of the batch still proceeds. `success` reflects whether *any* ID was removed.
-- **Async:** Background workers may continue removing vector entries briefly after the response  -  but the source is immediately excluded from search.
 
 <RequestExample>
 ```bash cURL
@@ -30,8 +22,8 @@ curl -X DELETE 'https://api.hydradb.com/source' \
   -d '{
     "request": {
       "tenant_id": "acme_corp",
-      "sub_tenant_id": "default",
-      "ids": ["policy_v2", "runbook_deploy"]
+      "sub_tenant_id": "team_docs",
+      "ids": ["policy_main", "runbook_deploy"]
     },
     "type": "knowledge"
   }'
@@ -41,8 +33,8 @@ await client.source.delete({
   type: "knowledge",
   request: {
     tenant_id: "acme_corp",
-    sub_tenant_id: "default",
-    ids: ["policy_v2", "runbook_deploy"],
+    sub_tenant_id: "team_docs",
+    ids: ["policy_main", "runbook_deploy"],
   },
 });
 ```
@@ -51,23 +43,46 @@ client.source.delete(
     type="knowledge",
     request={
         "tenant_id": "acme_corp",
-        "sub_tenant_id": "default",
-        "ids": ["policy_v2", "runbook_deploy"],
+        "sub_tenant_id": "team_docs",
+        "ids": ["policy_main", "runbook_deploy"],
     },
 )
 ```
 </RequestExample>
 
+### Memory delete example
+
+Use `type: "memory"` and pass memory `source_id`s in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the memories; omitting it targets the default sub-tenant.
+
+```json
+{
+  "request": {
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_alex",
+    "ids": ["mem_user_alex_tone"]
+  },
+  "type": "memory"
+}
+```
+
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Deleting an already-deleted ID is a no-op for that ID  -  the rest of the batch still proceeds. `success` reflects whether *any* ID was removed.
+- **Async:** Background workers may continue removing vector entries briefly after the response  -  but the source is immediately excluded from search.
+
+</Accordion>
+
 ## Request body
 
-The body wraps two fields together. Required fields are marked with `*`.
+The body wraps two fields together. 
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="request.tenant_id" required /> | string | Owning tenant. |
-| <Field name="request.sub_tenant_id" /> | string \| null | Sub-tenant scope. (default=`null`) |
-| <Field name="request.ids" required /> | string[] | One or more source IDs to delete. At least one is required. |
-| <Field name="type" /> | `"knowledge" \| "memory"` | Bucket selector. (default=`"knowledge"`) |
+| Name | Description |
+| --- | --- |
+| <Field name="request.tenant_id" type="string" required /> | Owning tenant. |
+| <Field name="request.sub_tenant_id" type="string or null" /> | Sub-tenant scope. Use the same value used at ingestion. If omitted, the default sub-tenant is used. (default=`null`) |
+| <Field name="request.ids" type="string[]" required /> | One or more source IDs to delete. At least one is required. |
+| <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. (default=`"knowledge"`) |
 
 ## Response
 
@@ -80,7 +95,7 @@ The body wraps two fields together. Required fields are marked with `*`.
   "success": true,
   "message": "Delete completed",
   "results": [
-    { "id": "policy_v2", "deleted": true, "error": null },
+    { "id": "policy_main", "deleted": true, "error": null },
     { "id": "runbook_deploy", "deleted": true, "error": null }
   ],
   "deleted_count": 2
@@ -91,11 +106,11 @@ The body wraps two fields together. Required fields are marked with `*`.
 
 | Field | Description |
 |---|---|
-| <Field name="success" /> | `true` if at least one ID was deleted. |
-| <Field name="results[].id" /> | The ID being reported on. |
-| <Field name="results[].deleted" /> | Whether deletion succeeded for this specific ID. |
-| <Field name="results[].error" /> | Error message if deletion failed (e.g., not found). |
-| <Field name="deleted_count" /> | Total IDs successfully deleted. |
+| <Field name="success" type="boolean" /> | `true` if at least one ID was deleted. |
+| <Field name="results[].id" type="string" /> | The ID being reported on. |
+| <Field name="results[].deleted" type="boolean" /> | Whether deletion succeeded for this specific ID. |
+| <Field name="results[].error" type="string or null" /> | Error message if deletion failed (e.g., not found). |
+| <Field name="deleted_count" type="integer" /> | Total IDs successfully deleted. |
 
 ### Memory (`type=memory`)
 
@@ -112,8 +127,8 @@ The body wraps two fields together. Required fields are marked with `*`.
 
 | Field | Description |
 |---|---|
-| <Field name="success" /> | `true` if all listed memories were deleted. |
-| <Field name="user_memory_deleted" /> | `true` only when every listed memory was deleted. `false` if any deletion failed. |
+| <Field name="success" type="boolean" /> | `true` if all listed memories were deleted. |
+| <Field name="user_memory_deleted" type="boolean" /> | `true` only when every listed memory was deleted. `false` if any deletion failed. |
 
 ## Behavior notes
 
@@ -141,6 +156,6 @@ The body wraps two fields together. Required fields are marked with `*`.
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Sources  -  Overview](/api-reference/v2/endpoint/sources-overview)

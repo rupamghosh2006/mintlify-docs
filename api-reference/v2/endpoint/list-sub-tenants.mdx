@@ -6,17 +6,9 @@ openapi: "GET /tenants/sub-tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Discover which sub-tenants exist inside a tenant  -  typically users (B2C), workspaces, teams, projects, or sessions. Useful for admin views, per-user dashboards, audit tooling, or before running a per-user search.
 
-Sub-tenants are created **implicitly** the first time a `sub_tenant_id` value appears in an ingestion or search call. There is no explicit "create sub-tenant" endpoint, and the returned list only includes sub-tenants that have at least one indexed source or memory.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
+Sub-tenants are created **implicitly during ingestion** the first time a `sub_tenant_id` value is written with a source or memory. There is no explicit "create sub-tenant" endpoint, and the returned list only includes sub-tenants that have at least one indexed source or memory.
 
 <RequestExample>
 ```bash cURL
@@ -34,13 +26,21 @@ response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Read-only
+- **Async:** No
+
+</Accordion>
+
 ## Query parameters
 
-Required fields are marked with `*`.
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Identifier of the tenant whose sub-tenants you want to list. |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Identifier of the tenant whose sub-tenants you want to list. |
 
 ## Response
 
@@ -48,26 +48,35 @@ Required fields are marked with `*`.
 
 ```json Response
 {
-  "sub_tenant_ids": ["user_alex", "user_johndoe", "workspace_42", "default"],
+  "sub_tenant_ids": ["user_alex", "user_johndoe", "workspace_42", "subtenant_default_abc123"],
   "message": "Successfully retrieved sub-tenant IDs"
 }
 ```
 
 </ResponseExample>
 
+A tenant with no indexed content can return an empty list:
+
+```json Empty tenant
+{
+  "sub_tenant_ids": [],
+  "message": "Successfully retrieved sub-tenant IDs"
+}
+```
+
 | Field | Description |
 |---|---|
-| <Field name="sub_tenant_ids" /> | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
-| <Field name="message" /> | Human-readable status (string). |
+| <Field name="sub_tenant_ids" type="string[]" /> | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
+| <Field name="message" type="string" /> | Human-readable status (string). |
 
 ## Behavior notes
 
 <Info>
-**Implicit creation.** Sub-tenants are auto-created the first time a `sub_tenant_id` is referenced. The returned list grows organically as your application writes data under new values.
+**Implicit creation.** Sub-tenants are auto-created when ingestion writes data under a new `sub_tenant_id`. The returned list grows organically as your application writes data under new values.
 </Info>
 
 <Info>
-**Default sub-tenant included.** Every tenant has a default sub-tenant that receives writes when `sub_tenant_id` is omitted. It will appear here once any data is written without an explicit `sub_tenant_id`.
+**Default sub-tenant included.** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. It appears here once any data is written without an explicit `sub_tenant_id`.
 </Info>
 
 <Info>
@@ -82,6 +91,6 @@ Required fields are marked with `*`.
 
 ## Errors
 
-Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)

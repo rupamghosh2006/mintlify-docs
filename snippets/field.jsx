@@ -1,39 +1,23 @@
-import { useState } from 'react';
-
 export const Field = ({ name, type, required, recommended }) => {
-  const [show, setShow] = useState(false);
-
   const label = required ? 'required' : recommended ? 'recommended' : null;
+  const typeLabel = typeof type === 'string' ? type : null;
+  const ariaParts = [name, typeLabel && `${typeLabel}`, label].filter(Boolean);
 
   return (
     <span
-      onMouseEnter={() => label && setShow(true)}
-      onMouseLeave={() => setShow(false)}
+      aria-label={ariaParts.join(', ')}
+      className={label ? 'field-wrap has-field-tip' : 'field-wrap'}
       style={{ position: 'relative', cursor: label ? 'default' : undefined }}
+      tabIndex={label ? 0 : undefined}
     >
-      <code>{name}</code>
-      {required && <span className="field-req"> *</span>}
-      {recommended && <span className="field-rec"> ●</span>}
-      {type && <><br />({type})</>}
-      {show && (
-        <span
-          style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 4px)',
-            left: 0,
-            zIndex: 50,
-            padding: '2px 8px',
-            borderRadius: '4px',
-            fontSize: '0.7rem',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            backgroundColor: '#1f2937',
-            color: '#e5e7eb',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            pointerEvents: 'none',
-          }}
-        >
+      <span className="field-name-row">
+        <code>{name}</code>
+        {required && <span className="field-req"> *</span>}
+        {recommended && <span className="field-rec"> ●</span>}
+      </span>
+      {type && <span className="field-type">{type}</span>}
+      {label && (
+        <span className="field-tip" role="tooltip">
           {label}
         </span>
       )}

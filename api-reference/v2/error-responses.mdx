@@ -1,0 +1,241 @@
+---
+title: "Error Responses"
+description: "Response envelope, HTTP status codes, error codes, and retry patterns."
+---
+
+## Response envelope
+
+HydraDB uses the same top-level envelope for successful and failed requests.
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `success` | `false` for errors. |
+| `data` | Always `null` for error responses. |
+| `error.code` | Machine-readable code for programmatic handling. |
+| `error.message` | Human-readable explanation of what failed. |
+| `meta.request_id` | Request identifier. Include it when contacting support. |
+| `meta.latency_ms` | Server-side processing time in milliseconds. |
+
+<Info>
+Use `error.code` for branching and log `meta.request_id` for every failed request. The HTTP status tells you the class of failure; the error code tells you what to do.
+</Info>
+
+## HTTP status codes
+
+| Code | Meaning | Retry? |
+|---|---|---|
+| `400` | Invalid parameters or malformed request | No |
+| `401` | Missing, expired, or invalid API key | No |
+| `403` | Authenticated, but not permitted for the resource | No |
+| `404` | Tenant, source, memory, or related resource was not found | No |
+| `409` | Conflict, usually an existing tenant or source ID | Usually no |
+| `422` | Well-formed request that failed validation | No |
+| `429` | Rate limit exceeded | Yes, with backoff |
+| `500` | Internal server error | Yes, with backoff |
+| `503` | Temporary service unavailability | Yes, with backoff |
+
+## Common error codes
+
+| Code | Typical status | Meaning |
+|---|---|---|
+| `INVALID_PARAMETERS` | `400` | A required parameter is missing, malformed, or mutually incompatible with another parameter. |
+| `UNAUTHORIZED` | `401` | The `Authorization: Bearer <your_api_key>` header is missing or invalid. |
+| `FORBIDDEN` | `403` | The API key is valid but does not have access to the requested resource. |
+| `TENANT_ALREADY_EXISTS` | `409` | `POST /tenants` received a `tenant_id` that is already in use. |
+| `TENANT_NOT_FOUND` | `404` | The requested tenant does not exist or is not visible to the current API key. |
+| `SOURCE_NOT_FOUND` | `404` | The requested source or memory ID does not exist in the selected tenant/sub-tenant. |
+| `VALIDATION_ERROR` | `422` | The request shape was valid JSON/form data, but one or more fields failed semantic validation. |
+| `RATE_LIMITED` | `429` | The API key exceeded its current rate limit. |
+| `INTERNAL_ERROR` | `500` | HydraDB hit an unexpected server-side error. |
+| `SERVICE_UNAVAILABLE` | `503` | A dependency is temporarily unavailable or the service is under load. |
+
+<Note>
+Endpoint pages list the most common codes for that operation. New codes may be added over time, so clients should handle unknown `error.code` values gracefully.
+</Note>
+
+## Retry pattern
+
+Retry only transient failures: `429`, `500`, and `503`. Use exponential backoff with jitter and keep retries bounded.
+
+<CodeGroup>
+```typescript TypeScript SDK
+import { HydraDBError } from "@hydradb/sdk";
+
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!(error instanceof HydraDBError)) throw error;
+
+      const retryable = [429, 500, 503].includes(error.statusCode);
+      if (!retryable || attempt === maxRetries) throw error;
+
+      const baseDelayMs = 2 ** attempt * 1000;
+      const jitterMs = Math.floor(Math.random() * 250);
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs + jitterMs));
+    }
+  }
+
+  throw new Error("unreachable");
+}
+
+const result = await withRetry(() =>
+  client.search.query({
+    tenant_id: "my_first_tenant",
+    query: "What are the pricing tiers?",
+    source: "knowledge",
+  })
+);
+```
+```python Python SDK
+import random
+import time
+
+from hydra_db import HydraDBError
+
+def with_retry(operation, max_retries=3):
+    for attempt in range(max_retries + 1):
+        try:
+            return operation()
+        except HydraDBError as exc:
+            retryable = exc.status_code in (429, 500, 503)
+            if not retryable or attempt == max_retries:
+                raise
+
+            delay = (2 ** attempt) + random.uniform(0, 0.25)
+            time.sleep(delay)
+
+result = with_retry(lambda: client.search.query(
+    tenant_id="my_first_tenant",
+    query="What are the pricing tiers?",
+    source="knowledge",
+))
+```
+```typescript fetch
+async function hydraRequest(url: string, options: RequestInit, maxRetries = 3) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+    if (response.ok) return response.json();
+
+    const retryable = [429, 500, 503].includes(response.status);
+    if (!retryable || attempt === maxRetries) {
+      throw await response.json();
+    }
+
+    const baseDelayMs = 2 ** attempt * 1000;
+    const jitterMs = Math.floor(Math.random() * 250);
+    await new Promise((resolve) => setTimeout(resolve, baseDelayMs + jitterMs));
+  }
+}
+```
+</CodeGroup>
+
+## Handling errors
+
+<CodeGroup>
+```typescript TypeScript SDK
+import { HydraDBError } from "@hydradb/sdk";
+
+try {
+  await client.source.ingest({
+    type: "knowledge",
+    tenant_id: "my_first_tenant",
+    files: [{ path: "policy.pdf", filename: "policy.pdf" }],
+  });
+} catch (error) {
+  if (error instanceof HydraDBError) {
+    const code = error.body?.error?.code;
+    const requestId = error.body?.meta?.request_id;
+
+    if (code === "TENANT_NOT_FOUND") {
+      // Create or select a valid tenant before ingesting.
+    } else if (error.statusCode === 429) {
+      // Retry with backoff.
+    } else {
+      console.error({ code, requestId });
+      throw error;
+    }
+  } else {
+    throw error;
+  }
+}
+```
+```python Python SDK
+from hydra_db import HydraDBError
+
+try:
+    client.source.ingest(
+        type="knowledge",
+        tenant_id="my_first_tenant",
+        files=[("policy.pdf", open("policy.pdf", "rb"), "application/pdf")],
+    )
+except HydraDBError as exc:
+    if exc.error_code == "TENANT_NOT_FOUND":
+        # Create or select a valid tenant before ingesting.
+        pass
+    elif exc.status_code == 429:
+        # Retry with backoff.
+        pass
+    else:
+        raise
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Authentication failures
+
+Send exactly one `Authorization` header:
+
+```bash
+Authorization: Bearer <your_api_key>
+```
+
+Also send `API-Version: 2` on raw HTTP requests. The official SDKs set the version header automatically.
+
+### Tenant not found after creation
+
+Tenant creation is asynchronous. After `POST /tenants`, poll [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `infra.scheduler_status`, `infra.graph_status`, and both entries in `infra.vectorstore_status` are `true`.
+
+### Ingestion validation errors
+
+Common causes:
+
+- `file_metadata` length does not match the `files` array length.
+- `app_knowledge`, `memories`, or `file_metadata` was sent as an object instead of a JSON-stringified multipart field.
+- A memory item has neither `text` nor `user_assistant_pairs`.
+- A typed `tenant_metadata` value does not match the tenant metadata schema.
+
+### Empty search results
+
+Empty results are not always errors. Check these first:
+
+- Source status may still be `queued` or `processing`; poll [`GET /source/status`](/api-reference/v2/endpoint/source-status).
+- `metadata_filters` may be too restrictive or may target the wrong metadata namespace.
+- The query may be scoped to the wrong `tenant_id` or `sub_tenant_id`.
+- The `source` value may exclude the collection you need. Use `source: "all"` when combining knowledge and memories.
+
+## Related sections
+
+- [API Reference](/api-reference/v2) - endpoint inventory and conventions
+- [Source Status](/api-reference/v2/endpoint/source-status) - async ingestion state
+- [Search](/api-reference/v2/endpoint/search) - retrieval parameters and response shape

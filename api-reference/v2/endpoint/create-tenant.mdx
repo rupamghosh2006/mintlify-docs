@@ -6,17 +6,9 @@ openapi: "POST /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-## When to use it
-
 Creating a new tenant is the first step before any ingestion or search. A tenant is a fully isolated workspace – no tenant can read another tenant's data.
 
 In most cases, you create one tenant per organization. For per-user isolation (B2C), you use sub-tenants inside a single tenant.
-
-## Endpoint
-
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Re-sending with the same `tenant_id` returns `409 CONFLICT`
-- **Async:** Yes – returns `status: accepted`. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) before ingestion or search.
 
 <RequestExample>
 ```bash cURL
@@ -85,16 +77,24 @@ response = client.tenants.create(
 ```
 </RequestExample>
 
+<Accordion title="HTTP request details">
+
+- **Auth:** Bearer token + `API-Version: 2`
+- **Idempotency:** Re-sending with the same `tenant_id` returns `409 CONFLICT`
+- **Async:** Yes – returns `status: accepted`. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) before ingestion or search.
+
+</Accordion>
+
 ## Request body
 
-Required fields are marked with `*`.
 
-| Name | Type | Description |
-|---|---|---|
-| <Field name="tenant_id" required /> | string | Unique identifier for the tenant. Must be at least one character. |
-| <Field name="tenant_metadata_schema" /> | array | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. (default=`null`) |
-| <Field name="is_embeddings_tenant" /> | boolean | Set to `true` to create a pure embeddings tenant (raw vector storage rather than parsed sources). Most applications leave this `false`. (default=`false`) |
-| <Field name="embeddings_dimension" /> | integer | Dimensionality of the dense vector store. Only applies when `is_embeddings_tenant: true`. (default=`1536`) |
+
+| Name | Description |
+| --- | --- |
+| <Field name="tenant_id" type="string" required /> | Account-scoped tenant identifier. Use a stable, case-sensitive ID up to 25 characters; prefer lowercase letters, numbers, and underscores for portability. |
+| <Field name="tenant_metadata_schema" type="array" /> | Defines tenant-level metadata fields. See [Metadata schema](#metadata-schema) below. (default=`null`) |
+| <Field name="is_embeddings_tenant" type="boolean" /> | Set to `true` to create a pure embeddings tenant (raw vector storage rather than parsed sources). Most applications leave this `false`. (default=`false`) |
+| <Field name="embeddings_dimension" type="integer" /> | Dimensionality of the dense vector store. Only applies when `is_embeddings_tenant: true`. (default=`1536`) |
 
 ## Response
 
@@ -112,24 +112,34 @@ Required fields are marked with `*`.
 
 | Field | Description |
 |---|---|
-| <Field name="status" /> | Always `accepted`. Provisioning runs in the background. |
-| <Field name="tenant_id" /> | The tenant identifier provided in the request. |
-| <Field name="message" /> | Human-readable next-step hint. |
+| <Field name="status" type="enum" /> | Always `accepted`. Provisioning runs in the background. |
+| <Field name="tenant_id" type="string" /> | The tenant identifier provided in the request. |
+| <Field name="message" type="string" /> | Human-readable next-step hint. |
+
+## What happens next?
+
+After creation, follow this sequence before serving user traffic:
+
+1. Create the tenant with `POST /tenants`.
+2. Poll [Tenant Status](/api-reference/v2/endpoint/tenant-status) until the tenant is ready.
+3. Ingest files, app sources, or memories with [Ingest Content](/api-reference/v2/endpoint/ingest-content).
+4. Save every returned `results[].source_id` and poll [Source Status](/api-reference/v2/endpoint/source-status).
+5. Search once each recently ingested source reaches `graph_creation` or `completed`.
 
 ## Metadata schema
 
 `tenant_metadata_schema` defines fields that all documents in the tenant inherit. Each entry has the following shape:
 
-| Field | Type | Description |
-|---|---|---|
-| <Field name="name" required /> | string | Field name. Must start with a letter or underscore and contain only letters, numbers, and underscores (no spaces or special characters). Reserved system names are rejected. |
-| <Field name="data_type" /> | enum | Field data type. Accepts friendly names (`string`, `integer`, `float`, `boolean`, `array`, `object`) or raw Milvus types (`VARCHAR`, `INT32`, etc.). See [Valid data types](#valid-data-types). (default=`VARCHAR`) |
-| <Field name="max_length" /> | integer | Max length for `VARCHAR` fields. Increase for long text. (default=`1024`) |
-| <Field name="enable_analyzer" /> | boolean | Enable a text analyzer for full-text search capabilities on this field. (default=`false`) |
-| <Field name="enable_match" /> | boolean | Enable exact-match filtering on this field via `metadata_filters`. (default=`false`) |
-| <Field name="enable_dense_embedding" /> | boolean | Index a dense embedding for semantic similarity search. Only applicable to `VARCHAR` fields. (default=`false`) |
-| <Field name="enable_sparse_embedding" /> | boolean | Index a sparse embedding (BM25) for keyword search. Only applicable to `VARCHAR` fields. (default=`false`) |
-| <Field name="nullable" /> | boolean | Whether the field can be null at ingestion time. (default=`true`) |
+| Field | Description |
+| --- | --- |
+| <Field name="name" type="string" required /> | Field name. Must start with a letter or underscore and contain only letters, numbers, and underscores (no spaces or special characters). Reserved system names are rejected. |
+| <Field name="data_type" type="enum" /> | Field data type. Accepts friendly names (`string`, `integer`, `float`, `boolean`, `array`, `object`) or raw Milvus types (`VARCHAR`, `INT32`, etc.). See [Valid data types](#valid-data-types). (default=`VARCHAR`) |
+| <Field name="max_length" type="integer" /> | Max length for `VARCHAR` fields. Increase for long text. (default=`1024`) |
+| <Field name="enable_analyzer" type="boolean" /> | Enable a text analyzer for full-text search capabilities on this field. (default=`false`) |
+| <Field name="enable_match" type="boolean" /> | Enable exact-match filtering on this field via `metadata_filters`. (default=`false`) |
+| <Field name="enable_dense_embedding" type="boolean" /> | Index a dense embedding for semantic similarity search. Only applicable to `VARCHAR` fields. (default=`false`) |
+| <Field name="enable_sparse_embedding" type="boolean" /> | Index a sparse embedding (BM25) for keyword search. Only applicable to `VARCHAR` fields. (default=`false`) |
+| <Field name="nullable" type="boolean" /> | Whether the field can be null at ingestion time. (default=`true`) |
 
 ### Valid data types
 
@@ -175,7 +185,7 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 
 ### Schema examples
 
-Each example below shows only the schema entries  -  wrap them in a full `POST /tenants` request like the [Example](#example) above.
+Each example below shows only the schema entries  -  wrap them in a full `POST /tenants` request like the request example above.
 
 #### Single exact-match filter field
 
@@ -316,12 +326,16 @@ For raw vector use cases  -  bring-your-own-embeddings  -  flip `is_embeddings_t
 
 ## Behavior notes
 
+<Warning>
+Do not ingest content until `scheduler_status`, `graph_status`, and both `vectorstore_status` values are `true`.
+</Warning>
+
 <Info>
 **Tenant creation is asynchronous.** Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion call. Both `vectorstore_status.knowledge` and `vectorstore_status.memories`, as well as `graph_status`, must be `true` before the tenant is ready.
 </Info>
 
 <Info>
-**Default sub-tenant.** A default sub-tenant is auto-created with your tenant. Any API call that omits `sub_tenant_id` targets this default. See [Essentials → Multi-Tenant](/essentials/v2/multi-tenant) for details.
+**Default sub-tenant.** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. See [Essentials → Multi-Tenant](/essentials/v2/multi-tenant) for details.
 </Info>
 
 <Info>
@@ -336,6 +350,6 @@ For raw vector use cases  -  bring-your-own-embeddings  -  flip `is_embeddings_t
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant) · [Essentials → Metadata](/essentials/v2/metadata)

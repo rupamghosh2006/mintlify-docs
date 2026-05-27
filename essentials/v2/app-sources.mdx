@@ -447,7 +447,136 @@ See [Scoping using metadata](/essentials/v2/metadata) for the full schema design
 
 ---
 
-## 10. Common mistakes
+## 10. TLDR field/type reference
+
+Use this as the compact contract for `app_knowledge` ingestion in API v2. Unlike v1 app sources, v2 uses a flat Knowledge-source shape: `type` is a source category tag, and provider-specific structure goes in `tenant_metadata`, `document_metadata`, `attachments`, and `relations`.
+
+### Top-level app source fields
+
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="id" type="string" recommended /> | Stable HydraDB source ID for this app item. Compose it from provider IDs, such as `slack_<channel>_<ts>` or `jira_<key>`. | Used as the `source_id`, upsert key, status/deletion ID, and forceful-relation target. If omitted, HydraDB generates one. |
+| <Field name="title" type="string" recommended /> | Human-readable title, subject, page name, ticket title, or message label. | Improves source display, snippets, citations, and semantic matching. |
+| <Field name="type" type="string" recommended /> | Source category tag, such as `slack`, `gmail`, `jira`, `notion`, `salesforce`, `linear_comment`, or `custom`. | Preserved for display/filtering and useful for app-level scoping. This is not a discriminator; any stable string is allowed. |
+| <Field name="description" type="string" /> | Optional long-form summary or context. | Adds additional searchable/display context. |
+| <Field name="url" type="string" /> | Canonical link back to the provider item. | Improves citations and source navigation. |
+| <Field name="timestamp" type="ISO-8601 datetime" /> | Creation, sent, or last-updated time. | Helps chronology, freshness, and display. |
+| <Field name="content" type="object" required /> | Searchable body. Use `content.text` for plain text or `content.markdown` for Markdown. | Primary text that HydraDB chunks, embeds, graphs, and indexes. |
+| <Field name="tenant_metadata" type="object" /> | Schema-aligned, filterable fields such as channel, project, space, mailbox, pipeline, region, or environment. | Searchable via `metadata_filters` when keys are declared in `tenant_metadata_schema`. |
+| <Field name="document_metadata" type="object" /> | Free-form display/bookkeeping fields such as author, ticket key, provider IDs, status, assignee, thread ID, or stage. | Preserved on the source and searchable/filterable under `metadata_filters.document_metadata`. |
+| <Field name="attachments" type="array" /> | Pre-extracted files attached to this item. | Attachment text is indexed alongside the source. |
+| <Field name="relations" type="object" /> | Forceful links to other sources: `{ "cortex_source_ids": ["..."] }`. | In `thinking` mode, linked Knowledge sources can be returned in `additional_context`. |
+
+### Content fields
+
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="content.text" type="string" recommended /> | Plain-text body. | Indexed as the main source text. |
+| <Field name="content.markdown" type="string" recommended /> | Markdown body when you have structure, headings, lists, or tables. | Indexed as the main source text with Markdown-aware structure. |
+
+Send at least one of `content.text` or `content.markdown`. If you have both, keep them consistent and prefer the version that best preserves useful structure.
+
+### Attachment fields
+
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="id" type="string" /> | Stable attachment ID. | Helps identify and deduplicate attachments. |
+| <Field name="title" type="string" /> | File name or display title. | Improves attachment display and matching. |
+| <Field name="url" type="string" /> | Link back to the provider attachment. | Improves citations and navigation. |
+| <Field name="content_url" type="string" /> | Direct content URL, distinct from the reference URL. | Preserved as attachment metadata. |
+| <Field name="content_type" type="string" /> | MIME type such as `application/pdf`, `text/markdown`, or `image/png`. | Helps classify the attachment. |
+| <Field name="content.text" type="string" /> | Pre-extracted plain text. | Indexed as attachment text. |
+| <Field name="content.markdown" type="string" /> | Pre-extracted Markdown. | Indexed as attachment text while preserving structure. |
+| <Field name="misc" type="object" /> | Provider-specific attachment metadata. | Preserved for display/bookkeeping. |
+
+### Relation fields
+
+| Field | Why send it | Search / ingestion effect |
+|---|---|---|
+| <Field name="relations.cortex_source_ids" type="string[]" required /> | Source IDs of related Knowledge sources. | Enables forceful relation expansion in `mode: "thinking"`. |
+| <Field name="relations.properties" type="object" /> | Optional metadata about the relationship, such as reason, relation type, or confidence. | Preserved with the declared relation. |
+
+Only link to source IDs in the same store. For app sources, that means Knowledge → Knowledge. If the related item may arrive later, still use the stable source ID you plan to ingest for that item.
+
+### Recommended `type` values and mappings
+
+`type` is free-form, but using consistent values makes filtering, analytics, and source rendering easier.
+
+| App concept | Recommended `type` | `content` | `tenant_metadata` | `document_metadata` | Link with `relations.cortex_source_ids` |
+|---|---|---|---|---|---|
+| Email message | `gmail`, `outlook`, `email` | Subject/body text or thread excerpt | Mailbox, team, workspace | Provider message ID, thread ID, from/to/cc/bcc, reply/forward IDs | Parent email, thread root, forwarded source |
+| Chat message | `slack`, `teams`, `discord`, `message` | Message body | Channel, workspace, team | Message timestamp, thread timestamp, author, mentions | Thread root or replied-to message |
+| Ticket / issue / support case | `jira`, `linear`, `zendesk`, `github_issue`, `ticket` | Title + description + current status summary | Project, queue, product, environment | Ticket key, status, priority, assignee, reporter, parent epic ID | Parent epic, linked issues, blockers, related tickets |
+| Knowledge-base page | `notion`, `confluence`, `google_docs`, `knowledge_base` | Page body as text/Markdown | Space, database, collection, doc type | Page ID, parent page ID, created_by, updated_by | Parent page, referenced docs, related runbooks |
+| First-class comment | `<provider>_comment`, such as `linear_comment` or `jira_comment` | Comment body | Project, ticket queue, channel, workspace | Comment ID, author, parent ticket/page/source ID | Parent ticket/page/source |
+| CRM/business record | `salesforce`, `hubspot`, `crm`, `custom` | Record summary plus important fields | Pipeline, region, segment, account tier | Record type, record ID, stage, amount, owner, account ID | Account, deal, contact, support ticket |
+| Web page / CMS item | `webpage`, `cms`, `blog` | Page/article body | Site, collection, locale, topic | Slug, author, published_at | Canonical/related pages |
+| Internal workflow record | `custom`, `workflow`, `<system_name>` | Summary, status, and key details | Workflow, team, environment | Record ID, owner, status, parent record ID | Parent/child records or related sources |
+
+<Note>
+  For provider-specific IDs, prefer stable composite `id` values and mirror the raw provider IDs in `document_metadata`. For scope fields you need to filter on, use `tenant_metadata` and declare the keys in the tenant schema.
+</Note>
+
+### Common metadata fields by source type
+
+#### Email
+
+| Field | Where to put it | Why |
+|---|---|---|
+| `subject` | `title` and/or `content.text` | Improves snippets and matching. |
+| `body` | `content.text` or `content.markdown` | Primary searchable text. |
+| `from`, `to`, `cc`, `bcc` | `document_metadata` | Preserves actors for display and filtering. |
+| `message_id`, `thread_id`, `reply_to_id`, `forwarded_from_id` | `document_metadata`; use related source IDs in `relations` when available | Keeps provider structure and enables forceful relation expansion. |
+| `mailbox` | `tenant_metadata` | Enables mailbox/team scoping. |
+
+#### Message
+
+| Field | Where to put it | Why |
+|---|---|---|
+| `body` | `content.text` | Primary searchable text. |
+| `author`, `mentions` | `document_metadata` | Preserves actor context. |
+| `channel`, `workspace`, `team` | `tenant_metadata` | Enables channel/workspace filters. |
+| `message_ts`, `thread_ts`, `parent_message_id` | `document_metadata`; put parent source IDs in `relations.cortex_source_ids` | Reconstructs threads and replies. |
+
+#### Ticket
+
+| Field | Where to put it | Why |
+|---|---|---|
+| `title` | `title` | Display title and snippets. |
+| `description` | `content.text` or `content.markdown` | Primary searchable text. |
+| `status`, `priority`, `assignee`, `reporter` | `document_metadata` unless you need schema-level filtering | Preserves workflow state and ownership. |
+| `project`, `queue`, `environment` | `tenant_metadata` | Enables common ticket filters. |
+| `ticket_key`, `parent_id`, `linked_issue_ids` | `document_metadata`; put known source IDs in `relations.cortex_source_ids` | Keeps provider IDs and connected-ticket retrieval. |
+
+#### Knowledge-base page
+
+| Field | Where to put it | Why |
+|---|---|---|
+| `title` | `title` | Display title and matching. |
+| `body` | `content.markdown` or `content.text` | Primary searchable text. |
+| `space`, `database`, `collection`, `doc_type` | `tenant_metadata` | Enables docs scoping. |
+| `page_id`, `parent_page_id`, `created_by`, `updated_by` | `document_metadata` | Preserves provider and author/editor context. |
+
+#### Comment
+
+| Field | Where to put it | Why |
+|---|---|---|
+| `body` | `content.text` | Primary searchable text. |
+| `author`, `comment_id`, `parent_id`, `thread_id` | `document_metadata` | Preserves comment identity and parent/thread context. |
+| Parent ticket/page/source | `relations.cortex_source_ids` | Pulls the parent source into `additional_context` in thinking-mode search. |
+
+#### Custom / CRM
+
+| Field | Where to put it | Why |
+|---|---|---|
+| Important record summary | `content.text` | Makes the business object searchable. |
+| `record_type`, `record_id`, `stage`, `amount`, `owner`, `account_id` | `document_metadata` unless you need schema-level filtering | Preserves provider-specific CRM fields. |
+| `pipeline`, `region`, `segment`, `team` | `tenant_metadata` | Enables operational filters. |
+| Related account/deal/contact/support ticket | `relations.cortex_source_ids` | Connects cross-app context. |
+
+---
+
+## 11. Common mistakes
 
 | Mistake | Why it breaks | Fix |
 |---|---|---|
@@ -461,7 +590,6 @@ See [Scoping using metadata](/essentials/v2/metadata) for the full schema design
 | Sending `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Not a supported parameter | Just call [`POST /search`](/api-reference/v2/endpoint/search)  -  app sources are already in the [Knowledge](/essentials/v2/knowledge) store |
 
 ---
-
 ## Related
 
 - [Knowledge](/essentials/v2/knowledge)  -  the broader ingestion path; Path B covers `app_knowledge` end-to-end

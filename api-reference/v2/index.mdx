@@ -6,10 +6,10 @@ description: "Complete reference for every HydraDB endpoint, organized by group.
 ## Quick links
 
 - **New to HydraDB?** Start with the [Quickstart](/get-started/v2/quickstart)
-- **Prefer SDKs?** See the [Python and TypeScript SDKs](#sdks) below
+- **Prefer SDKs?** See [SDKs - Node and Python](/api-reference/v2/sdks)
 - **Authentication:** Every endpoint requires `Authorization: Bearer <your_api_key>`
 - **Base URL:** `https://api.hydradb.com`
-- **Errors:** See [Error Responses](/api-reference/error-responses)
+- **Errors:** See [Error Responses](/api-reference/v2/error-responses)
 
 ## Endpoint groups
 
@@ -86,7 +86,7 @@ const client = new HydraDBClient({
 
 </CodeGroup>
 
-SDK methods mirror the API: `client.<group>.<method>()` maps to the corresponding endpoint. Operations include Fern SDK fields in [`api-reference/v2/openapi.json`](/api-reference/v2/openapi.json), and the `ts-sdk-v2`, `python-sdk-v2`, and `go-sdk-v2` generators filter to audience `v2` and set `API-Version: 2` automatically.
+SDK methods mirror the API: `client.<group>.<method>()` maps to the corresponding endpoint. The SDKs are generated from the OpenAPI contract and set `API-Version: 2` automatically.
 
 ## Full endpoint inventory
 
@@ -96,7 +96,7 @@ SDK methods mirror the API: `client.<group>.<method>()` maps to the correspondin
 | [`/tenants`](/api-reference/v2/endpoint/list-tenants) | `GET` | `tenants.list` | List tenants | You need to discover tenant IDs available to the current API key. |
 | [`/tenants`](/api-reference/v2/endpoint/delete-tenant) | `DELETE` | `tenants.delete` | Delete a tenant | You need to permanently remove a workspace and its data. |
 | [`/tenants/status`](/api-reference/v2/endpoint/tenant-status) | `GET` | `tenants.status` | Check provisioning readiness | You just created a tenant and need to wait before ingesting data. |
-| [`/tenants/sub-tenants`](/api-reference/v2/endpoint/list-sub-tenants) | `GET` | `tenants.sub_tenants` | List active sub-tenants | You partition data by user, team, customer, or account and need to inspect those partitions. |
+| [`/tenants/sub-tenants`](/api-reference/v2/endpoint/list-sub-tenants) | `GET` | `tenants.subTenants` / `tenants.sub_tenants` | List active sub-tenants | You partition data by user, team, customer, or account and need to inspect those partitions. |
 | [`/tenants/stats`](/api-reference/v2/endpoint/tenant-stats) | `GET` | `tenants.stats` | Get usage statistics | You want to monitor object counts and vector dimensions for a tenant. |
 | [`/source/ingest`](/api-reference/v2/endpoint/ingest-content) | `POST` | `source.ingest` | Ingest knowledge or memories | You are uploading files, app-generated sources, or user memories. |
 | [`/source/status`](/api-reference/v2/endpoint/source-status) | `GET` | `source.status` | Check processing status | You have source IDs from ingestion and need to know when they are searchable. |
@@ -104,7 +104,7 @@ SDK methods mirror the API: `client.<group>.<method>()` maps to the correspondin
 | [`/source/list`](/api-reference/v2/endpoint/list-documents) | `POST` | `source.list` | Browse knowledge or memories | You need pagination, filters, field projection, or a specific subset by `source_ids`. |
 | [`/source`](/api-reference/v2/endpoint/delete-source) | `DELETE` | `source.delete` | Delete sources or memories | You need to remove one or more knowledge sources or memories by ID. |
 | [`/source/relations`](/api-reference/v2/endpoint/source-relations) | `GET` | `source.relations` | Inspect entity relationships | You need graph relations for a source or sub-tenant. |
-| [`/search`](/api-reference/v2/endpoint/search) | `POST` | `search.query` | Unified search over knowledge, memories, or both | You need retrieval with `hybrid`, `text`, or `vector` search across `sources`, `memories`, or `all`. |
+| [`/search`](/api-reference/v2/endpoint/search) | `POST` | `search.query` | Unified search over knowledge, memories, or both | You need retrieval with `hybrid`, `text`, or `vector` search across `knowledge`, `memories`, or `all`. |
 
 ## Conventions
 
@@ -125,7 +125,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 
-**Response envelope.** JSON responses are wrapped in a consistent envelope:
+**Response envelope.** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages document the resource-specific `data` payload unless the full envelope is important to the behavior.
 
 ```json
 {
@@ -141,7 +141,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 
 Errors use the same envelope with `success: false`, `data: null`, and an `error` object containing `code` and `message`.
 
-**Tenant scoping.** Every endpoint requires a `tenant_id`. Most endpoints also accept an optional `sub_tenant_id` for finer-grained scoping. If omitted, the default sub-tenant is used.
+**Tenant scoping.** Most tenant-scoped endpoints require a `tenant_id`. Many source and search endpoints also accept an optional `sub_tenant_id` for finer-grained scoping. If omitted, the default sub-tenant is used.
 
 **Async operations.** Tenant creation, deletion, and content ingestion are asynchronous. They return immediately after queuing. Use the relevant status endpoint to confirm completion before downstream operations.
 
@@ -167,7 +167,7 @@ Errors use the same envelope with `success: false`, `data: null`, and an `error`
 | `500` | Internal server error |
 | `503` | Service unavailable |
 
-See [Error Responses](/api-reference/error-responses) for response shapes and error codes.
+See [Error Responses](/api-reference/v2/error-responses) for response shapes, error codes, and retry patterns.
 
 ## Rate limits
 
@@ -175,7 +175,7 @@ Rate limits apply per API key. For production deployments, build retry logic wit
 
 ## Next steps
 
-Existing v1 endpoints remain available under API Reference `1.0.0`.
+Existing v1 endpoints remain available under the v1 API Reference.
 
 - **Build something:** [Quickstart](/get-started/v2/quickstart) walks through your first integration in five minutes
 - **Understand the model:** [Core Concepts](/get-started/core-concepts) explains tenants, memories, search, and metadata

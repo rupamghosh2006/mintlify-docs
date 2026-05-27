@@ -2556,3 +2556,4 @@ results = cached_recall(
 ---
 
 This completes the comprehensive HydraDB reference for LLMs. Use `llms.txt` for navigation and links, use this file (`llms-full.txt`) for complete embedded context when building without access to live docs.
+

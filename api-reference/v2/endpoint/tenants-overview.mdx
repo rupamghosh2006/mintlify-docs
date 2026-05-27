@@ -45,16 +45,11 @@ DELETE /tenants -> schedule deletion (irreversible)
 
 ## Key concepts
 
-- **Tenant** - Top-level isolated workspace. One per organization in most cases.
-- **Sub-tenant** - Subdivision inside a tenant. Created automatically the first time ingestion writes data with a `sub_tenant_id`. No explicit creation step, no confirmation.
+- **Tenant** - A top-level isolated workspace. Usually one per organization.
+- **Sub-tenant** - Partitions within a tenant for B2C/per-user separation. They are created implicitly at ingestion.
+- **Tenant Metadata & Schema** - Structured fields defined at tenant creation to enable search-time filtering.
 
-- **Default sub-tenant** - HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused.
-
-- **Tenant metadata** - Structured fields you attach at ingestion for filtering and consistent slicing (department, region, plan). Keys must be declared in the tenant metadata schema. For one-off per-source fields, use `document_metadata`.
-
-- **Tenant metadata schema** - Immutable field definitions set at creation. Declare only the keys you expect to filter on later.
-
-For the full schema options and examples, see [Create Tenant](/api-reference/v2/endpoint/create-tenant) and [Essentials - Metadata](/essentials/v2/metadata).
+For detailed concepts, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) and [Scoping using metadata](/essentials/v2/metadata) essentials guides.
 
 ## Related sections
 

@@ -6,12 +6,14 @@ openapi: "POST /source/list"
 
 import { Field } from "/snippets/field.jsx";
 
-Browse what's in a tenant or sub-tenant  -  for admin dashboards, audit views, populating a "select source" picker, or fetching a known subset of sources by ID. Pick the bucket with `kind`:
+Browse and filter ingested knowledge sources or user memories within a tenant or sub-tenant.
+
+Specify the category using the `kind` parameter:
 
 - `kind=knowledge` *(default)*  -  knowledge sources (files, app sources).
 - `kind=memories`  -  user memories.
 
-Supports pagination (`page`, `page_size`), structured filters on tenant and document metadata, source-field filters (title, type, url, etc.), and field projection (`include_fields`) for slim payloads.
+Supports pagination, metadata filters, and field projection. For more details on metadata filters, see the [Scoping using metadata](/essentials/v2/metadata) guide.
 
 <RequestExample>
 ```bash cURL
@@ -59,13 +61,7 @@ sources = client.source.list(
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
 
 ## Request body
 
@@ -181,25 +177,14 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 
 ## Behavior notes
 
-<Info>
-**Pagination is mandatory in spirit.** Even without filters, `total` may be large. Always prefer `page` / `page_size` over fetching everything in one call.
-</Info>
-
-<Info>
-**Filters AND.** All filter pairs combine with logical AND. To express OR semantics, run multiple calls and union client-side.
-</Info>
-
-<Info>
-**`source_ids` + filters.** When `source_ids` is non-empty, only those IDs are considered, but `filters` still applies on top  -  useful for "show me items 1, 2, 3 that also belong to department=legal".
-</Info>
-
 <Warning>
-**Undeclared filter keys are silent.** Keys in `filters.tenant_metadata` that aren't declared in `tenant_metadata_schema` are silently ignored. If a filter doesn't narrow results as expected, verify the schema field exists and has `enable_match: true`.
+**Undeclared filter keys are silent.** Keys in `filters.tenant_metadata` that are not declared in `tenant_metadata_schema` are silently ignored. If a filter doesn't narrow results as expected, verify the schema field exists and has `enable_match: true`.
 </Warning>
 
-<Warning>
-**Common mistakes.** `row_count` from [Tenant Stats](/api-reference/v2/endpoint/tenant-stats) counts chunks, not documents. Use this endpoint's `total` when you need distinct source or memory counts.
-</Warning>
+- **Pagination is mandatory in spirit:** Even without filters, `total` may be large. Always prefer using `page` and `page_size` over fetching everything in a single call.
+- **Filters AND:** All filter pairs combine with a logical AND. To express OR semantics, run multiple calls and union them client-side.
+- **`source_ids` + filters:** When `source_ids` is non-empty, only those IDs are considered, but other `filters` still apply on top  -  useful for "show me items 1, 2, 3 that also belong to department=legal".
+- **Common mistakes:** `row_count` from [Tenant Stats](/api-reference/v2/endpoint/tenant-stats) counts individual chunks, not documents. Use this endpoint's `total` when you need distinct source or memory counts.
 
 ## Related endpoints
 

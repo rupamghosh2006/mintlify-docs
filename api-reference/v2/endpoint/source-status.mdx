@@ -6,13 +6,9 @@ openapi: "GET /source/status"
 
 import { Field } from "/snippets/field.jsx";
 
-`POST /source/ingest` is asynchronous. Use this endpoint to know when content is ready to be searched. Common patterns:
+Check the processing status of ingested sources by their IDs. Since ingestion is asynchronous, use this endpoint to determine when content is ready to be searched.
 
-- **Polling after ingest**  -  wait until status is `graph_creation` before running searches, or `completed` before graph-heavy flows
-- **Bulk progress tracking**  -  pass multiple `source_id`s in one call to check a whole batch
-- **Error inspection**  -  see why a specific item failed via `error_code` and `message`
-
-Works for both knowledge sources and memory items  -  pass the `source_id` you got from the ingest response.
+Pass one or more `source_id` values in `file_ids` to retrieve status. Works for files, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
 
 <RequestExample>
 ```bash cURL
@@ -40,13 +36,7 @@ status = client.source.status(
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
 
 ## Query parameters
 
@@ -221,12 +211,10 @@ Typical processing time:
 ## Behavior notes
 
 <Info>
-**`graph_creation` is searchable.** Items in this state are already retrievable via `POST /search`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
+**`graph_creation` is searchable.** Items in this state are already retrievable via `/search`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
 </Info>
 
-<Info>
-**Unknown IDs return as `errored`.** If you pass an ID that doesn't exist (e.g., typo), HydraDB returns an entry with `indexing_status: "errored"` rather than silently dropping it.
-</Info>
+- **Unknown IDs return as `errored`:** If you pass an ID that does not exist (e.g., a typo), HydraDB returns an entry with `indexing_status: "errored"` rather than silently dropping it.
 
 ## Related endpoints
 

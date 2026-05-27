@@ -6,7 +6,7 @@ openapi: "DELETE /source"
 
 import { Field } from "/snippets/field.jsx";
 
-Remove indexed content  -  for data-retention policies, deleting a specific user's memories on request, pruning stale documents, or cleaning up after a botched ingest. Pick the bucket with `type`:
+Delete knowledge sources or memories by their IDs. Specify the resource category with the `type` parameter:
 
 - `type=knowledge` *(default)*  -  delete knowledge sources.
 - `type=memory`  -  delete memories.
@@ -65,13 +65,7 @@ Use `type: "memory"` and pass memory `source_id`s in the same `request.ids` arra
 }
 ```
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Deleting an already-deleted ID is a no-op for that ID  -  the rest of the batch still proceeds. `success` reflects whether *any* ID was removed.
-- **Async:** Background workers may continue removing vector entries briefly after the response  -  but the source is immediately excluded from search.
-
-</Accordion>
 
 ## Request body
 
@@ -133,20 +127,12 @@ The body wraps two fields together.
 ## Behavior notes
 
 <Warning>
-**Irreversible.** Chunks, embeddings, and graph nodes are removed. There is no soft-delete or undo. Keep a copy if you need to re-ingest.
+**Irreversible action.** Chunks, embeddings, and graph nodes are permanently removed. There is no soft-delete or undo. Keep a copy of your data if you may need to re-ingest it later.
 </Warning>
 
-<Info>
-**Partial-success semantics.** For `type=knowledge`, each ID is reported independently in `results[]`. A failure on one ID does not stop the rest. For `type=memory`, the response reports an aggregate `user_memory_deleted` reflecting *all* listed IDs.
-</Info>
-
-<Info>
-**Search drops the source immediately.** Even before background cleanup finishes, deleted IDs disappear from `/search` and `/source/list` responses.
-</Info>
-
-<Info>
-**Mixed deletes need two calls.** To delete both knowledge and memory items, send two requests  -  one with `type=knowledge`, one with `type=memory`. A single call cannot mix the two buckets.
-</Info>
+- **Partial-success semantics:** For `type=knowledge`, each ID is reported independently in `results[]`. A failure on one ID does not stop the rest. For `type=memory`, the response reports an aggregate `user_memory_deleted` reflecting *all* listed IDs.
+- **Search drops the source immediately:** Even before background cleanup finishes, deleted IDs disappear from `/search` and `/source/list` responses.
+- **Mixed deletes need two calls:** To delete both knowledge and memory items, send two requests  -  one with `type=knowledge`, one with `type=memory`. A single call cannot mix the two buckets.
 
 ## Related endpoints
 

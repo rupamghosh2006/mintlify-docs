@@ -6,14 +6,7 @@ openapi: "GET /source/fetch"
 
 import { Field } from "/snippets/field.jsx";
 
-Pull back ingested content for display in your UI, audit trails, or to feed a different downstream model. `content` is parsed text extracted by HydraDB; `presigned_url` downloads the original file when one exists. Common patterns:
-
-- **UI rendering**  -  show the original document next to LLM-generated answers.
-- **Audit views**  -  let admins inspect what was actually ingested for a `source_id` returned by search.
-- **Re-processing**  -  fetch the raw text to run your own analyzer or summarizer.
-- **Long-lived links**  -  get a presigned URL valid up to 7 days for downstream services to access the file directly.
-
-Works for both knowledge sources and memories  -  pass the `source_id` from the ingest response or from a search hit.
+Retrieve the original content of an ingested knowledge source or memory. Specify the `source_id` of the content you want to retrieve.
 
 <RequestExample>
 
@@ -47,14 +40,7 @@ file = client.source.fetch(
 
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-- **Presigned URL lifetime:** `expiry_seconds` is clamped to `60 ≤ x ≤ 604800` (7 days).
-
-</Accordion>
 
 ## Query parameters
 
@@ -167,20 +153,12 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 ## Behavior notes
 
 <Info>
-**Text vs binary.** When the source is text-parseable (PDF, DOCX, MD, TXT), `content` is the parsed text. For non-text files HydraDB returns `content_base64` instead. Check both when handling unknown content types.
+**Text vs binary handling.** When the source is text-parseable (PDF, DOCX, MD, TXT), `content` is populated with parsed text. For non-text/binary files, HydraDB returns `content_base64`. Check both fields when handling unknown content types.
 </Info>
 
-<Info>
-**Recently ingested sources.** If you fetch immediately after ingestion, the source record may exist before parsed text is ready. For reliable reads, poll [Source Status](/api-reference/v2/endpoint/source-status) for that `source_id`; use `mode=url` for the original file and `mode=content` after processing when you need extracted text.
-</Info>
-
-<Info>
-**Presigned URL TTL.** The URL is valid only for `expiry_seconds`. Anyone with the URL can download the file during that window  -  treat it as a short-lived secret.
-</Info>
-
-<Info>
-**Memory items.** Fetching a memory's `source_id` returns its raw text content (and the inferred preference, when applicable). There is no presigned URL for memory items  -  `mode=url` and `mode=both` return `presigned_url: null`.
-</Info>
+- **Recently ingested sources:** Fetching immediately after ingestion may return a record before the parsed text is ready. For reliable reads, poll [Source Status](/api-reference/v2/endpoint/source-status) for the `source_id` first.
+- **Presigned URL TTL:** The URL is valid only for `expiry_seconds`. Anyone with the URL can download the file during that window, so treat it as a short-lived secret.
+- **Memory items:** Fetching a memory's `source_id` returns its raw text content. There are no presigned URLs for memory items  -  `mode=url` and `mode=both` return `presigned_url: null`.
 
 ## Related endpoints
 

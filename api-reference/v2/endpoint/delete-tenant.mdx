@@ -6,9 +6,9 @@ openapi: "DELETE /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-Tearing down a workspace  -  for customer offboarding, end-of-life environments, or cleanup after testing. Deletes the tenant **and all of its ingested data, memories, metadata schema, vector indices, graph, and infrastructure**.
+Permanently delete a tenant and all of its associated data, including ingested content, memories, metadata schema, vector indices, and graphs.
 
-This action is irreversible. There is no soft-delete and no recovery window.
+This action is irreversible. There is no soft-delete and no recovery window. For details on multi-tenant architecture, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
 ```bash cURL
@@ -26,13 +26,7 @@ response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Calling on an already-deleted tenant returns `404 TENANT_NOT_FOUND`
-- **Async:** Yes  -  the response acknowledges the deletion; cleanup of vector indices, the graph, and storage objects runs in the background.
-
-</Accordion>
 
 ## Query parameters
 
@@ -71,20 +65,12 @@ After deletion completes, the same `tenant_id` can be used in a new `POST /tenan
 ## Behavior notes
 
 <Warning>
-**Irreversible.** Ingested documents, memories, embeddings, graph nodes, metadata schema, and storage objects are removed. There is no recovery window  -  make sure you have a backup if the content matters.
+**Irreversible action.** Ingested documents, memories, embeddings, graph nodes, metadata schema, and storage objects are permanently removed. There is no recovery window  -  ensure you have a backup if the content matters.
 </Warning>
 
-<Info>
-**Async cleanup.** The endpoint returns immediately after deregistering the tenant. Vector indices, MongoDB documents, the knowledge graph, and S3/MinIO objects are removed by background workers and may take a few minutes to fully disappear from infrastructure.
-</Info>
-
-<Warning>
-**Stop in-flight work first.** Stop ingestion, polling, search, and background jobs that target this tenant before deletion. Calls made after deregistration can fail with `TENANT_NOT_FOUND` even while infrastructure cleanup is still running.
-</Warning>
-
-<Info>
-**Repeat calls.** Deleting an already-deleted tenant returns `404 TENANT_NOT_FOUND`. Deleting a tenant that is still provisioning or already deleting is treated as a request to tear down that tenant; use the deletion-completion checks above before recreating the same ID.
-</Info>
+- **Stop in-flight work first:** Stop all ingestion, polling, search, and background jobs targeting this tenant before deleting. Calls made after deregistration can fail with `TENANT_NOT_FOUND` even while infrastructure cleanup is still running.
+- **Async cleanup:** The endpoint returns immediately after deregistering the tenant. Infrastructure cleanup of vector stores, graphs, and storage objects runs in the background and may take a few minutes to complete.
+- **Repeat calls:** Deleting an already-deleted tenant returns `404 TENANT_NOT_FOUND`. Deleting a tenant that is still provisioning or deleting is treated as a request to tear down that tenant.
 
 ## Related endpoints
 

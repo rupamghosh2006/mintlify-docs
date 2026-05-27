@@ -75,119 +75,12 @@ flowchart LR
 So `type=knowledge` + `app_knowledge` means "this is knowledge, and I've already done the extraction  -  index this JSON as-is."
 </Note>
 
-## Knowledge vs memory
+## Core Ingestion Concepts
 
-| Type | What it stores | Best for | Search with |
-|---|---|---|---|
-| `knowledge` | Shared information your app or team may need later: files, docs, Slack threads, Notion pages, tickets, webpages, policies, contracts. | RAG over product docs, customer records, internal wikis, support content, or any source that should be reusable across users. | `/search` with `source: "knowledge"` or `source: "all"` |
-| `memories` | User-specific context: preferences, conversation history, notes, inferred traits, past decisions, or personalization data. | Personalizing answers for one user, account, or sub-tenant. | `/search` with `source: "memories"` or `source: "all"` |
-
-Use `knowledge` when the content is an external or shared source of truth. Use `memory` when the content describes a user or should shape the answer for that user.
-
-<Info>
-**Naming rule:** ingestion and deletion use singular `type: "memory"` because you are writing to one bucket. Listing and search use plural `"memories"` for `kind` or `source` because you are querying a collection.
-</Info>
-
-## File metadata
-
-`file_metadata` is a JSON string that lets you attach metadata to each uploaded file. Use it when you want HydraDB to preserve source IDs, titles, metadata, or relationships instead of treating files as anonymous uploads.
-
-| Field | Why use it? | Example |
-|---|---|---|
-| <Field name="file_id" type="string" /> | Sets a stable source ID you can use later for status checks, fetch, list, delete, or relations. | `contract_q4_2026` |
-| <Field name="tenant_metadata" type="object" /> | Tenant-level metadata for filtering and search. These keys should match your tenant metadata schema when you want reliable filters. | `{ "department": "legal", "region": "us" }` |
-| <Field name="document_metadata" type="object" /> | Document-level details that are useful to display or inspect but may not be part of the tenant-wide schema. | `{ "author": "Finance Team", "version": "final" }` |
-| <Field name="relations" type="object" /> | Explicitly connects this file to other sources for graph context. | Link a contract to its account plan. |
-
-For multiple file uploads, send one `file_metadata` entry per file in the same order as the `files` array.
-
-**`tenant_metadata` vs `document_metadata`.** Use tenant metadata for fields you want to filter/search across many sources, like `department`, `region`, or `customer_tier`. Use document metadata for per-source details you mainly want to display or inspect, like `author`, `filename`, `version`, or `created_at`.
-
-## Source IDs
-
-`source_id` values are stable identifiers for ingested knowledge sources or memories.
-
-| Where they come from | How to use them |
-|---|---|
-| The response from `/source/ingest` includes `results[].source_id` for queued items. | Poll `/source/status`, fetch content, delete data, or inspect relations. |
-| If you set `file_id` in `file_metadata`, that value becomes the source ID for that file. | Use your own app's document ID as the HydraDB source ID. |
-| `/source/list` returns existing source IDs. | Discover IDs after ingestion or list a filtered subset. |
-
-Pass `source_ids` to `/source/list` when you want to retrieve a known subset of sources instead of browsing the whole tenant.
-
-<Note>
-For `DELETE /source`, send the IDs inside the `request` object and use the sibling `type` field to choose `knowledge` or `memory`.
-</Note>
-
-## Typical call sequence
-
-```
-1. POST /source/ingest  -> returns results[].source_id, status: queued
-2. GET  /source/status  -> poll until graph_creation for search, or completed for graph operations
-3. POST /search         -> content is retrievable once graph_creation is reached
-```
-
-For batched uploads with mixed content:
-
-```
-1. POST /source/ingest with files=[...] AND app_knowledge=[...]
-   -> single request, multiple results[].source_id values in response
-2. GET /source/status with all source_id values
-   -> check all statuses
-```
-
-## Status pipeline
-
-| Status | Searchable? | What to do |
-|---|---|---|
-| `queued` | No | Work was accepted; keep polling. |
-| `processing` | No | HydraDB is parsing, chunking, and embedding; keep polling. |
-| `graph_creation` | Yes - via `/search` | Safe for normal retrieval. Graph context and relations may still be incomplete. |
-| `completed` | Yes - via `/search`, with full graph context | Safe for graph-heavy flows such as `/source/relations` and complete `graph_context`. |
-| `errored` | No | Inspect `error_code` and `message` on the status object. |
-
-Compact rule: search at `graph_creation`; wait for `completed` when you need graph-ready results.
-
-## Key concepts
-
-**Source** - Any unit of ingested content. Files become sources, app knowledge payloads become sources, memory items become sources. Each gets a unique `source_id`.
-
-**Knowledge vs memory** - Two different content models, picked at ingest with the `type` field.
-
-| | Knowledge (`type=knowledge`) | Memory (`type=memory`) |
-|---|---|---|
-| What it stores | Shared documents  -  PDFs, DOCX, CSVs, Notion pages, Slack threads, webpages, app-generated sources | Per-user content  -  preferences, past conversations, notes, inline facts about a specific end-user |
-| Scope | Across the tenant (or a sub-tenant for team-level corpora) | Almost always scoped to a `sub_tenant_id` representing one user, one workspace, or one session |
-| Typical use | RAG over your knowledge base  -  internal docs, customer-facing help content, product catalog | Personalization  -  "remember Alex prefers concise answers" or "this user already bought plan X" |
-| Retrieved via | `/search` with `source: "knowledge"` | `/search` with `source: "memories"` |
-| Mix both |  -  | Use `source: "all"` to merge a tenant-wide knowledge search with this user's memories in one ranked result set |
-
-Pick knowledge when the content is meant to be shared. Pick memory when the content is tied to a specific person, agent, or session.
-
-**`source_id`** - The unique identifier for any ingested item. Where it comes from:
-
-- Returned as `results[].source_id` from `POST /source/ingest` for every queued item.
-- Or set explicitly: pass `file_id` inside `file_metadata` for an uploaded file, set `id` on each item in `app_knowledge`, or set `source_id` on each item in `memories`. If you set it, HydraDB uses that value as the source ID  -  handy for mirroring your application's own document or memory IDs.
-
-Use a `source_id` to poll status (`/source/status`), fetch content (`/source/fetch`), delete an item (`DELETE /source`), inspect graph relations (`/source/relations`), or list a known subset (`/source/list` with `source_ids: [...]`).
-
-**`file_metadata`** - A JSON array on `/source/ingest` (one entry per file in `files`, same order) that attaches structured fields to each upload. Without it, an uploaded file indexes with only its filename. Use it to:
-
-- Set `tenant_metadata` so the file is filterable on schema-defined fields (department, region, etc.).
-- Set `document_metadata` for free-form per-document fields (author, source URL, timestamps).
-- Override the source `title`, `type`, or `url` shown in search results.
-- Pin your own `file_id` so the source ID matches your application's document ID.
-- Declare `relations` to other sources for thinking-mode search to surface as `additional_context`.
-
-**Multipart form data** - `/source/ingest` uses `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge`, `memories`) must be sent as JSON-stringified form values.
-
-**Upsert** - By default, ingesting a source with an existing ID overwrites the previous version. Set `upsert: false` to fail instead.
-
-**Forceful relations** - You can declare relationships between sources at ingest time using the `relations` field. Note: `relations` is a **per-item** field, not a top-level form field  -  set it on each entry inside `app_knowledge`, `memories`, or `file_metadata`. In `thinking`-mode search, related sources are surfaced as `additional_context`.
-
-<Note>
-**`tenant_metadata` vs `document_metadata`.** `tenant_metadata` matches the schema defined at tenant creation  -  fields are indexed and filterable tenant-wide (department, region, customer tier). `document_metadata` is free-form per-document JSON  -  flexible, but to filter on it you must nest the filter under a `document_metadata` key: `metadata_filters: {"document_metadata": {"source": "account_plan"}}`. Rule of thumb: structured + reusable → `tenant_metadata`; ad-hoc + per-doc → `document_metadata`. See [Essentials - Metadata](/essentials/v2/metadata).
-</Note>
+- **Knowledge vs. Memories**: [Knowledge](/essentials/v2/knowledge) is shared, tenant-wide content (files, app pages, Slack messages). [Memories](/essentials/v2/memories) are user-specific preferences and conversational traits scoped by `sub_tenant_id`. Both can be searched together via `source: "all"`.
+- **Source IDs**: Unique identifiers returned by `/source/ingest`. You can assign custom IDs using `source_id` in metadata or `id` in app knowledge. Use them for polling status, fetching content, and deleting sources.
+- **Metadata Filtering**: You can scope queries using `tenant_metadata` (structured fields defined in your tenant schema) or `additional_metadata` (free-form per-document JSON). For detailed guidelines on structuring metadata, see the [Scoping using metadata](/essentials/v2/metadata) guide.
+- **Forceful Relations**: Relationships between sources can be declared at ingestion time to construct a robust knowledge graph. For more details on the graph layer, see the [Context Graphs](/essentials/v2/context-graphs) guide.
 
 ## Related sections
 

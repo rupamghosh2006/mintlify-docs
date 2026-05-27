@@ -6,9 +6,9 @@ openapi: "GET /tenants/sub-tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-Discover which sub-tenants exist inside a tenant  -  typically users (B2C), workspaces, teams, projects, or sessions. Useful for admin views, per-user dashboards, audit tooling, or before running a per-user search.
+Retrieve all sub-tenant IDs that have indexed data within a specific tenant.
 
-Sub-tenants are created **implicitly during ingestion** the first time a `sub_tenant_id` value is written with a source or memory. There is no explicit "create sub-tenant" endpoint, and the returned list only includes sub-tenants that have at least one indexed source or memory.
+Sub-tenants are created implicitly during ingestion the first time a `sub_tenant_id` value is written. For details, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
 ```bash cURL
@@ -26,13 +26,7 @@ response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
 
 ## Query parameters
 
@@ -75,13 +69,8 @@ A tenant with no indexed content can return an empty list:
 **Implicit creation.** Sub-tenants are auto-created when ingestion writes data under a new `sub_tenant_id`. The returned list grows organically as your application writes data under new values.
 </Info>
 
-<Info>
-**Default sub-tenant included.** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. It appears here once any data is written without an explicit `sub_tenant_id`.
-</Info>
-
-<Info>
-**Only sub-tenants with data are listed.** A sub-tenant that has been referenced in a search but never received an ingest will not show up here.
-</Info>
+- **Default sub-tenant included:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. It appears here once any data is written without an explicit `sub_tenant_id`.
+- **Only sub-tenants with data are listed:** A sub-tenant that has been referenced in a search but never received an ingest will not show up here.
 
 ## Related endpoints
 

@@ -6,15 +6,14 @@ openapi: "GET /tenants/status"
 
 import { Field } from "/snippets/field.jsx";
 
-Tenant creation is asynchronous. Always poll this endpoint after `POST /tenants` and before your first ingestion or search call  -  the tenant is only ready when **all** of these are `true`:
+Check the provisioning readiness of a tenant's infrastructure. Since tenant creation is asynchronous, poll this endpoint after calling `POST /tenants` and before executing ingestion or search requests.
 
+The tenant is fully ready when:
 - Both `infra.vectorstore_status.knowledge` and `infra.vectorstore_status.memory` are `true`
-- `infra.graph_status` (the knowledge-graph layer)
-- `infra.scheduler_status` (the background indexing scheduler)
+- `infra.graph_status` (the knowledge-graph layer) is `true`
+- `infra.scheduler_status` (the background indexing scheduler) is `true`
 
-<Note>
-Provisioning typically takes 1–2 minutes on Free and Ship plans, and 4–5 minutes on Enterprise plans, which get complete physical isolation.
-</Note>
+For details on multi-tenant architecture and provisioning guarantees, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
 ```bash cURL
@@ -32,13 +31,7 @@ status = client.tenants.status(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
 
 ## Query parameters
 
@@ -139,13 +132,10 @@ done
 
 ## Behavior notes
 
-<Info>
-**Eventual consistency.** A freshly created tenant may briefly return `false` on one or more flags. Keep polling  -  provisioning is the normal path.
-</Info>
+- **Eventual consistency:** A freshly created tenant may briefly return `false` on one or more flags. Keep polling  -  provisioning is the normal path.
 
-<Info>
-**Stale tenant IDs.** If `tenant_id` does not exist, the call returns `404 TENANT_NOT_FOUND`. Always check that the tenant was created successfully before polling.
-</Info>
+
+- **Stale tenant IDs:** If `tenant_id` does not exist, the call returns `404 TENANT_NOT_FOUND`. Always verify that the tenant was created successfully before polling.
 
 ## Related endpoints
 

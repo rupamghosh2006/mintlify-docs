@@ -6,13 +6,9 @@ openapi: "GET /tenants/stats"
 
 import { Field } from "/snippets/field.jsx";
 
-Inspect storage growth, object counts, and vector dimensions for a tenant. Common use cases:
+Retrieve usage statistics for a tenant, including storage growth, object counts, and vector dimensions.
 
-- **Billing dashboards**  -  track row counts across the Knowledge and Memories collections.
-- **Capacity planning**  -  see how many vectors are in use and at what dimension.
-- **Post-ingest sanity check**  -  confirm that ingestion actually wrote rows to the expected collection.
-
-The response splits stats into two tenant-wide collections: `normal_collection` (Knowledge) and `memory_collection` (Memories), each with its own row count and embedding dimensionality. There is no `sub_tenant_id` parameter; counts aggregate across all sub-tenants in the tenant.
+The response splits stats into two tenant-wide collections: `normal_collection` (Knowledge) and `memory_collection` (Memories), each with its own row count and embedding dimensionality. Counts aggregate across all sub-tenants in the tenant. For more details on multi-tenant architecture, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
 ```bash cURL
@@ -30,13 +26,7 @@ stats = client.tenants.stats(tenant_id="my_first_tenant")
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-
-</Accordion>
 
 ## Query parameters
 
@@ -95,16 +85,11 @@ For a new or empty tenant, both collections are present and report zero rows:
 ## Behavior notes
 
 <Info>
-**`row_count` is chunks, not sources.** One ingested document typically becomes many chunks. A 30-page PDF can produce 100+ rows. To count distinct sources, use [List Documents](/api-reference/v2/endpoint/list-documents) with `page_size=1` and read `total`.
+**`row_count` is chunks, not sources.** One ingested document typically becomes many chunks (e.g., a 30-page PDF can produce 100+ rows). To count distinct sources, use [List Documents](/api-reference/v2/endpoint/list-documents) with `page_size=1` and read `total`.
 </Info>
 
-<Info>
-**Both collections always exist.** Even if you've only ingested knowledge (or only memories), both collections are provisioned. Empty collections report `row_count: 0` with the configured `dimensions`.
-</Info>
-
-<Info>
-**Stats are eventually consistent.** Immediately after ingestion or deletion, counts may lag until background processing completes. Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested source IDs before treating counts as final.
-</Info>
+- **Both collections always exist:** Even if you've only ingested knowledge (or only memories), both collections are provisioned. Empty collections report `row_count: 0` with the configured `dimensions`.
+- **Stats are eventually consistent:** Immediately after ingestion or deletion, counts may lag until background processing completes. Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested source IDs before treating counts as final.
 
 ## Related endpoints
 

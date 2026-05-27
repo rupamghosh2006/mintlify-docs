@@ -6,14 +6,9 @@ openapi: "GET /source/relations"
 
 import { Field } from "/snippets/field.jsx";
 
-Inspect the entity-and-relationship graph HydraDB built during ingestion. Common uses:
+Inspect the entity-and-relationship graph built during ingestion.
 
-- **Graph visualizations**  -  render a knowledge graph for a specific document or for the whole sub-tenant.
-- **Debug graph context**  -  see why a `mode: "thinking"` search returned a specific entity in `additional_context`.
-- **Downstream reasoning**  -  extract a relationship slice (e.g., "all `DEPENDS_ON` edges out of service X") and feed it to a planner or an LLM.
-- **Audit**  -  confirm that key entities were extracted from your ingested content.
-
-Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `is_memory=true` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets.
+Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `is_memory=true` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets. For more concepts, see the [Context Graphs](/essentials/v2/context-graphs) guide.
 
 <RequestExample>
 ```bash cURL
@@ -40,14 +35,7 @@ relations = client.source.relations(
 ```
 </RequestExample>
 
-<Accordion title="HTTP request details">
 
-- **Auth:** Bearer token + `API-Version: 2`
-- **Idempotency:** Read-only
-- **Async:** No
-- **Pagination:** Cursor-based. `limit` clamped to `1 ≤ x ≤ 10000`; default `5000`. Pass the response's `next_cursor` to fetch the next page.
-
-</Accordion>
 
 ## Query parameters
 
@@ -152,21 +140,10 @@ while True:
 **Cursor opacity.** `next_cursor` is opaque (currently a numeric score). Don't construct it client-side or assume meaning  -  pass back exactly what the server returned.
 </Info>
 
-<Info>
-**Sub-tenant-wide queries.** Omitting `source_id` returns relations across the whole sub-tenant. Useful for full-graph exports; pair with a small `limit` and paginate.
-</Info>
-
-<Info>
-**Knowledge vs memory.** If the `source_id` belongs to a memory, set `is_memory=true`; otherwise the endpoint searches the Knowledge graph. The two graphs are separate.
-</Info>
-
-<Info>
-**Ordering.** Treat `relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare scores across unrelated queries as absolute probabilities.
-</Info>
-
-<Info>
-**Graph completeness.** Source relations only fully populate once the source's `indexing_status` reaches `completed`. Items in `graph_creation` are searchable but their relations may still be in flight.
-</Info>
+- **Sub-tenant-wide queries:** Omitting `source_id` returns relations across the entire sub-tenant. This is useful for full-graph exports; pair with a small `limit` and paginate.
+- **Knowledge vs memory:** If the `source_id` belongs to a memory, set `is_memory=true`; otherwise the endpoint searches the Knowledge graph. The two graphs are completely separate.
+- **Ordering:** Treat `relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare scores across unrelated queries as absolute probabilities.
+- **Graph completeness:** Source relations only fully populate once the source's `indexing_status` reaches `completed`. Items in `graph_creation` are searchable but their relations may still be in flight.
 
 ## Related endpoints
 

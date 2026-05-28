@@ -13,6 +13,24 @@
     overflow: hidden !important;
 }
 
+/* Move Mintlify's generated API reference block to the explicit MDX marker. */
+.mdx-content:has(.api-before-related-resources) {
+    display: flex;
+    flex-direction: column;
+}
+
+.api-before-related-resources {
+    display: none;
+}
+
+.mdx-content:has(.api-before-related-resources) > div:has(> .api-section) {
+    order: 1;
+}
+
+.mdx-content:has(.api-before-related-resources) .api-before-related-resources ~ * {
+    order: 2;
+}
+
 /* Field reference requirement indicators */
 .field-req { color: #ef4444; font-weight: bold; cursor: default; }
 .field-rec { color: #eab308; font-size: 0.6em; vertical-align: middle; cursor: default; }

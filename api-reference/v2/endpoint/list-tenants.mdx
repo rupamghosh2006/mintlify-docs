@@ -1,7 +1,7 @@
 ---
 title: "List Tenants"
 description: "List all tenant IDs registered for your organization."
-openapi: "GET /tenants"
+openapi: "api-reference/v2/openapi.json GET /tenants"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -61,6 +61,8 @@ If provisioning failed for a tenant, `failed_tenant_ids` contains diagnostic ent
 ## Errors
 
 Common codes: `401 UNAUTHORIZED`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

@@ -1,7 +1,7 @@
 ---
 title: "Search"
 description: "Unified retrieval over knowledge, memories, or both."
-openapi: "POST /search"
+openapi: "api-reference/v2/openapi.json POST /search"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -438,6 +438,8 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

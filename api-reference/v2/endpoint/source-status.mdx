@@ -1,7 +1,7 @@
 ---
 title: "Source Status"
 description: "Check the processing status of ingested sources by their IDs."
-openapi: "GET /source/status"
+openapi: "api-reference/v2/openapi.json GET /source/status"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -208,6 +208,8 @@ Typical processing time:
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

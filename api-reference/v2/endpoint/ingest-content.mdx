@@ -1,7 +1,7 @@
 ---
 title: "Ingest Content"
 description: "Unified ingestion endpoint for knowledge (files, app sources) and user memories."
-openapi: "POST /source/ingest"
+openapi: "api-reference/v2/openapi.json POST /source/ingest"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -536,6 +536,8 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

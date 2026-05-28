@@ -1,7 +1,7 @@
 ---
 title: "Delete Source"
 description: "Delete knowledge sources or memories by their IDs."
-openapi: "DELETE /source"
+openapi: "api-reference/v2/openapi.json DELETE /source"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -118,6 +118,8 @@ The body wraps two fields together.
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

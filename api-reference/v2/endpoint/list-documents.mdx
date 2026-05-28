@@ -1,7 +1,7 @@
 ---
 title: "List Documents"
 description: "Paginated browse over knowledge sources or memories with optional filters."
-openapi: "POST /source/list"
+openapi: "api-reference/v2/openapi.json POST /source/list"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -179,6 +179,8 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

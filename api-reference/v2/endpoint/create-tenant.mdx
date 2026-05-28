@@ -1,7 +1,7 @@
 ---
 title: "Create Tenant"
 description: "Create an isolated workspace for your data."
-openapi: "POST /tenants"
+openapi: "api-reference/v2/openapi.json POST /tenants"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -116,9 +116,9 @@ You can define a custom schema at tenant creation to enable fast, deterministic 
 
 For detailed parameters, valid data types, shorthand flags, and comprehensive configuration examples, see the [Scoping using metadata](/essentials/v2/metadata) guide.
 
-<Warning>
+<Note>
 Schema field names are **immutable** after tenant creation. You can add per-document free-form metadata fields at ingestion time, but tenant-level fields cannot be renamed, removed, or have their flags changed in-place. Plan your schema carefully before creating the tenant.
-</Warning>
+</Note>
 
 
 ## Behavior notes
@@ -133,6 +133,8 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

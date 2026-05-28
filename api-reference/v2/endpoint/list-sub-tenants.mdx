@@ -1,7 +1,7 @@
 ---
 title: "List Sub-Tenants"
 description: "List sub-tenant IDs that have indexed data inside a tenant."
-openapi: "GET /tenants/sub-tenants"
+openapi: "api-reference/v2/openapi.json GET /tenants/sub-tenants"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -66,6 +66,8 @@ A tenant with no indexed content can return an empty list:
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

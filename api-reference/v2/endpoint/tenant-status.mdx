@@ -1,7 +1,7 @@
 ---
 title: "Tenant Status"
 description: "Check the provisioning readiness of a tenant's infrastructure."
-openapi: "GET /tenants/status"
+openapi: "api-reference/v2/openapi.json GET /tenants/status"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -123,6 +123,8 @@ done
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

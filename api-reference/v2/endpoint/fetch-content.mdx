@@ -1,7 +1,7 @@
 ---
 title: "Fetch Content"
 description: "Retrieve the original content of an ingested source."
-openapi: "GET /source/fetch"
+openapi: "api-reference/v2/openapi.json GET /source/fetch"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -150,6 +150,8 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

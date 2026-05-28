@@ -1,7 +1,7 @@
 ---
 title: "Tenant Stats"
 description: "Retrieve usage statistics for a tenant."
-openapi: "GET /tenants/stats"
+openapi: "api-reference/v2/openapi.json GET /tenants/stats"
 ---
 
 import { Field } from "/snippets/field.jsx";
@@ -78,6 +78,8 @@ For a new or empty tenant, both collections are present and report zero rows:
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<div className="api-before-related-resources" />
 
 <Tip>
 **Related Resources**

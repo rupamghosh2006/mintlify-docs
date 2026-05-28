@@ -9,11 +9,7 @@
   },
   "favicon": "/favicon.svg",
   "contextual": {
-    "options": [
-      "copy",
-      "chatgpt",
-      "claude"
-    ]
+    "options": ["copy", "chatgpt", "claude"]
   },
   "api": {
     "examples": {
@@ -70,6 +66,10 @@
                   "plugins/cli",
                   "plugins/openclaw"
                 ]
+              },
+              {
+                "group": "For Agents",
+                "pages": ["AGENTS"]
               }
             ]
           },
@@ -101,10 +101,7 @@
             "groups": [
               {
                 "group": "API Documentation",
-                "pages": [
-                  "api-reference/v2/index",
-                  "api-reference/v2/sdks"
-                ]
+                "pages": ["api-reference/v2/index", "api-reference/v2/sdks"]
               },
               {
                 "group": "Tenants",
@@ -139,9 +136,7 @@
               },
               {
                 "group": "Miscellaneous",
-                "pages": [
-                  "api-reference/v2/error-responses"
-                ]
+                "pages": ["api-reference/v2/error-responses"]
               }
             ]
           }
@@ -185,12 +180,6 @@
                   "plugins/mcp",
                   "plugins/cli",
                   "plugins/openclaw"
-                ]
-              },
-              {
-                "group": "For Agents",
-                "pages": [
-                  "AGENTS"
                 ]
               }
             ]

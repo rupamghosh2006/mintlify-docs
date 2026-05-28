@@ -1,0 +1,161 @@
+---
+title: "buildString / build_string"
+description: "Format a search result into a plain string for LLM injection."
+---
+
+## Overview
+
+`buildString` (TypeScript) / `build_string` (Python) formats a `POST /search` result into a plain string you can pass directly to an LLM.
+
+It works with any result from `client.search.query()` regardless of `source` or `search_by`.
+
+<Info>
+This helper is part of the SDK only. It makes no network calls.
+</Info>
+
+---
+
+## Knowledge only
+
+<CodeGroup>
+```typescript TypeScript SDK
+import { HydraDBClient, buildString } from "@hydradb/sdk";
+
+const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
+
+const result = await client.search.query({
+  tenant_id: "my_tenant",
+  query: "What is our refund policy?",
+  source: "knowledge",
+  search_by: "hybrid",
+  graph_context: true,
+});
+
+console.log(buildString(result));
+```
+```python Python SDK
+from hydra_db import HydraDB, build_string
+
+client = HydraDB(token="YOUR_API_KEY")
+
+result = client.search.query(
+    tenant_id="my_tenant",
+    query="What is our refund policy?",
+    source="knowledge",
+    search_by="hybrid",
+    graph_context=True,
+)
+
+print(build_string(result))
+```
+```python Python SDK (Async)
+from hydra_db import AsyncHydraDB, build_string
+
+client = AsyncHydraDB(token="YOUR_API_KEY")
+
+result = await client.search.query(
+    tenant_id="my_tenant",
+    query="What is our refund policy?",
+    source="knowledge",
+    search_by="hybrid",
+    graph_context=True,
+)
+
+print(build_string(result))
+```
+</CodeGroup>
+
+---
+
+## Memories only
+
+<CodeGroup>
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "my_tenant",
+  sub_tenant_id: "user_alex",
+  query: "What are the user preferences?",
+  source: "memories",
+  search_by: "hybrid",
+});
+
+console.log(buildString(result));
+```
+```python Python SDK
+result = client.search.query(
+    tenant_id="my_tenant",
+    sub_tenant_id="user_alex",
+    query="What are the user preferences?",
+    source="memories",
+    search_by="hybrid",
+)
+
+print(build_string(result))
+```
+</CodeGroup>
+
+---
+
+## Knowledge and memories together
+
+<CodeGroup>
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "my_tenant",
+  sub_tenant_id: "user_alex",
+  query: "What is our refund policy?",
+  source: "all",
+  search_by: "hybrid",
+  mode: "thinking",
+});
+
+console.log(buildString(result));
+```
+```python Python SDK
+result = client.search.query(
+    tenant_id="my_tenant",
+    sub_tenant_id="user_alex",
+    query="What is our refund policy?",
+    source="all",
+    search_by="hybrid",
+    mode="thinking",
+)
+
+print(build_string(result))
+```
+</CodeGroup>
+
+---
+
+## Output format
+
+Each chunk is rendered with its source, content, and graph relations inline:
+
+```text
+=== CONTEXT ===
+
+Chunk 1
+Source: refund-policy.pdf (score: 1.33)
+
+Refunds are issued within 30 days of purchase. To request a refund,
+contact support with your order number and reason for the request.
+
+Graph Relations:
+  [refund policy] -> GOVERNS -> [support team]: The support team processes all refund requests.
+  [refund policy] -> RELATED_TO -> [billing department]: Approved refunds are processed by billing.
+---
+
+Chunk 2
+Source: refund-policy.pdf (score: 1.21)
+
+Refunds are not available for digital products once downloaded.
+---
+```
+
+---
+
+## Related
+
+- [Search](/api-reference/v2/endpoint/search) - full search endpoint reference
+- [Search Overview](/api-reference/v2/endpoint/search-overview) - which parameters to use
+- [How to Use API Results](/essentials/v2/api-results) - end-to-end prompt building

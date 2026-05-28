@@ -10,7 +10,7 @@ App sources are pre-parsed records from business applications  -  emails, chat m
 Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.source_ids`](#7-forceful-relations).
 
 <Info>
-  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
+  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with `app_search: true` and `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
 </Info>
 
 ---
@@ -380,11 +380,8 @@ Use forceful relations for connections the text alone can't express:
 ```
 
 <Warning>
-  Forceful relations work **within the same store**  -  Knowledge → Knowledge or Memory → Memory. Pointing a Knowledge source at a Memory source ID (or vice versa) silently returns nothing at search.
-</Warning>
-
-<Warning>
-  Forceful-relation context is only fetched when `mode: "thinking"` is set on the [search request](/api-reference/v2/endpoint/search). In `fast` mode, `search_forceful_relations` is ignored.
+- Forceful relations work **within the same store**  -  Knowledge → Knowledge or Memory → Memory. Pointing a Knowledge source at a Memory source ID (or vice versa) silently returns nothing at search.
+- Forceful-relation context is only fetched when `mode: "thinking"` is set on the [search request](/api-reference/v2/endpoint/search). In `fast` mode, `search_forceful_relations` is ignored.
 </Warning>
 
 See [Knowledge - Forceful relations](/essentials/v2/knowledge#7-forceful-relations) for the full retrieval contract.

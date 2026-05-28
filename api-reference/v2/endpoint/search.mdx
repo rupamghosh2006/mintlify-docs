@@ -126,7 +126,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 ## Common use-cases and their configurations
 
 <AccordionGroup>
-  <Accordion title="Knowledge RAG - answer from shared documents" defaultOpen>
+  <Accordion title="1. Knowledge RAG - answer from shared documents">
     <CodeGroup>
 
 ```bash cURL
@@ -172,7 +172,7 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
-  <Accordion title="Personalized answer - combine knowledge with user memories">
+  <Accordion title="2. Personalized answer - combine knowledge with user memories">
     <CodeGroup>
 
 ```bash cURL
@@ -215,7 +215,7 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
-  <Accordion title="Retrieve user preferences - search only user memories">
+  <Accordion title="3. Retrieve user preferences - search only user memories">
     <CodeGroup>
 
 ```bash cURL
@@ -255,7 +255,7 @@ result = client.search.query(
     </CodeGroup>
   </Accordion>
 
-  <Accordion title="Exact phrase lookup - BM25 for legal terms, SKUs, or IDs">
+  <Accordion title="4. Exact phrase lookup - BM25 for legal terms, SKUs, or IDs">
     <CodeGroup>
 
 ```bash cURL
@@ -317,6 +317,17 @@ result = client.search.query(
 | <Field name="additional_context" type="string or null" /> | Request-time hint to guide retrieval (e.g., "user is on the billing page"). This is different from the response `additional_context` map. (default=`null`) |
 | <Field name="metadata_filters" type="object or null" /> | Deterministic narrowing before ranking. See [Filters](#filters). (default=`null`) |
 
+<Tip>
+**Tuning heuristics.**
+<ul>
+  <li><strong><code>alpha</code></strong>: start at <code>0.8</code>. Lower toward <code>0.3–0.5</code> when the query contains literal tokens (error codes, SKUs, product names). Raise toward <code>0.9</code> for conceptual questions. Use <code>"auto"</code> when query shape varies.</li>
+  <li><strong><code>recency_bias</code></strong>: leave at <code>0</code> for static reference material. Set <code>0.2–0.4</code> for mixed content, <code>0.6–0.8</code> for changelogs, news, or status updates.</li>
+  <li><strong><code>max_results</code></strong>: start at <code>10</code>. Drop to <code>5</code> for tight context windows; raise to <code>20</code> if you rerank downstream.</li>
+</ul>
+</Tip>
+
+
+### Decision matrices
 ### Source selection
 
 | Value | Searches | Best for |
@@ -531,66 +542,6 @@ A zero-result search returns empty arrays/maps rather than an error:
 
 For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
 
-## Graph response schema
-
-When `graph_context` is enabled, the graph payload is returned at `data.graph_context` as a `GraphContext` object.
-
-### GraphContext fields
-
-| Field | Description |
-|---|---|
-| <Field name="query_paths" type="ScoredPathResponse[]" /> | Entity traversal paths derived from the query. Useful for relational reasoning across matching entities. |
-| <Field name="chunk_relations" type="ScoredPathResponse[]" /> | Relation paths attached to returned chunks. Use with `chunk_id_to_group_ids` to attach the right graph paths to each chunk. |
-| <Field name="chunk_id_to_group_ids" type="object" /> | Map of `chunk_uuid` to the `group_id` values in `chunk_relations` that belong to that chunk. |
-| <Field name="synthesis_context" type="string or null" /> | LLM-generated summary of how sub-query results connect. Present only for multi-step graph queries that require synthesis. |
-
-### `ScoredPathResponse` fields
-
-`query_paths[]` and `chunk_relations[]` both use `ScoredPathResponse`:
-
-| Field | Description |
-|---|---|
-| <Field name="triplets" type="PathTriplet[]" required /> | Ordered graph edges in the path. |
-| <Field name="relevancy_score" type="number" required /> | Relevance score for this graph path. |
-| <Field name="combined_context" type="string or null" /> | Text summary of the path's supporting context, when available. |
-| <Field name="group_id" type="string or null" /> | Path group identifier, such as `p_0`, used by `chunk_id_to_group_ids`. |
-| <Field name="source_chunk_ids" type="string[] or null" /> | Input chunk IDs whose graph traversal produced this path. |
-
-### `PathTriplet` fields
-
-Each `triplets[]` item is a `PathTriplet`:
-
-| Field | Description |
-|---|---|
-| <Field name="source" type="Entity" required /> | Source entity for the relation. |
-| <Field name="relation" type="RelationEvidence" required /> | Evidence and predicate connecting source to target. |
-| <Field name="target" type="Entity" required /> | Target entity for the relation. |
-
-### `Entity` fields
-
-| Field | Description |
-|---|---|
-| <Field name="name" type="string" required /> | Normalized entity name. |
-| <Field name="type" type="string" required /> | Entity class, such as `PERSON`, `ORGANIZATION`, `PROJECT`, `PRODUCT`, or `ERROR_CODE`. |
-| <Field name="namespace" type="string" /> | Context category, such as `employees` or `projects`. Defaults to `default`. |
-| <Field name="entity_id" type="string" required /> | Internal unique entity ID from the graph database. |
-| <Field name="identifier" type="string or null" /> | Stable external identifier, such as an email, employee ID, or URL. |
-
-### `RelationEvidence` fields
-
-| Field | Description |
-|---|---|
-| <Field name="canonical_predicate" type="string" required /> | Normalized relationship phrase. |
-| <Field name="raw_predicate" type="string" required /> | Original predicate extracted from source text. |
-| <Field name="context" type="string" required /> | Supporting context for the relationship. |
-| <Field name="confidence" type="number" /> | Confidence score from `0.0` to `1.0`. Defaults to `0.8`. |
-| <Field name="temporal_details" type="string or null" /> | Temporal timing information extracted from text. |
-| <Field name="timestamp" type="string" /> | ISO-8601 timestamp when this relation was introduced. |
-| <Field name="relationship_id" type="string" required /> | Unique relationship ID from the graph database. |
-| <Field name="chunk_id" type="string or null" /> | Chunk ID this relation was extracted from. |
-| <Field name="source_entity_id" type="string or null" /> | Entity ID for the source node. |
-| <Field name="target_entity_id" type="string or null" /> | Entity ID for the target node. |
-
 ## Behavior notes
 
 <Info>
@@ -605,15 +556,6 @@ Each `triplets[]` item is a `PathTriplet`:
 - **`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under a `document_metadata` key.
 - **Common mistakes.** Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before searching. If you omit `sub_tenant_id`, HydraDB searches the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
 </Warning>
-
-<Tip>
-**Tuning heuristics.**
-<ul>
-  <li><strong><code>alpha</code></strong>: start at <code>0.8</code>. Lower toward <code>0.3–0.5</code> when the query contains literal tokens (error codes, SKUs, product names). Raise toward <code>0.9</code> for conceptual questions. Use <code>"auto"</code> when query shape varies.</li>
-  <li><strong><code>recency_bias</code></strong>: leave at <code>0</code> for static reference material. Set <code>0.2–0.4</code> for mixed content, <code>0.6–0.8</code> for changelogs, news, or status updates.</li>
-  <li><strong><code>max_results</code></strong>: start at <code>10</code>. Drop to <code>5</code> for tight context windows; raise to <code>20</code> if you rerank downstream.</li>
-</ul>
-</Tip>
 
 ## Errors
 

@@ -11,6 +11,13 @@
   "contextual": {
     "options": ["copy", "chatgpt", "claude"]
   },
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_qH6psLVjkWQFAGSmTJoKkpVG9Tj5KUqzULfAn9mYdg79",
+      "apiHost": "https://us.i.posthog.com",
+      "sessionRecording": true
+    }
+  },
   "api": {
     "examples": {
       "languages": ["python", "javascript", "curl"]
@@ -181,6 +188,10 @@
                   "plugins/cli",
                   "plugins/openclaw"
                 ]
+              },
+              {
+                "group": "For Agents",
+                "pages": ["AGENTS"]
               }
             ]
           },

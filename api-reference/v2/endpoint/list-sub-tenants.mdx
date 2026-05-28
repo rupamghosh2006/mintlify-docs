@@ -38,8 +38,16 @@ curl -X GET 'https://api.hydradb.com/tenants/sub-tenants?tenant_id=my_first_tena
 
 ```json Response
 {
-  "sub_tenant_ids": ["user_alex", "user_johndoe", "workspace_42", "subtenant_default_abc123"],
-  "message": "Successfully retrieved sub-tenant IDs"
+  "success": true,
+  "data": {
+    "sub_tenant_ids": ["user_alex", "user_johndoe", "workspace_42", "subtenant_default_abc123"],
+    "message": "Successfully retrieved sub-tenant IDs"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -49,8 +57,16 @@ A tenant with no indexed content can return an empty list:
 
 ```json Empty tenant
 {
-  "sub_tenant_ids": [],
-  "message": "Successfully retrieved sub-tenant IDs"
+  "success": true,
+  "data": {
+    "sub_tenant_ids": [],
+    "message": "Successfully retrieved sub-tenant IDs"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -66,6 +82,21 @@ A tenant with no indexed content can return an empty list:
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

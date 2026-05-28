@@ -508,13 +508,21 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 ```json Response
 {
   "success": true,
-  "message": "Knowledge uploaded successfully",
-  "results": [
-    { "source_id": "policy_main", "filename": "policy.pdf", "status": "queued", "error": null },
-    { "source_id": "runbook_deploy", "filename": "runbook.pdf", "status": "queued", "error": null }
-  ],
-  "success_count": 2,
-  "failed_count": 0
+  "data": {
+    "success": true,
+    "message": "Knowledge uploaded successfully",
+    "results": [
+      { "source_id": "policy_main", "filename": "policy.pdf", "status": "queued", "error": null },
+      { "source_id": "runbook_deploy", "filename": "runbook.pdf", "status": "queued", "error": null }
+    ],
+    "success_count": 2,
+    "failed_count": 0
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -536,6 +544,21 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

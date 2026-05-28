@@ -54,27 +54,51 @@ curl -G 'https://api.hydradb.com/source/relations' \
 
 ```json Response
 {
-  "relations": [
-    {
-      "triplets": [
-        {
-          "source": { "name": "PaymentsWorker", "type": "Service" },
-          "relation": {
-            "canonical_predicate": "DEPENDS_ON",
-            "context": "fetches transactions during sync",
-            "temporal_details": "2026-02"
-          },
-          "target": { "name": "OrdersDB", "type": "Database" }
-        }
-      ],
-      "relevancy_score": 0.93,
-      "group_id": "p_42"
-    }
-  ],
-  "is_truncated": false,
-  "next_cursor": null,
   "success": true,
-  "message": "Relations retrieved successfully"
+  "data": {
+    "relations": [
+      {
+        "source": {
+          "name": "PaymentsWorker",
+          "type": "Service",
+          "namespace": "default",
+          "entity_id": "entity_payments_worker",
+          "identifier": null
+        },
+        "target": {
+          "name": "OrdersDB",
+          "type": "Database",
+          "namespace": "default",
+          "entity_id": "entity_orders_db",
+          "identifier": null
+        },
+        "relations": [
+          {
+            "canonical_predicate": "DEPENDS_ON",
+            "raw_predicate": "depends on",
+            "context": "PaymentsWorker fetches transactions from OrdersDB during sync.",
+            "confidence": 0.93,
+            "temporal_details": "2026-02",
+            "timestamp": "2026-05-12T08:14:00Z",
+            "relationship_id": "rel_payments_orders",
+            "chunk_id": "policy_main_chunk_3",
+            "source_entity_id": "entity_payments_worker",
+            "target_entity_id": "entity_orders_db"
+          }
+        ],
+        "chunk_id": "policy_main_chunk_3"
+      }
+    ],
+    "is_truncated": false,
+    "next_cursor": null,
+    "success": true,
+    "message": "Relations retrieved successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -82,23 +106,44 @@ curl -G 'https://api.hydradb.com/source/relations' \
 
 ```json Truncated response
 {
-  "relations": [
-    {
-      "triplets": [
-        {
-          "source": { "name": "PaymentsWorker", "type": "Service" },
-          "relation": { "canonical_predicate": "DEPENDS_ON" },
-          "target": { "name": "OrdersDB", "type": "Database" }
-        }
-      ],
-      "relevancy_score": 0.88,
-      "group_id": "p_43"
-    }
-  ],
-  "is_truncated": true,
-  "next_cursor": 0.88,
   "success": true,
-  "message": "Relations retrieved successfully"
+  "data": {
+    "relations": [
+      {
+        "source": {
+          "name": "PaymentsWorker",
+          "type": "Service",
+          "namespace": "default",
+          "entity_id": "entity_payments_worker"
+        },
+        "target": {
+          "name": "OrdersDB",
+          "type": "Database",
+          "namespace": "default",
+          "entity_id": "entity_orders_db"
+        },
+        "relations": [
+          {
+            "canonical_predicate": "DEPENDS_ON",
+            "raw_predicate": "depends on",
+            "context": "PaymentsWorker depends on OrdersDB for transaction sync.",
+            "relationship_id": "rel_payments_orders",
+            "confidence": 0.88
+          }
+        ],
+        "chunk_id": "policy_main_chunk_4"
+      }
+    ],
+    "is_truncated": true,
+    "next_cursor": 0.88,
+    "success": true,
+    "message": "Relations retrieved successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -129,12 +174,27 @@ while True:
 
 - **Sub-tenant-wide queries:** Omitting `source_id` returns relations across the entire sub-tenant. This is useful for full-graph exports; pair with a small `limit` and paginate.
 - **Knowledge vs memory:** If the `source_id` belongs to a memory, set `is_memory=true`; otherwise the endpoint searches the Knowledge graph. The two graphs are completely separate.
-- **Ordering:** Treat `relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare scores across unrelated queries as absolute probabilities.
+- **Ordering:** Treat `data.relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare ordering across unrelated queries as an absolute signal.
 - **Graph completeness:** Source relations only fully populate once the source's `indexing_status` reaches `completed`. Items in `graph_creation` are searchable but their relations may still be in flight.
 
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "SOURCE_NOT_FOUND",
+    "message": "Source not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

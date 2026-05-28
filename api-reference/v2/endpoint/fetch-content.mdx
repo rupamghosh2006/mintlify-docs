@@ -71,52 +71,84 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 ```json mode=content
 {
   "success": true,
-  "source_id": "policy_main",
-  "content": "Section 1. Authentication policies...",
-  "content_base64": null,
-  "presigned_url": null,
-  "content_type": "application/pdf",
-  "size_bytes": 1842233,
-  "message": "File fetched successfully"
+  "data": {
+    "success": true,
+    "source_id": "policy_main",
+    "content": "Section 1. Authentication policies...",
+    "content_base64": null,
+    "presigned_url": null,
+    "content_type": "application/pdf",
+    "size_bytes": 1842233,
+    "message": "File fetched successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
 ```json mode=url
 {
   "success": true,
-  "source_id": "policy_main",
-  "content": null,
-  "content_base64": null,
-  "presigned_url": "https://storage.hydradb.com/.../policy_main.pdf?X-Amz-...",
-  "content_type": "application/pdf",
-  "size_bytes": 1842233,
-  "message": "File fetched successfully"
+  "data": {
+    "success": true,
+    "source_id": "policy_main",
+    "content": null,
+    "content_base64": null,
+    "presigned_url": "https://storage.hydradb.com/.../policy_main.pdf?X-Amz-...",
+    "content_type": "application/pdf",
+    "size_bytes": 1842233,
+    "message": "File fetched successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
 ```json mode=both for a binary file
 {
   "success": true,
-  "source_id": "diagram_png",
-  "content": null,
-  "content_base64": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "presigned_url": "https://storage.hydradb.com/.../diagram.png?X-Amz-...",
-  "content_type": "image/png",
-  "size_bytes": 92844,
-  "message": "File fetched successfully"
+  "data": {
+    "success": true,
+    "source_id": "diagram_png",
+    "content": null,
+    "content_base64": "iVBORw0KGgoAAAANSUhEUgAA...",
+    "presigned_url": "https://storage.hydradb.com/.../diagram.png?X-Amz-...",
+    "content_type": "image/png",
+    "size_bytes": 92844,
+    "message": "File fetched successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
 ```json Memory source
 {
   "success": true,
-  "source_id": "mem_user_alex_tone",
-  "content": "Prefers concise answers and dark mode.",
-  "content_base64": null,
-  "presigned_url": null,
-  "content_type": "text/plain",
-  "size_bytes": null,
-  "message": "Memory fetched successfully"
+  "data": {
+    "success": true,
+    "source_id": "mem_user_alex_tone",
+    "content": "Prefers concise answers and dark mode.",
+    "content_base64": null,
+    "presigned_url": null,
+    "content_type": "text/plain",
+    "size_bytes": null,
+    "message": "Memory fetched successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -125,13 +157,21 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 ```json Response
 {
   "success": true,
-  "source_id": "policy_main",
-  "content": "Section 1. Authentication policies...",
-  "content_base64": null,
-  "presigned_url": "https://storage.hydradb.com/.../policy_main.pdf?X-Amz-...",
-  "content_type": "application/pdf",
-  "size_bytes": 1842233,
-  "message": "File fetched successfully"
+  "data": {
+    "success": true,
+    "source_id": "policy_main",
+    "content": "Section 1. Authentication policies...",
+    "content_base64": null,
+    "presigned_url": "https://storage.hydradb.com/.../policy_main.pdf?X-Amz-...",
+    "content_type": "application/pdf",
+    "size_bytes": 1842233,
+    "message": "File fetched successfully"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -150,6 +190,21 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "SOURCE_NOT_FOUND",
+    "message": "Source not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

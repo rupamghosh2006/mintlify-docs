@@ -368,30 +368,137 @@ For `search_by: "hybrid"` and `"vector"`:
 
 ```json Response
 {
-  "chunks": [
-    {
-      "chunk_uuid": "policy_main_chunk_3",
-      "source_title": "Compliance Policy",
-      "source_id": "policy_main",
-      "chunk_content": "Refunds are issued within 30 days...",
-      "relevancy_score": 0.91,
-      "extra_context_ids": ["pref-tone"],
-      "additional_metadata": { "author": "Legal Team" }
+  "success": true,
+  "data": {
+    "chunks": [
+      {
+        "chunk_uuid": "policy_main_chunk_3",
+        "source_id": "policy_main",
+        "chunk_content": "Refunds are issued within 30 days...",
+        "source_type": "pdf",
+        "source_title": "Compliance Policy",
+        "source_upload_time": "2026-05-12T08:14:00Z",
+        "source_last_updated_time": "2026-05-12T08:14:00Z",
+        "layout": "{\"offsets\":{\"document_level_start_index\":1024},\"page\":3}",
+        "relevancy_score": 0.91,
+        "extra_context_ids": ["pref-tone"],
+        "metadata": { "department": "legal" },
+        "additional_metadata": { "author": "Legal Team" }
+      }
+    ],
+    "sources": [
+      {
+        "id": "policy_main",
+        "title": "Compliance Policy",
+        "type": "pdf",
+        "description": "",
+        "url": "",
+        "timestamp": "2026-05-12T08:14:00Z",
+        "metadata": { "department": "legal" },
+        "additional_metadata": { "author": "Legal Team" },
+        "app_kind": null,
+        "app_provider": null,
+        "app_external_id": null
+      }
+    ],
+    "graph_context": {
+      "query_paths": [
+        {
+          "triplets": [
+            {
+              "source": {
+                "name": "Compliance Policy",
+                "type": "DOCUMENT",
+                "namespace": "default",
+                "entity_id": "entity_compliance_policy",
+                "identifier": "https://api.hydradb.com/docs/compliance_policy"
+              },
+              "relation": {
+                "canonical_predicate": "GOVERNS",
+                "raw_predicate": "governs and regulates",
+                "context": "The compliance policy governs the refund processing timeline of 30 days.",
+                "confidence": 0.95,
+                "temporal_details": null,
+                "timestamp": "2026-05-12T08:14:00Z",
+                "relationship_id": "rel_governs_refunds",
+                "chunk_id": "policy_main_chunk_3",
+                "source_entity_id": "entity_compliance_policy",
+                "target_entity_id": "entity_refund_processing"
+              },
+              "target": {
+                "name": "Refund Processing",
+                "type": "PROCESS",
+                "namespace": "default",
+                "entity_id": "entity_refund_processing",
+                "identifier": null
+              }
+            }
+          ],
+          "relevancy_score": 0.89,
+          "combined_context": "The Compliance Policy governs the Refund Processing, which regulates refunds.",
+          "group_id": null,
+          "source_chunk_ids": ["policy_main_chunk_3"]
+        }
+      ],
+      "chunk_relations": [
+        {
+          "triplets": [
+            {
+              "source": {
+                "name": "Refund Processing",
+                "type": "PROCESS",
+                "namespace": "default",
+                "entity_id": "entity_refund_processing",
+                "identifier": null
+              },
+              "relation": {
+                "canonical_predicate": "MANAGED_BY",
+                "raw_predicate": "is managed by",
+                "context": "Refund processing is managed by the Finance Department.",
+                "confidence": 0.9,
+                "temporal_details": "Q2 2026 onwards",
+                "timestamp": "2026-05-12T08:14:00Z",
+                "relationship_id": "rel_managed_by_finance",
+                "chunk_id": "policy_main_chunk_3",
+                "source_entity_id": "entity_refund_processing",
+                "target_entity_id": "entity_finance_dept"
+              },
+              "target": {
+                "name": "Finance Department",
+                "type": "ORGANIZATION",
+                "namespace": "default",
+                "entity_id": "entity_finance_dept",
+                "identifier": "finance@hydradb.com"
+              }
+            }
+          ],
+          "relevancy_score": 0.82,
+          "combined_context": "Refund Processing is managed by the Finance Department.",
+          "group_id": "p_0",
+          "source_chunk_ids": ["policy_main_chunk_3"]
+        }
+      ],
+      "chunk_id_to_group_ids": {
+        "policy_main_chunk_3": ["p_0"]
+      },
+      "synthesis_context": "The Compliance Policy governs Refund Processing, which is managed by the Finance Department."
+    },
+    "additional_context": {
+      "pref-tone": {
+        "chunk_uuid": "pref-tone",
+        "source_id": "mem_user_alex_tone",
+        "chunk_content": "Prefers concise answers.",
+        "source_type": "memory",
+        "source_title": "User preferences",
+        "source_upload_time": "2026-05-12T08:14:00Z",
+        "source_last_updated_time": "2026-05-12T08:14:00Z"
+      }
     }
-  ],
-  "sources": [
-    { "id": "policy_main", "title": "Compliance Policy", "type": "pdf" }
-  ],
-  "graph_context": {
-    "query_paths": [],
-    "chunk_relations": [],
-    "chunk_id_to_group_ids": {}
   },
-  "additional_context": {
-    "pref-tone": {
-      "source_title": "User preferences",
-      "chunk_content": "Prefers concise answers."
-    }
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
   }
 }
 ```
@@ -402,14 +509,87 @@ A zero-result search returns empty arrays/maps rather than an error:
 
 ```json Zero results
 {
-  "chunks": [],
-  "sources": [],
-  "graph_context": null,
-  "additional_context": {}
+  "success": true,
+  "data": {
+    "chunks": [],
+    "sources": [],
+    "graph_context": {
+      "query_paths": [],
+      "chunk_relations": [],
+      "chunk_id_to_group_ids": {},
+      "synthesis_context": null
+    },
+    "additional_context": {}
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
 For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
+
+## Graph response schema
+
+When `graph_context` is enabled, the graph payload is returned at `data.graph_context` as a `GraphContext` object.
+
+### GraphContext fields
+
+| Field | Description |
+|---|---|
+| <Field name="query_paths" type="ScoredPathResponse[]" /> | Entity traversal paths derived from the query. Useful for relational reasoning across matching entities. |
+| <Field name="chunk_relations" type="ScoredPathResponse[]" /> | Relation paths attached to returned chunks. Use with `chunk_id_to_group_ids` to attach the right graph paths to each chunk. |
+| <Field name="chunk_id_to_group_ids" type="object" /> | Map of `chunk_uuid` to the `group_id` values in `chunk_relations` that belong to that chunk. |
+| <Field name="synthesis_context" type="string or null" /> | LLM-generated summary of how sub-query results connect. Present only for multi-step graph queries that require synthesis. |
+
+### `ScoredPathResponse` fields
+
+`query_paths[]` and `chunk_relations[]` both use `ScoredPathResponse`:
+
+| Field | Description |
+|---|---|
+| <Field name="triplets" type="PathTriplet[]" required /> | Ordered graph edges in the path. |
+| <Field name="relevancy_score" type="number" required /> | Relevance score for this graph path. |
+| <Field name="combined_context" type="string or null" /> | Text summary of the path's supporting context, when available. |
+| <Field name="group_id" type="string or null" /> | Path group identifier, such as `p_0`, used by `chunk_id_to_group_ids`. |
+| <Field name="source_chunk_ids" type="string[] or null" /> | Input chunk IDs whose graph traversal produced this path. |
+
+### `PathTriplet` fields
+
+Each `triplets[]` item is a `PathTriplet`:
+
+| Field | Description |
+|---|---|
+| <Field name="source" type="Entity" required /> | Source entity for the relation. |
+| <Field name="relation" type="RelationEvidence" required /> | Evidence and predicate connecting source to target. |
+| <Field name="target" type="Entity" required /> | Target entity for the relation. |
+
+### `Entity` fields
+
+| Field | Description |
+|---|---|
+| <Field name="name" type="string" required /> | Normalized entity name. |
+| <Field name="type" type="string" required /> | Entity class, such as `PERSON`, `ORGANIZATION`, `PROJECT`, `PRODUCT`, or `ERROR_CODE`. |
+| <Field name="namespace" type="string" /> | Context category, such as `employees` or `projects`. Defaults to `default`. |
+| <Field name="entity_id" type="string" required /> | Internal unique entity ID from the graph database. |
+| <Field name="identifier" type="string or null" /> | Stable external identifier, such as an email, employee ID, or URL. |
+
+### `RelationEvidence` fields
+
+| Field | Description |
+|---|---|
+| <Field name="canonical_predicate" type="string" required /> | Normalized relationship phrase. |
+| <Field name="raw_predicate" type="string" required /> | Original predicate extracted from source text. |
+| <Field name="context" type="string" required /> | Supporting context for the relationship. |
+| <Field name="confidence" type="number" /> | Confidence score from `0.0` to `1.0`. Defaults to `0.8`. |
+| <Field name="temporal_details" type="string or null" /> | Temporal timing information extracted from text. |
+| <Field name="timestamp" type="string" /> | ISO-8601 timestamp when this relation was introduced. |
+| <Field name="relationship_id" type="string" required /> | Unique relationship ID from the graph database. |
+| <Field name="chunk_id" type="string or null" /> | Chunk ID this relation was extracted from. |
+| <Field name="source_entity_id" type="string or null" /> | Entity ID for the source node. |
+| <Field name="target_entity_id" type="string or null" /> | Entity ID for the target node. |
 
 ## Behavior notes
 
@@ -438,6 +618,21 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "INVALID_PARAMETERS",
+    "message": "query must not be empty"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

@@ -6,7 +6,7 @@ openapi: "api-reference/v2/openapi.json GET /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-The response separates active or provisioning tenants (in `tenant_ids`) from tenants whose provisioning failed (in `failed_tenant_ids`). 
+The response separates active or provisioning tenants (in `data.tenant_ids`) from tenants whose provisioning failed (in `data.failed_tenant_ids`).
 
 <RequestExample>
 ```python Python SDK
@@ -28,39 +28,70 @@ curl -X GET 'https://api.hydradb.com/tenants' \
 
 ```json Success
 {
-  "tenant_ids": ["acme_corp", "my_first_tenant"],
-  "failed_tenant_ids": null,
-  "message": "Successfully retrieved tenant IDs"
+  "success": true,
+  "data": {
+    "tenant_ids": ["acme_corp", "my_first_tenant"],
+    "failed_tenant_ids": null,
+    "message": "Successfully retrieved tenant IDs"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
-```json Provisioning Failure
+```json Provisioning issue
 {
-  "tenant_ids": ["acme_corp"],
-  "failed_tenant_ids": [
-    {
-      "tenant_id": "staging_import",
-      "error": "Provisioning failed. Re-create the tenant to retry."
-    }
-  ],
-  "message": "Successfully retrieved tenant IDs"
+  "success": true,
+  "data": {
+    "tenant_ids": ["acme_corp"],
+    "failed_tenant_ids": [
+      {
+        "tenant_id": "staging_import",
+        "error": "Provisioning failed. Re-create the tenant to retry."
+      }
+    ],
+    "message": "Successfully retrieved tenant IDs"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
 </ResponseExample>
 
-If provisioning failed for a tenant, `failed_tenant_ids` contains diagnostic entries as shown in the **Provisioning Failure** tab.
+If provisioning failed for a tenant, `data.failed_tenant_ids` contains diagnostic entries as shown in the **Provisioning issue** tab.
 
 <Info>
-**Includes provisioning tenants.** Tenants returned in `tenant_ids` may still be provisioning. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to confirm readiness before ingestion.
+**Includes provisioning tenants.** Tenants returned in `data.tenant_ids` may still be provisioning. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to confirm readiness before ingestion.
 </Info>
 
 ## Behavior notes
-- **Retry failed tenants:** If a tenant appears in `failed_tenant_ids`, re-create that tenant with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
+- **Retry failed tenants:** If a tenant appears in `data.failed_tenant_ids`, re-create that tenant with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
 
 ## Errors
 
 Common codes: `401 UNAUTHORIZED`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing, expired, or invalid API key"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

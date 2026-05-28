@@ -45,17 +45,25 @@ curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
 
 ```json Response
 {
-  "tenant_id": "my_first_tenant",
-  "org_id": "org_abc123",
-  "infra": {
-    "scheduler_status": true,
-    "graph_status": true,
-    "vectorstore_status": {
-      "knowledge": true,
-      "memory": true
-    }
+  "success": true,
+  "data": {
+    "tenant_id": "my_first_tenant",
+    "org_id": "org_abc123",
+    "infra": {
+      "scheduler_status": true,
+      "graph_status": true,
+      "vectorstore_status": {
+        "knowledge": true,
+        "memory": true
+      }
+    },
+    "message": "Deployed infrastructure status"
   },
-  "message": "Deployed infrastructure status"
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -123,6 +131,21 @@ done
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

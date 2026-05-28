@@ -83,12 +83,20 @@ The body wraps two fields together.
 ```json Response
 {
   "success": true,
-  "message": "Delete completed",
-  "results": [
-    { "id": "policy_main", "deleted": true, "error": null },
-    { "id": "runbook_deploy", "deleted": true, "error": null }
-  ],
-  "deleted_count": 2
+  "data": {
+    "success": true,
+    "message": "Delete completed",
+    "results": [
+      { "id": "policy_main", "deleted": true, "error": null },
+      { "id": "runbook_deploy", "deleted": true, "error": null }
+    ],
+    "deleted_count": 2
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -99,7 +107,15 @@ The body wraps two fields together.
 ```json Response
 {
   "success": true,
-  "user_memory_deleted": true
+  "data": {
+    "success": true,
+    "user_memory_deleted": true
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -118,6 +134,21 @@ The body wraps two fields together.
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "SOURCE_NOT_FOUND",
+    "message": "Source not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

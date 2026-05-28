@@ -8,7 +8,7 @@ import { Field } from "/snippets/field.jsx";
 
 Get detailed metrics including storage growth, object counts, and vector dimensions.
 
-The response splits stats into two tenant-wide collections: `normal_collection` (Knowledge) and `memory_collection` (Memories), each with its own row count and embedding dimensionality. Counts aggregate across all sub-tenants in the tenant.
+The response splits stats into two tenant-wide collections: `data.normal_collection` (Knowledge) and `data.memory_collection` (Memories), each with its own row count and embedding dimensionality. Counts aggregate across all sub-tenants in the tenant.
 
 <RequestExample>
 ```python Python SDK
@@ -40,16 +40,24 @@ curl -X GET 'https://api.hydradb.com/tenants/stats?tenant_id=my_first_tenant' \
 
 ```json Response
 {
-  "tenant_id": "my_first_tenant",
-  "normal_collection": {
-    "row_count": 42318,
-    "dimensions": 1536
+  "success": true,
+  "data": {
+    "tenant_id": "my_first_tenant",
+    "normal_collection": {
+      "row_count": 42318,
+      "dimensions": 1536
+    },
+    "memory_collection": {
+      "row_count": 287,
+      "dimensions": 1536
+    },
+    "message": "Successfully retrieved tenant collection statistics"
   },
-  "memory_collection": {
-    "row_count": 287,
-    "dimensions": 1536
-  },
-  "message": "Successfully retrieved tenant collection statistics"
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -59,10 +67,18 @@ For a new or empty tenant, both collections are present and report zero rows:
 
 ```json Empty tenant
 {
-  "tenant_id": "my_first_tenant",
-  "normal_collection": { "row_count": 0, "dimensions": 1536 },
-  "memory_collection": { "row_count": 0, "dimensions": 1536 },
-  "message": "Successfully retrieved tenant collection statistics"
+  "success": true,
+  "data": {
+    "tenant_id": "my_first_tenant",
+    "normal_collection": { "row_count": 0, "dimensions": 1536 },
+    "memory_collection": { "row_count": 0, "dimensions": 1536 },
+    "message": "Successfully retrieved tenant collection statistics"
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -78,6 +94,21 @@ For a new or empty tenant, both collections are present and report zero rows:
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

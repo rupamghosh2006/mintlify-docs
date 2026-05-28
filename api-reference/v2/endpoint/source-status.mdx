@@ -64,22 +64,30 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 
 ```json Response
 {
-  "statuses": [
-    {
-      "file_id": "policy_main",
-      "indexing_status": "completed",
-      "error_code": "",
-      "success": true,
-      "message": "Processing status retrieved successfully"
-    },
-    {
-      "file_id": "runbook_deploy",
-      "indexing_status": "graph_creation",
-      "error_code": "",
-      "success": true,
-      "message": "Processing status retrieved successfully"
-    }
-  ]
+  "success": true,
+  "data": {
+    "statuses": [
+      {
+        "file_id": "policy_main",
+        "indexing_status": "completed",
+        "error_code": "",
+        "success": true,
+        "message": "Processing status retrieved successfully"
+      },
+      {
+        "file_id": "runbook_deploy",
+        "indexing_status": "graph_creation",
+        "error_code": "",
+        "success": true,
+        "message": "Processing status retrieved successfully"
+      }
+    ]
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -208,6 +216,21 @@ Typical processing time:
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

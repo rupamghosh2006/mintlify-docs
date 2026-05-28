@@ -125,7 +125,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 
-**Response envelope:** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages document the resource-specific `data` payload unless the full envelope is important to the behavior.
+**Response envelope:** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages show the full envelope; the resource-specific payload lives under `data`.
 
 ```json
 {

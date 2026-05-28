@@ -138,7 +138,7 @@ Use text search when literal wording matters: legal clauses, SKUs, error codes, 
 
 ## Response summary
 
-`POST /search` returns ranked `chunks[]`, deduplicated `sources[]`, optional `graph_context`, and optional `additional_context` from forceful relations. Preserve `chunks[]` order when building prompts; HydraDB has already ranked the results. For prompt formatting and citation patterns, see [How to Use API Results](/essentials/v2/api-results).
+`POST /search` returns ranked `data.chunks[]`, deduplicated `data.sources[]`, optional `data.graph_context`, and optional `data.additional_context` from forceful relations. Preserve `data.chunks[]` order when building prompts; HydraDB has already ranked the results. For prompt formatting and citation patterns, see [How to Use API Results](/essentials/v2/api-results).
 
 ## Related sections
 

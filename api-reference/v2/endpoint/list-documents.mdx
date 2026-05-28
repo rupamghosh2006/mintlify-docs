@@ -111,56 +111,68 @@ Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_m
 ```json Response
 {
   "success": true,
-  "message": "Sources retrieved successfully",
-  "sources": [
-    {
-      "id": "policy_main",
-      "tenant_id": "acme_corp",
-      "sub_tenant_id": "team_docs",
-      "title": "Compliance Policy",
-      "type": "pdf",
-      "url": null,
-      "timestamp": "2026-05-12T08:14:00Z"
-    }
-  ],
-  "total": 318,
-  "pagination": {
-    "page": 1,
-    "page_size": 50,
+  "data": {
+    "success": true,
+    "message": "Sources retrieved successfully",
+    "sources": [
+      {
+        "id": "policy_main",
+        "tenant_id": "acme_corp",
+        "sub_tenant_id": "team_docs",
+        "title": "Compliance Policy",
+        "type": "pdf",
+        "url": null,
+        "timestamp": "2026-05-12T08:14:00Z"
+      }
+    ],
     "total": 318,
-    "total_pages": 7,
-    "has_next": true,
-    "has_previous": false
+    "pagination": {
+      "page": 1,
+      "page_size": 50,
+      "total": 318,
+      "total_pages": 7,
+      "has_next": true,
+      "has_previous": false
+    }
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
   }
 }
 ```
 
 </ResponseExample>
 
-When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  -  same idea but with a `user_memories[]` array of memory items.
+When `kind=memories`, `data` is a `ListUserMemoriesResponse` instead  -  same idea but with a `data.user_memories[]` array of memory items.
 
 ```json Memories response
 {
   "success": true,
-  "message": "Memories retrieved successfully",
-  "user_memories": [
-    {
-      "source_id": "mem_user_alex_tone",
-      "sub_tenant_id": "user_alex",
-      "title": "Communication preference",
-      "text": "Prefers concise answers and dark mode.",
-      "tenant_metadata": {},
-      "document_metadata": { "source": "profile" }
-    }
-  ],
-  "total": 1,
-  "pagination": {
-    "page": 1,
-    "page_size": 50,
+  "data": {
+    "success": true,
+    "user_memories": [
+      {
+        "memory_id": "mem_user_alex_tone",
+        "memory_content": "Prefers concise answers and dark mode.",
+        "inferred_content": "User prefers concise answers and dark mode."
+      }
+    ],
     "total": 1,
-    "total_pages": 1,
-    "has_next": false,
-    "has_previous": false
+    "pagination": {
+      "page": 1,
+      "page_size": 50,
+      "total": 1,
+      "total_pages": 1,
+      "has_next": false,
+      "has_previous": false
+    }
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
   }
 }
 ```
@@ -179,6 +191,21 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_NOT_FOUND",
+    "message": "Tenant not found"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

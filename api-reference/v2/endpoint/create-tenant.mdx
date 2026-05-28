@@ -92,9 +92,17 @@ curl -X POST 'https://api.hydradb.com/tenants' \
 
 ```json Response
 {
-  "status": "accepted",
-  "tenant_id": "my_first_tenant",
-  "message": "Tenant creation started in the background. Use GET /tenants/status?tenant_id=... to check progress."
+  "success": true,
+  "data": {
+    "status": "accepted",
+    "tenant_id": "my_first_tenant",
+    "message": "Tenant creation started in the background. Use GET /tenants/status?tenant_id=... to check progress."
+  },
+  "error": null,
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 12.3
+  }
 }
 ```
 
@@ -133,6 +141,21 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TENANT_ALREADY_EXISTS",
+    "message": "Tenant already exists"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
 
 <div className="api-before-related-resources" />
 

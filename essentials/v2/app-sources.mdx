@@ -10,7 +10,7 @@ App sources are pre-parsed records from business applications  -  emails, chat m
 Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.source_ids`](#7-forceful-relations).
 
 <Info>
-  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with **`search_apps: true`** and `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
+  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with **`search_apps: true`** and `type: "knowledge"` (or `type: "all"` to merge with [Memories](/essentials/v2/memories)).
 </Info>
 
 ## 1. What it is

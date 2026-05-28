@@ -42,7 +42,7 @@ The pipeline works like this:
 1. **Parse the input**  -  raw text, markdown, or user–assistant pairs.
 2. **Optionally infer meaning**  -  if `infer: true`, HydraDB extracts the underlying preference, trait, or fact.
 3. **Process and index the result**  -  the memory is prepared for retrieval.
-4. **Make it searchable**  -  later, [`POST /search`](/api-reference/v2/endpoint/search) can retrieve it with `source: "memories"` or `source: "all"`.
+4. **Make it searchable**  -  later, [`POST /search`](/api-reference/v2/endpoint/search) can retrieve it with `type: "memory"` or `type: "all"`.
 
 The most important choice is [`infer`](#choose-whether-hydradb-should-infer-the-memory). It decides whether HydraDB should extract the useful memory from raw signal, or store exactly what you send.
 
@@ -127,15 +127,15 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 
 ## Scope memories to the right user or workspace
 
-Memories live in their own store, separate from [Knowledge](/essentials/v2/knowledge). The [`POST /search`](/api-reference/v2/endpoint/search) endpoint reaches each store through the `source` parameter:
+Memories live in their own store, separate from [Knowledge](/essentials/v2/knowledge). The [`POST /search`](/api-reference/v2/endpoint/search) endpoint reaches each store through the `type` parameter:
 
-- `source: "memories"` searches the Memories store (`vectorstore_status.memories`).
-- `source: "knowledge"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status.knowledge`).
-- `source: "all"` runs both in parallel and returns a single merged, re-ranked result set.
+- `type: "memory"` searches the Memories store (`vectorstore_status.memories`).
+- `type: "knowledge"` searches the [Knowledge](/essentials/v2/knowledge) store (`vectorstore_status.knowledge`).
+- `type: "all"` runs both in parallel and returns a single merged, re-ranked result set.
 
 <Info>
   <strong>One endpoint, two stores.</strong>
-  <p>For personalized responses grounded in shared context, use <code>source: "all"</code> on a single <a href="/api-reference/v2/endpoint/search"><code>POST /search</code></a> call. HydraDB runs both stores in parallel and merges results for you. See <a href="/essentials/v2/search">Search</a>.</p>
+  <p>For personalized responses grounded in shared context, use <code>type: "all"</code> on a single <a href="/api-reference/v2/endpoint/search"><code>POST /search</code></a> call. HydraDB runs both stores in parallel and merges results for you. See <a href="/essentials/v2/search">Search</a>.</p>
 </Info>
 
 ---
@@ -316,7 +316,7 @@ The response returns a `source_id` for each memory and an initial `status` of `q
 }
 ```
 
-Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) with the returned `source_id` until `indexing_status` is `completed`. You can also use webhooks when available. After indexing, the memory can surface in [`POST /search`](/api-reference/v2/endpoint/search-overview) when called with `source: "memories"` or `source: "all"`.
+Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) with the returned `source_id` until `indexing_status` is `completed`. You can also use webhooks when available. After indexing, the memory can surface in [`POST /search`](/api-reference/v2/endpoint/search-overview) when called with `type: "memory"` or `type: "all"`.
 
 ---
 
@@ -424,7 +424,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 </CodeGroup>
 
-Later, when [`POST /search`](/api-reference/v2/endpoint/search) runs with `source: "memories"` and a query like `"what UI settings does the user prefer?"`, HydraDB can return the inferred preference  -  for example, `"prefers dark mode"`  -  rather than the raw event log.
+Later, when [`POST /search`](/api-reference/v2/endpoint/search) runs with `type: "memory"` and a query like `"what UI settings does the user prefer?"`, HydraDB can return the inferred preference  -  for example, `"prefers dark mode"`  -  rather than the raw event log.
 
 If you sent the same input with `infer: false`, HydraDB would index the event log verbatim. That is useful only when you want to retrieve the log itself.
 
@@ -441,7 +441,7 @@ If you sent the same input with `infer: false`, HydraDB would index the event lo
 | Extracting preferences yourself before sending raw logs | You duplicate work HydraDB can do for you | Send the raw signal with `infer: true` |
 | Sending pre-extracted facts with `infer: true` | HydraDB may re-derive the memory and change the original phrasing | Use `infer: false` for already-structured facts |
 | Treating `user_name` as cosmetic | It can influence inference, so the wrong name can bias extraction | Pass the actual user's name |
-| Storing shared docs as memories | They will not surface when searching `source: "knowledge"` | Use [knowledge ingestion](/essentials/v2/knowledge) with `type=knowledge` on [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) |
+| Storing shared docs as memories | They will not surface when searching `type: "knowledge"` | Use [knowledge ingestion](/essentials/v2/knowledge) with `type=knowledge` on [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) |
 | Expecting immediate searchability | Ingestion is asynchronous | Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) until indexing is complete |
 | Forgetting `infer` for conversational input | Raw dialogue is stored without preference extraction | Set `infer: true` for conversations |
 

@@ -120,7 +120,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "my_first_tenant",
     "query": "What are the pricing tiers?",
-    "source": "knowledge",
+    "type": "knowledge",
     "search_by": "hybrid"
   }'
 ```
@@ -151,7 +151,7 @@ Errors use the same envelope with `success: false`, `data: null`, and an `error`
 
 - **Parameter casing.** The REST API uses snake_case (`tenant_id`). The TypeScript SDK accepts the same snake_case keys; method names are camelCase when generated for TypeScript. The Python SDK uses snake_case throughout.
 
-- **Search modes.** `POST /search` supports `search_by: "hybrid"`, `"text"`, or `"vector"` and `source: "knowledge"`, `"memories"`, or `"all"`.
+- **Search modes.** `POST /search` supports `search_by: "hybrid"`, `"text"`, or `"vector"` and `type: "knowledge"`, `"memory"`, or `"all"`.
 
 **Status codes:** Successful responses return `200` (or `202` for async accepts). Errors follow standard HTTP semantics:
 

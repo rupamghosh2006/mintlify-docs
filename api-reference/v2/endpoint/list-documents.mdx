@@ -6,10 +6,10 @@ openapi: "api-reference/v2/openapi.json POST /source/list"
 
 import { Field } from "/snippets/field.jsx";
 
-Specify the category using the `kind` parameter to filter and view ingested knowledge sources or user memories within a tenant or sub-tenant:
+Specify the category using the `type` parameter to filter and view ingested knowledge sources or user memories within a tenant or sub-tenant:
 
-- `kind=knowledge` *(default)*  -  knowledge sources (files, app sources).
-- `kind=memories`  -  user memories.
+- `type=knowledge` *(default)*  -  knowledge sources (files, app sources).
+- `type=memory`  -  user memories.
 
 Supports pagination, metadata filters, and field projection. For more details on metadata filters, see the [Scoping using metadata](/essentials/v2/metadata) guide.
 
@@ -17,7 +17,7 @@ Supports pagination, metadata filters, and field projection. For more details on
 ```python Python SDK
 sources = client.source.list(
     tenant_id="acme_corp",
-    kind="knowledge",
+    type="knowledge",
     page=1,
     page_size=50,
     filters={
@@ -30,7 +30,7 @@ sources = client.source.list(
 ```typescript TypeScript SDK
 const sources = await client.source.list({
   tenant_id: "acme_corp",
-  kind: "knowledge",
+  type: "knowledge",
   page: 1,
   page_size: 50,
   filters: {
@@ -47,7 +47,7 @@ curl -X POST 'https://api.hydradb.com/source/list' \
   -H "Content-Type: application/json" \
   -d '{
     "tenant_id": "acme_corp",
-    "kind": "knowledge",
+    "type": "knowledge",
     "page": 1,
     "page_size": 50,
     "filters": {
@@ -69,12 +69,12 @@ curl -X POST 'https://api.hydradb.com/source/list' \
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Owning tenant. |
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-| <Field name="kind" type='"knowledge" or "memories"' /> | Bucket to list. (default=`"knowledge"`) |
+| <Field name="type" type='"knowledge" or "memory"' /> | Bucket to list. (default=`"knowledge"`) |
 | <Field name="source_ids" type="string[] or null" /> | When provided and non-empty, only items with these IDs are returned (pagination + filters still apply). (default=`null`) |
 | <Field name="page" type="integer" /> | Page number (1-indexed). (default=`1`) |
 | <Field name="page_size" type="integer" /> | Items per page, from `1` to `100`. (default=`50`) |
 | <Field name="filters" type="object" /> | Structured exact-match filters. See [Filters](#filters). (default=`null`) |
-| <Field name="include_fields" type="string[] or null" /> | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `kind=knowledge`. (default=`null`  -  all fields) |
+| <Field name="include_fields" type="string[] or null" /> | Field projection. Only the listed fields plus `id`, `tenant_id`, `sub_tenant_id` are populated. Only applies to `type=knowledge`. (default=`null`  -  all fields) |
 
 ### Filters
 
@@ -104,7 +104,7 @@ When you don't need every field on every row, pass `include_fields` to keep resp
 
 Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_metadata`, `document_metadata`, and `chunk_count`. Omit or pass `null` to return everything.
 
-`include_fields` only applies to `kind=knowledge`. It is ignored for `kind=memories`.
+`include_fields` only applies to `type=knowledge`. It is ignored for `type=memory`.
 
 <ResponseExample>
 
@@ -145,7 +145,7 @@ Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_m
 
 </ResponseExample>
 
-When `kind=memories`, `data` is a `ListUserMemoriesResponse` instead  -  same idea but with a `data.user_memories[]` array of memory items.
+When `type=memory`, `data` is a `ListUserMemoriesResponse` instead  -  same idea but with a `data.user_memories[]` array of memory items.
 
 ```json Memories response
 {

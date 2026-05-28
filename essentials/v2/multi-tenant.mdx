@@ -71,13 +71,13 @@ Typical flow:
 
 ### Shared Knowledge + user personalization
 
-For personalized answers grounded in shared Knowledge, use the `source` parameter on `POST /search`:
+For personalized answers grounded in shared Knowledge, use the `type` parameter on `POST /search`:
 
-- `source: "knowledge"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status.knowledge`).
-- `source: "memories"` retrieves user-specific Memories (Memories vector store, `vectorstore_status.memories`).
-- `source: "all"` runs both in parallel and returns one merged, re-ranked result set  -  usually what you want for personalized answers.
+- `type: "knowledge"` retrieves shared Knowledge (Knowledge vector store, `vectorstore_status.knowledge`).
+- `type: "memory"` retrieves user-specific Memories (Memories vector store, `vectorstore_status.memories`).
+- `type: "all"` runs both in parallel and returns one merged, re-ranked result set  -  usually what you want for personalized answers.
 
-When you need different formatting for shared vs personal context in the LLM prompt, call `POST /search` twice (once with `source: "knowledge"`, once with `source: "memories"`) and combine in your application.
+When you need different formatting for shared vs personal context in the LLM prompt, call `POST /search` twice (once with `type: "knowledge"`, once with `type: "memory"`) and combine in your application.
 
 ---
 
@@ -109,11 +109,11 @@ Use `sub_tenant_id` for partitioning data. Use `metadata_filters` for narrowing 
 
 Memories and Knowledge live in separate stores, both reached through `POST /search`:
 
-- `source: "memories"` retrieves **Memories** (user-scoped, personal).
-- `source: "knowledge"` retrieves **Knowledge** (shared documents and app sources).
-- `source: "all"` retrieves both in one call.
+- `type: "memory"` retrieves **Memories** (user-scoped, personal).
+- `type: "knowledge"` retrieves **Knowledge** (shared documents and app sources).
+- `type: "all"` retrieves both in one call.
 
-For a personalized answer, the common pattern is one `POST /search` with `source: "all"` and the user's `sub_tenant_id`. HydraDB runs both stores in parallel and merges results. Use two separate calls only when you need to format the two streams differently in your LLM prompt.
+For a personalized answer, the common pattern is one `POST /search` with `type: "all"` and the user's `sub_tenant_id`. HydraDB runs both stores in parallel and merges results. Use two separate calls only when you need to format the two streams differently in your LLM prompt.
 
 <Warning>
   <strong>Use the same <code>sub_tenant_id</code> on writes and reads for the same logical scope.</strong>
@@ -128,37 +128,36 @@ The example below shows a common personalized-answer flow: write a user Memory, 
 
 <CodeGroup>
 
-```python Python SDK
-import json
-import os
-from hydra_db import HydraDB
-
-client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
-
+```bash cURL
 # 1. Write a per-user memory under the user's sub_tenant_id.
-client.source.ingest(
-    type="memory",
-    tenant_id="acme_corp",
-    sub_tenant_id="user_123",
-    upsert=True,
-    memories=json.dumps([
-        {
-            "text": "Prefers dark mode and short answers.",
-            "infer": True,
-            "user_name": "John",
-        }
-    ]),
-)
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_123" \
+  -F "upsert=true" \
+  -F 'memories=[
+    {
+      "text": "Prefers dark mode and short answers.",
+      "infer": true,
+      "user_name": "John"
+    }
+  ]'
 
-# 2. Search Knowledge + Memories together with source: "all".
-result = client.search.query(
-    tenant_id="acme_corp",
-    sub_tenant_id="user_123",
-    query="refund policy",
-    source="all",
-    search_by="hybrid",
-    mode="thinking",
-)
+# 2. Search Knowledge + Memories together with type: "all".
+curl -X POST 'https://api.hydradb.com/search' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_123",
+    "query": "refund policy",
+    "type": "all",
+    "search_by": "hybrid",
+    "mode": "thinking"
+  }'
 ```
 
 ```typescript TypeScript SDK
@@ -183,47 +182,48 @@ await client.source.ingest({
   ]),
 });
 
-// 2. Search Knowledge + Memories together with source: "all".
+// 2. Search Knowledge + Memories together with type: "all".
 const result = await client.search.query({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_123",
   query: "refund policy",
-  source: "all",
+  type: "all",
   search_by: "hybrid",
   mode: "thinking",
 });
 ```
 
-```bash cURL
-# 1. Write a per-user memory under the user's sub_tenant_id.
-curl -X POST 'https://api.hydradb.com/source/ingest' \
-  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -H "API-Version: 2" \
-  -F "type=memory" \
-  -F "tenant_id=acme_corp" \
-  -F "sub_tenant_id=user_123" \
-  -F "upsert=true" \
-  -F 'memories=[
-    {
-      "text": "Prefers dark mode and short answers.",
-      "infer": true,
-      "user_name": "John"
-    }
-  ]'
+```python Python SDK
+import json
+import os
+from hydra_db import HydraDB
 
-# 2. Search Knowledge + Memories together with source: "all".
-curl -X POST 'https://api.hydradb.com/search' \
-  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -H "API-Version: 2" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tenant_id": "acme_corp",
-    "sub_tenant_id": "user_123",
-    "query": "refund policy",
-    "source": "all",
-    "search_by": "hybrid",
-    "mode": "thinking"
-  }'
+client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
+
+# 1. Write a per-user memory under the user's sub_tenant_id.
+client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_123",
+    upsert=True,
+    memories=json.dumps([
+        {
+            "text": "Prefers dark mode and short answers.",
+            "infer": True,
+            "user_name": "John",
+        }
+    ]),
+)
+
+# 2. Search Knowledge + Memories together with type: "all".
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_123",
+    query="refund policy",
+    type="all",
+    search_by="hybrid",
+    mode="thinking",
+)
 ```
 
 </CodeGroup>

@@ -75,30 +75,6 @@ Endpoint pages list the most common codes for that operation. New codes may be a
 Retry only transient failures: `429`, `500`, and `503`. Use exponential backoff with jitter and keep retries bounded.
 
 <CodeGroup>
-```python Python SDK
-import random
-import time
-
-from hydra_db import HydraDBError
-
-def with_retry(operation, max_retries=3):
-    for attempt in range(max_retries + 1):
-        try:
-            return operation()
-        except HydraDBError as exc:
-            retryable = exc.status_code in (429, 500, 503)
-            if not retryable or attempt == max_retries:
-                raise
-
-            delay = (2 ** attempt) + random.uniform(0, 0.25)
-            time.sleep(delay)
-
-result = with_retry(lambda: client.search.query(
-    tenant_id="my_first_tenant",
-    query="What are the pricing tiers?",
-    source="knowledge",
-))
-```
 ```typescript TypeScript SDK
 import { HydraDBError } from "@hydradb/sdk";
 
@@ -128,9 +104,33 @@ const result = await withRetry(() =>
   client.search.query({
     tenant_id: "my_first_tenant",
     query: "What are the pricing tiers?",
-    source: "knowledge",
+    type: "knowledge",
   })
 );
+```
+```python Python SDK
+import random
+import time
+
+from hydra_db import HydraDBError
+
+def with_retry(operation, max_retries=3):
+    for attempt in range(max_retries + 1):
+        try:
+            return operation()
+        except HydraDBError as exc:
+            retryable = exc.status_code in (429, 500, 503)
+            if not retryable or attempt == max_retries:
+                raise
+
+            delay = (2 ** attempt) + random.uniform(0, 0.25)
+            time.sleep(delay)
+
+result = with_retry(lambda: client.search.query(
+    tenant_id="my_first_tenant",
+    query="What are the pricing tiers?",
+    type="knowledge",
+))
 ```
 ```typescript fetch
 async function hydraRequest(url: string, options: RequestInit, maxRetries = 3) {
@@ -154,25 +154,6 @@ async function hydraRequest(url: string, options: RequestInit, maxRetries = 3) {
 ## Handling errors
 
 <CodeGroup>
-```python Python SDK
-from hydra_db import HydraDBError
-
-try:
-    client.source.ingest(
-        type="knowledge",
-        tenant_id="my_first_tenant",
-        files=[("policy.pdf", open("policy.pdf", "rb"), "application/pdf")],
-    )
-except HydraDBError as exc:
-    if exc.error_code == "TENANT_NOT_FOUND":
-        # Create or select a valid tenant before ingesting.
-        pass
-    elif exc.status_code == 429:
-        # Retry with backoff.
-        pass
-    else:
-        raise
-```
 ```typescript TypeScript SDK
 import { HydraDBError } from "@hydradb/sdk";
 
@@ -199,6 +180,25 @@ try {
     throw error;
   }
 }
+```
+```python Python SDK
+from hydra_db import HydraDBError
+
+try:
+    client.source.ingest(
+        type="knowledge",
+        tenant_id="my_first_tenant",
+        files=[("policy.pdf", open("policy.pdf", "rb"), "application/pdf")],
+    )
+except HydraDBError as exc:
+    if exc.error_code == "TENANT_NOT_FOUND":
+        # Create or select a valid tenant before ingesting.
+        pass
+    elif exc.status_code == 429:
+        # Retry with backoff.
+        pass
+    else:
+        raise
 ```
 </CodeGroup>
 
@@ -234,7 +234,7 @@ Empty results are not always errors. Check these first:
 - Source status may still be `queued` or `processing`; poll [`GET /source/status`](/api-reference/v2/endpoint/source-status).
 - `metadata_filters` may be too restrictive or may target the wrong metadata namespace.
 - The query may be scoped to the wrong `tenant_id` or `sub_tenant_id`.
-- The `source` value may exclude the collection you need. Use `source: "all"` when combining knowledge and memories.
+- The `type` value may exclude the collection you need. Use `type: "all"` when combining knowledge and memories.
 
 ## Related sections
 

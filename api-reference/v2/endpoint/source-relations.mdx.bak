@@ -8,7 +8,7 @@ import { Field } from "/snippets/field.jsx";
 
 This endpoint queries the entity-and-relationship graph built during ingestion.
 
-Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `type=memory` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets. For more concepts, see the [Context Graphs](/essentials/v2/context-graphs) guide.
+Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `is_memory=true` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets. For more concepts, see the [Context Graphs](/essentials/v2/context-graphs) guide.
 
 <RequestExample>
 ```python Python SDK
@@ -45,7 +45,7 @@ curl -G 'https://api.hydradb.com/source/relations' \
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Owning tenant. |
 | <Field name="source_id" type="string or null" /> | When provided, returns relations for that specific source. When omitted, returns all relations across the sub-tenant. (default=`null`) |
-| <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. Use `"memory"` when `source_id` belongs to a memory item. (default=`"knowledge"`) |
+| <Field name="is_memory" type="boolean" /> | Set `true` when `source_id` belongs to a memory item. The default searches the Knowledge graph. (default=`false`) |
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
 | <Field name="limit" type="integer" /> | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
 | <Field name="cursor" type="number or null" /> | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
@@ -173,7 +173,7 @@ while True:
 </Info>
 
 - **Sub-tenant-wide queries:** Omitting `source_id` returns relations across the entire sub-tenant. This is useful for full-graph exports; pair with a small `limit` and paginate.
-- **Knowledge vs memory:** If the `source_id` belongs to a memory, set `type=memory`; otherwise the endpoint searches the Knowledge graph. The two graphs are completely separate.
+- **Knowledge vs memory:** If the `source_id` belongs to a memory, set `is_memory=true`; otherwise the endpoint searches the Knowledge graph. The two graphs are completely separate.
 - **Ordering:** Treat `data.relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare ordering across unrelated queries as an absolute signal.
 - **Graph completeness:** Source relations only fully populate once the source's `indexing_status` reaches `completed`. Items in `graph_creation` are searchable but their relations may still be in flight.
 

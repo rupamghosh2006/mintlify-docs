@@ -85,7 +85,7 @@ flowchart LR
 Two details to notice in the diagram:
 
 - **Two vector stores, one ingest endpoint.** [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) routes to the [Knowledge](/essentials/v2/knowledge) store when `type=knowledge` and to the [Memories](/essentials/v2/memories) store when `type=memory`. Same endpoint, different bucket.
-- **One search endpoint, every retrieval method.** [`POST /search`](/api-reference/v2/endpoint/search) is the only retrieval entry point. The `source` and `search_by` parameters decide what gets searched and how  -  see [Search](/essentials/v2/search) for the full picture.
+- **One search endpoint, every retrieval method.** [`POST /search`](/api-reference/v2/endpoint/search) is the only retrieval entry point. The `type` and `search_by` parameters decide what gets searched and how  -  see [Search](/essentials/v2/search) for the full picture.
 
 ---
 
@@ -134,9 +134,9 @@ Here's the canonical end-to-end flow. Each step links to the endpoint that owns 
 2. **Wait for provisioning** by polling [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `vectorstore_status.knowledge`, `vectorstore_status.memories`, and `graph_status` are all `true`.
 3. **Ingest content** with [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content)  -  pick `type=knowledge` for shared documents or `type=memory` for per-user context. See [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) for the content models.
 4. **Watch indexing finish** by polling [`GET /source/status`](/api-reference/v2/endpoint/source-status) until each `source_id` reaches `completed` (or `graph_creation` if you don't need graph traversal).
-5. **Query** with [`POST /search`](/api-reference/v2/endpoint/search). Pick `source: "knowledge"` for Knowledge, `source: "memories"` for Memories, or `source: "all"` for both. Pair with `search_by: "hybrid"` (default), `"text"` (BM25, with `operator`), or `"vector"`. The mechanics live in [Search](/essentials/v2/search).
+5. **Query** with [`POST /search`](/api-reference/v2/endpoint/search). Pick `type: "knowledge"` for Knowledge, `type: "memory"` for Memories, or `type: "all"` for both. Pair with `search_by: "hybrid"` (default), `"text"` (BM25, with `operator`), or `"vector"`. The mechanics live in [Search](/essentials/v2/search).
 
-That's the whole loop. Most of what changes between integrations is *what* you put in the metadata, *what* you query with, and *which* `source` and `search_by` combination fits the task.
+That's the whole loop. Most of what changes between integrations is *what* you put in the metadata, *what* you query with, and *which* `type` and `search_by` combination fits the task.
 
 ---
 
@@ -158,7 +158,7 @@ The deeper trade-offs  -  when to spin up a new tenant vs. a new sub-tenant, how
 
 ## Retrieval pipeline
 
-[`POST /search`](/api-reference/v2/endpoint/search) is the single retrieval endpoint. Two parameters describe the request: `source` picks the collection, `search_by` picks the method. From there, every call goes through the same pipeline:
+[`POST /search`](/api-reference/v2/endpoint/search) is the single retrieval endpoint. Two parameters describe the request: `type` picks the collection, `search_by` picks the method. From there, every call goes through the same pipeline:
 
 1. **Authenticate and scope.** Validate `tenant_id`, resolve the tenant, and apply the requested `sub_tenant_id`.
 2. **Filter before ranking.** Apply `metadata_filters` to narrow the candidate set (see [Metadata](/essentials/v2/metadata)).

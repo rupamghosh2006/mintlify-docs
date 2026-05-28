@@ -27,8 +27,8 @@
               {
                 "group": "Get Started",
                 "pages": [
-                  "get-started/introduction",
-                  "get-started/core-concepts",
+                  "get-started/v2/introduction",
+                  "get-started/v2/core-concepts",
                   "get-started/v2/quickstart"
                 ]
               },

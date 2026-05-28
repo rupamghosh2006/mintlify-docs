@@ -135,7 +135,7 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 **Do not ingest content prematurely.** Tenant creation is asynchronous. Both `vectorstore_status.knowledge` and `vectorstore_status.memory`, as well as `scheduler_status` and `graph_status`, must be `true` before the tenant is ready. Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion or search call.
 </Warning>
 
-- **Default sub-tenant:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. See [Essentials → Multi-Tenant](/essentials/v2/multi-tenant) for details.
+- **Default sub-tenant:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. See [Concepts → Multi-Tenant](/essentials/v2/multi-tenant) for details.
 - **Reserved field names:** Some names are reserved by the indexing layer (e.g., system fields used to track ingestion and graph state). `name` values are validated server-side; reserved names return a `422 VALIDATION_ERROR`. Use prefixes like `app_` if you're worried about collisions.
 
 ## Errors
@@ -165,6 +165,6 @@ Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDA
 - **Next:** [Tenant Status](/api-reference/v2/endpoint/tenant-status) - poll until provisioning completes
 - **Next:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - start ingesting data once status is ready
 - **Related:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant) - teardown
-- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
-- **Read more:** [Essentials → Metadata](/essentials/v2/metadata)
+- **Read more:** [Concepts → Multi-Tenant Support](/essentials/v2/multi-tenant)
+- **Read more:** [Usage → Metadata](/essentials/v2/metadata)
 </Tip>

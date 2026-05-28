@@ -1,0 +1,74 @@
+---
+title: "Introduction"
+description: "The unified context substrate for AI. One brain for semantic knowledge, user memories, and episodic experiences."
+---
+
+## What HydraDB is
+
+HydraDB is a unified context substrate for AI agents. One system, three primitives:
+
+- **Semantic knowledge.** Documents and facts your agent reasons over.
+- **User memories.** Preferences, history, and identity that persist across sessions.
+- **Episodic experiences.** Time-ordered events from every agent interaction.
+
+You ingest. HydraDB extracts entities, relationships, and temporal signals automatically. Your agent queries. HydraDB returns *useful* context, not just similar context.
+
+> *VectorDBs find what's similar. HydraDB finds what's useful.*
+
+## The problem we solve
+
+Most teams building stateful AI end up stitching together five systems: a vector database, a graph database, a relational store, filesystem primitives, and a cache. Months of plumbing, constant maintenance, and yet everything fails in production. Either embeddings miscalculate similarity or costs scale poorly in production.
+
+HydraDB replaces the stack. One graph that learns every user preference, retains every agent experience, and delivers personalized context the moment your agent needs it.
+
+
+HydraDB is designed for teams building scalable, stateful AI agents, whether you're at 10K documents or 10M.
+
+**Skip ahead:** [Quickstart](/get-started/v2/quickstart) · [API Reference](/api-reference/v2) · [SDKs](/api-reference/v2/sdks)
+
+---
+
+## The principle
+
+We give you primitives, not abstractions. The graph, the memory primitives, the retrieval pipeline, and the ranking knobs are yours to compose. Your context store, your opinions, not ours.
+
+The base is complex. The configuration is yours.
+
+
+---
+   
+
+## Performance
+
+- **Long-Context Accuracy:** Achieves a 90% score on LongMemEvals
+- **Low Latency:** Delivers sub-200ms retrieval latency
+- **Strict tenant isolation.** No cross-tenant aggregation, ever.
+
+View the full technical breakdown in our [research paper](https://benchmarks.hydradb.com/hydradb.pdf).
+
+---
+
+
+## What you can build with this:
+
+- Customer support agents grounded in real customer history and preferences
+- Coding agents with persistent memory of a codebase and team conventions
+- Clinical companions tracking patient context across visits
+- Research copilots reasoning across papers, authors, findings
+- Internal knowledge assistants spanning Slack, Notion, Drive, and email
+- Consumer AI apps where every user gets a "second brain" that evolves over time
+
+Find more use cases at [Cookbooks](/cookbooks/v2/index).
+
+---
+
+## Get started
+
+1. Sign up at [app.hydradb.com](https://app.hydradb.com) for your API key
+2. Follow the [Quickstart](/get-started/v2/quickstart) to get your first search in five minutes
+3. Explore [Core Concepts](/get-started/v2/core-concepts) and the [API Reference](/api-reference/v2)
+
+For enterprise onboarding, contact [founders@hydradb.com](mailto:founders@hydradb.com).
+
+## LLMs
+For developers using LLMs or IDEs, we have compiled an uploadable summary of the docs here [llm.txt](/assets/llm.txt).

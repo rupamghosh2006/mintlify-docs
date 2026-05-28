@@ -9,7 +9,11 @@
   },
   "favicon": "/favicon.svg",
   "contextual": {
-    "options": ["copy", "chatgpt", "claude"]
+    "options": [
+      "copy",
+      "chatgpt",
+      "claude"
+    ]
   },
   "api": {
     "examples": {
@@ -97,7 +101,10 @@
             "groups": [
               {
                 "group": "API Documentation",
-                "pages": ["api-reference/v2/index", "api-reference/v2/sdks"]
+                "pages": [
+                  "api-reference/v2/index",
+                  "api-reference/v2/sdks"
+                ]
               },
               {
                 "group": "Tenants",
@@ -132,7 +139,9 @@
               },
               {
                 "group": "Miscellaneous",
-                "pages": ["api-reference/v2/error-responses"]
+                "pages": [
+                  "api-reference/v2/error-responses"
+                ]
               }
             ]
           }
@@ -180,7 +189,9 @@
               },
               {
                 "group": "For Agents",
-                "pages": ["AGENTS"]
+                "pages": [
+                  "AGENTS"
+                ]
               }
             ]
           },

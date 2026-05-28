@@ -89,30 +89,6 @@ The schema lives at the tenant level; values land on each source at ingest time.
 #### Step 1a  -  Declare the schema at tenant creation
 
 <CodeGroup>
-```python Python SDK
-client.tenants.create(
-    tenant_id="acme_corp",
-    tenant_metadata_schema=[
-        {
-            "name": "compliance_framework",
-            "data_type": "VARCHAR",
-            "enable_match": True,
-        }
-    ],
-)
-```
-```typescript TypeScript SDK
-await client.tenants.create({
-  tenant_id: "acme_corp",
-  tenant_metadata_schema: [
-    {
-      name: "compliance_framework",
-      data_type: "VARCHAR",
-      enable_match: true,
-    },
-  ],
-});
-```
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
@@ -129,6 +105,30 @@ curl -X POST 'https://api.hydradb.com/tenants' \
     ]
   }'
 ```
+```typescript TypeScript SDK
+await client.tenants.create({
+  tenant_id: "acme_corp",
+  tenant_metadata_schema: [
+    {
+      name: "compliance_framework",
+      data_type: "VARCHAR",
+      enable_match: true,
+    },
+  ],
+});
+```
+```python Python SDK
+client.tenants.create(
+    tenant_id="acme_corp",
+    tenant_metadata_schema=[
+        {
+            "name": "compliance_framework",
+            "data_type": "VARCHAR",
+            "enable_match": True,
+        }
+    ],
+)
+```
 </CodeGroup>
 
 #### Step 1b  -  Attach metadata at ingest
@@ -136,6 +136,47 @@ curl -X POST 'https://api.hydradb.com/tenants' \
 Drop schema-aligned values into `tenant_metadata` and any free-form per-document values into `additional_metadata`:
 
 <CodeGroup>
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2" \
+  -F "type=knowledge" \
+  -F "tenant_id=acme_corp" \
+  -F 'app_knowledge=[
+    {
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "default",
+      "id": "auth-controls-001",
+      "kind": "knowledge_base",
+      "fields": {
+        "title": "Authentication controls",
+        "body": "Authentication controls are reviewed quarterly for SOC2."
+      },
+      "tenant_metadata": { "compliance_framework": "SOC2" },
+      "additional_metadata": { "author": "alice", "doc_version": 3 }
+    }
+  ]'
+```
+```typescript TypeScript SDK
+await client.source.ingest({
+  type: "knowledge",
+  tenant_id: "acme_corp",
+  app_knowledge: JSON.stringify([
+    {
+      tenant_id: "acme_corp",
+      sub_tenant_id: "default",
+      id: "auth-controls-001",
+      kind: "knowledge_base",
+      fields: {
+        title: "Authentication controls",
+        body: "Authentication controls are reviewed quarterly for SOC2.",
+      },
+      tenant_metadata: { compliance_framework: "SOC2" },
+      additional_metadata: { author: "alice", doc_version: 3 },
+    },
+  ]),
+});
+```
 ```python Python SDK
 import json
 
@@ -158,47 +199,6 @@ client.source.ingest(
     ]),
 )
 ```
-```typescript TypeScript SDK
-await client.source.ingest({
-  type: "knowledge",
-  tenant_id: "acme_corp",
-  app_knowledge: JSON.stringify([
-    {
-      tenant_id: "acme_corp",
-      sub_tenant_id: "default",
-      id: "auth-controls-001",
-      kind: "knowledge_base",
-      fields: {
-        title: "Authentication controls",
-        body: "Authentication controls are reviewed quarterly for SOC2.",
-      },
-      tenant_metadata: { compliance_framework: "SOC2" },
-      additional_metadata: { author: "alice", doc_version: 3 },
-    },
-  ]),
-});
-```
-```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
-  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -H "API-Version: 2" \
-  -F "type=knowledge" \
-  -F "tenant_id=acme_corp" \
-  -F 'app_knowledge=[
-    {
-      "tenant_id": "acme_corp",
-      "sub_tenant_id": "default",
-      "id": "auth-controls-001",
-      "kind": "knowledge_base",
-      "fields": {
-        "title": "Authentication controls",
-        "body": "Authentication controls are reviewed quarterly for SOC2."
-      },
-      "tenant_metadata": { "compliance_framework": "SOC2" },
-      "additional_metadata": { "author": "alice", "doc_version": 3 }
-    }
-  ]'
-```
 </CodeGroup>
 
 <Warning>
@@ -210,30 +210,6 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 Mix tenant-level (top-level) and document-level (nested) scopes in the same `metadata_filters` object:
 
 <CodeGroup>
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    query="How does authentication control review work?",
-    source="knowledge",
-    search_by="hybrid",
-    metadata_filters={
-        "compliance_framework": "SOC2",
-        "additional_metadata": {"author": "alice"},
-    },
-)
-```
-```typescript TypeScript SDK
-const result = await client.search.query({
-  tenant_id: "acme_corp",
-  query: "How does authentication control review work?",
-  source: "knowledge",
-  search_by: "hybrid",
-  metadata_filters: {
-    compliance_framework: "SOC2",
-    additional_metadata: { author: "alice" },
-  },
-});
-```
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
@@ -242,13 +218,37 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "How does authentication control review work?",
-    "source": "knowledge",
+    "type": "knowledge",
     "search_by": "hybrid",
     "metadata_filters": {
       "compliance_framework": "SOC2",
       "additional_metadata": { "author": "alice" }
     }
   }'
+```
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  query: "How does authentication control review work?",
+  type: "knowledge",
+  search_by: "hybrid",
+  metadata_filters: {
+    compliance_framework: "SOC2",
+    additional_metadata: { author: "alice" },
+  },
+});
+```
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    query="How does authentication control review work?",
+    type="knowledge",
+    search_by="hybrid",
+    metadata_filters={
+        "compliance_framework": "SOC2",
+        "additional_metadata": {"author": "alice"},
+    },
+)
 ```
 </CodeGroup>
 

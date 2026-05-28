@@ -12,13 +12,13 @@ For the full request and response schema, see [Search - API Reference](/api-refe
 
 Pick the row that matches your goal and use the parameters as a starting point:
 
-| I want to… | `source` | `search_by` | `mode` | Notes |
+| I want to… | `type` | `search_by` | `mode` | Notes |
 | --- | --- | --- | --- | --- |
-| Document Q&A / RAG | `"sources"` | `"hybrid"` | `"thinking"` | Set `graph_context: true` for richer context-graph as a part of api response |
-| Exact keyword match | `"sources"` | `"text"` |  -  | optionally, add `operator: "and"/ "or" for metadata filtering for scoped search` |
-| Personalized response | `"memories"` | `"hybrid"` | `"thinking"` |  |
+| Document Q&A / RAG | `"knowledge"` | `"hybrid"` | `"thinking"` | Set `graph_context: true` for richer context-graph as a part of api response |
+| Exact keyword match | `"knowledge"` | `"text"` |  -  | optionally, add `operator: "and"/ "or" for metadata filtering for scoped search` |
+| Personalized response | `"memory"` | `"hybrid"` | `"thinking"` |  |
 | Personalized + grounded | `"all"` | `"hybrid"` | `"thinking"` | One call merges both stores |
-| Search over apps | `"sources"` | `"hybrid"` | `"thinking"` | Set `search_apps: true` to enable the app-aware retrieval lane (IDs, actors, thread & parent traversal) |
+| Search over apps | `"knowledge"` | `"hybrid"` | `"thinking"` | Set `search_apps: true` to enable the app-aware retrieval lane (IDs, actors, thread & parent traversal) |
 
 ---
 
@@ -59,7 +59,7 @@ Most of the time the defaults are right. When they aren't, here's where to start
 
 ## 4. Minimal working example
 
-The canonical personalized-answer flow takes a single call: `POST /search` with `source: "all"` returns merged knowledge and per-user memory in one ranked result set.
+The canonical personalized-answer flow takes a single call: `POST /search` with `type: "all"` returns merged knowledge and per-user memory in one ranked result set.
 
 ### Setup
 
@@ -95,7 +95,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "sub_tenant_id": "user_john_123",
     "query": "How do I reset my password?",
-    "source": "all",
+    "type": "all",
     "search_by": "hybrid",
     "mode": "thinking",
     "max_results": 8,
@@ -108,7 +108,7 @@ const result = await client.search.query({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_john_123",
   query: "How do I reset my password?",
-  source: "all",
+  type: "all",
   search_by: "hybrid",
   mode: "thinking",
   max_results: 8,
@@ -121,7 +121,7 @@ result = client.search.query(
     tenant_id="acme_corp",
     sub_tenant_id="user_john_123",
     query="How do I reset my password?",
-    source="all",
+    type="all",
     search_by="hybrid",
     mode="thinking",
     max_results=8,
@@ -151,11 +151,11 @@ const completion = await openai.chat.completions.create({
 });
 ```
 
-If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call `/search` twice in parallel with `source: "sources"` and `source: "memories"`, then merge client-side.
+If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call `/search` twice in parallel with `type: "knowledge"` and `type: "memory"`, then merge client-side.
 
 ### Production checklist
 
-- **Default to** `source: "all"` for personalized answers  -  one call instead of two.
+- **Default to** `type: "all"` for personalized answers  -  one call instead of two.
 - **Set per-call timeouts.** Generous for `thinking` (3–5 s), tight for `fast` (≤500 ms).
 - **Enable `search_apps: true`** when querying app sources to activate app-aware retrieval and thread/relation traversal.
 - **Pass** `additional_context` with known session state (page, feature, role). It sharpens retrieval without extra calls.
@@ -169,7 +169,7 @@ If you need to keep the two streams separate  -  for instance to format user pre
 | Empty `query_paths` / `chunk_relations` | `graph_context` not set, or no relations exist for the result set | Set `graph_context: true`. Empty arrays are normal when there's nothing to return  -  see [Context Graphs](/essentials/v2/context-graphs). |
 | Recent uploads don't appear in results | Indexing not finished | Poll `GET /source/status/source_id (todo)`  -  chunks are invisible until processing reaches at least `graph_creation`. |
 | `metadata_filters` doesn't narrow results | Filter key is undeclared, not match-enabled, or in wrong shape | Declare filterable keys in `tenant_metadata_schema` with `enable_match: true` before ingestion. For free-form per-document fields, nest under `document_metadata`. |
-| Memories missing from a `source: "sources"` search | Wrong store selected | Use `source: "memories"` or `source: "all"`. |
+| Memories missing from a `type: "knowledge"` search | Wrong store selected | Use `type: "memory"` or `type: "all"`. |
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
 | `operator: "phrase"` ignored | `search_by` not set to `"text"` | `operator` only applies to BM25 text search  -  switch `search_by` to `"text"`. |
 | `search_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |
@@ -182,7 +182,7 @@ If you need to keep the two streams separate  -  for instance to format user pre
 
 **Recall-then-rerank.** Ask for more chunks than you actually need (`max_results: 20`) and apply your own reranker  -  recency windows, compliance filters, business rules  -  before picking the final top-k for the prompt.
 
-**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_id, query, source, search_by)`. Recall is fast, but skipping it entirely is faster.
+**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_id, query, type, search_by)`. Recall is fast, but skipping it entirely is faster.
 
 ---
 

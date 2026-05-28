@@ -10,7 +10,7 @@ The single retrieval endpoint for everything. Use it any time you need to feed a
 
 Two independent dimensions control behavior:
 
-- **`source`** picks **what** to search: `"knowledge"`, `"memories"`, or `"all"` (both, merged and re-ranked together).
+- **`type`** picks **what** to search: `"knowledge"`, `"memory"`, or `"all"` (both, merged and re-ranked together).
 - **`search_by`** picks **how** to match: `"hybrid"` (semantic + BM25, the default), `"text"` (BM25 only  -  pair with `operator`), or `"vector"` (pure dense vectors).
 - **`mode`** picks **how** to rank results: `"fast"` (single-pass, low-latency), or `"thinking"` (expands query, reranks, and can include forceful-relation context).
 
@@ -24,8 +24,8 @@ result = client.search.query(
     sub_tenant_id="user_alex",
     query="What is our refund policy, and how should I explain it to this user?",
 
-    # What to search: "knowledge", "memories", or "all".
-    source="all",
+    # What to search: "knowledge", "memory", or "all".
+    type="all",
 
     # How to match: "hybrid" (default), "text" (BM25), or "vector".
     search_by="hybrid",
@@ -62,8 +62,8 @@ const result = await client.search.query({
   sub_tenant_id: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
 
-  // What to search: "knowledge", "memories", or "all".
-  source: "all",
+  // What to search: "knowledge", "memory", or "all".
+  type: "all",
 
   // How to match: "hybrid" (default), "text" (BM25), or "vector".
   search_by: "hybrid",
@@ -103,7 +103,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "sub_tenant_id": "user_alex",
     "query": "What is our refund policy, and how should I explain it to this user?",
-    "source": "all",
+    "type": "all",
     "search_by": "hybrid", // or "text" or "vector"
     "mode": "thinking",
     "max_results": 10,
@@ -129,30 +129,6 @@ curl -X POST 'https://api.hydradb.com/search' \
   <Accordion title="1. Knowledge RAG - answer from shared documents">
     <CodeGroup>
 
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    query="What is our refund policy?",
-    source="knowledge",
-    search_by="hybrid",
-    mode="thinking",
-    max_results=10,
-    graph_context=True,
-)
-```
-
-```typescript TypeScript SDK
-const result = await client.search.query({
-  tenant_id: "acme_corp",
-  query: "What is our refund policy?",
-  source: "knowledge",
-  search_by: "hybrid",
-  mode: "thinking",
-  max_results: 10,
-  graph_context: true,
-});
-```
-
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -161,7 +137,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "What is our refund policy?",
-    "source": "knowledge",
+    "type": "knowledge",
     "search_by": "hybrid",
     "mode": "thinking",
     "max_results": 10,
@@ -169,33 +145,35 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  query: "What is our refund policy?",
+  type: "knowledge",
+  search_by: "hybrid",
+  mode: "thinking",
+  max_results: 10,
+  graph_context: true,
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    query="What is our refund policy?",
+    type="knowledge",
+    search_by="hybrid",
+    mode="thinking",
+    max_results=10,
+    graph_context=True,
+)
+```
+
     </CodeGroup>
   </Accordion>
 
   <Accordion title="2. Personalized answer - combine knowledge with user memories">
     <CodeGroup>
-
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    sub_tenant_id="user_alex",
-    query="What is our refund policy, and how should I explain it to this user?",
-    source="all",
-    search_by="hybrid",
-    mode="thinking",
-)
-```
-
-```typescript TypeScript SDK
-const result = await client.search.query({
-  tenant_id: "acme_corp",
-  sub_tenant_id: "user_alex",
-  query: "What is our refund policy, and how should I explain it to this user?",
-  source: "all",
-  search_by: "hybrid",
-  mode: "thinking",
-});
-```
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
@@ -206,10 +184,32 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "sub_tenant_id": "user_alex",
     "query": "What is our refund policy, and how should I explain it to this user?",
-    "source": "all",
+    "type": "all",
     "search_by": "hybrid",
     "mode": "thinking"
   }'
+```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  query: "What is our refund policy, and how should I explain it to this user?",
+  type: "all",
+  search_by: "hybrid",
+  mode: "thinking",
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="What is our refund policy, and how should I explain it to this user?",
+    type="all",
+    search_by="hybrid",
+    mode="thinking",
+)
 ```
 
     </CodeGroup>
@@ -217,28 +217,6 @@ curl -X POST 'https://api.hydradb.com/search' \
 
   <Accordion title="3. Retrieve user preferences - search only user memories">
     <CodeGroup>
-
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    sub_tenant_id="user_alex",
-    query="Does the user have any specific preferences for tone or response length?",
-    source="memories",
-    search_by="hybrid",
-    search_apps=True,
-)
-```
-
-```typescript TypeScript SDK
-const result = await client.search.query({
-  tenant_id: "acme_corp",
-  sub_tenant_id: "user_alex",
-  query: "Does the user have any specific preferences for tone or response length?",
-  source: "memories",
-  search_by: "hybrid",
-  search_apps: true,
-});
-```
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
@@ -249,10 +227,32 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "sub_tenant_id": "user_alex",
     "query": "Does the user have any specific preferences for tone or response length?",
-    "source": "memories",
+    "type": "memory",
     "search_by": "hybrid",
     "search_apps": true
   }'
+```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
+  query: "Does the user have any specific preferences for tone or response length?",
+  type: "memory",
+  search_by: "hybrid",
+  search_apps: true,
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="Does the user have any specific preferences for tone or response length?",
+    type="memory",
+    search_by="hybrid",
+    search_apps=True,
+)
 ```
 
     </CodeGroup>
@@ -260,26 +260,6 @@ curl -X POST 'https://api.hydradb.com/search' \
 
   <Accordion title="4. Exact phrase lookup - BM25 for legal terms, SKUs, or IDs">
     <CodeGroup>
-
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    query="GDPR Article 17",
-    source="knowledge",
-    search_by="text",
-    operator="phrase",
-)
-```
-
-```typescript TypeScript SDK
-const result = await client.search.query({
-  tenant_id: "acme_corp",
-  query: "GDPR Article 17",
-  source: "knowledge",
-  search_by: "text",
-  operator: "phrase",
-});
-```
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/search' \
@@ -289,10 +269,30 @@ curl -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "GDPR Article 17",
-    "source": "knowledge",
+    "type": "knowledge",
     "search_by": "text",
     "operator": "phrase"
   }'
+```
+
+```typescript TypeScript SDK
+const result = await client.search.query({
+  tenant_id: "acme_corp",
+  query: "GDPR Article 17",
+  type: "knowledge",
+  search_by: "text",
+  operator: "phrase",
+});
+```
+
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    query="GDPR Article 17",
+    type="knowledge",
+    search_by="text",
+    operator="phrase",
+)
 ```
 
     </CodeGroup>
@@ -308,7 +308,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 | <Field name="tenant_id" type="string" required /> | Owning tenant. |
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. Required for per-user memory searches. (default=default sub-tenant) |
 | <Field name="query" type="string" required /> | Search terms or natural-language question. Cannot be empty. |
-| <Field name="source" type='"knowledge" or "memories" or "all"' /> | What collection to search. `"all"` runs knowledge and memories in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
+| <Field name="type" type='"knowledge" or "memory" or "all"' /> | What collection to search. `"all"` runs knowledge and memory in parallel and merges by `relevancy_score`. (default=`"knowledge"`) |
 | <Field name="search_by" type='"hybrid" or "text" or "vector"' /> | Retrieval method. See [Search methods](#search-methods). (default=`"hybrid"`) |
 | <Field name="search_apps" type="boolean" /> | Specialized search over app sources along with knowledge documents. (default=`false`) |
 | <Field name="operator" type='"or" or "and" or "phrase"' /> | BM25 operator for `search_by: "text"`. Ignored for `hybrid` and `vector`. (default=`"or"`) |
@@ -339,7 +339,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     |---|---|---|
     | `"knowledge"` *(default)* | Knowledge documents, files, and app sources | Document Q&A, RAG context. |
     | `"search_apps=true"` | Specialized search over app sources | App-specific Q&A along with knowledge documents. |
-    | `"memories"` | User memories | Personalization and user preferences. |
+    | `"memory"` | User memories | Personalization and user preferences. |
     | `"all"` | Both, merged in one ranked result set | Personalized answers grounded in both shared and user-specific context. |
   </Accordion>
 

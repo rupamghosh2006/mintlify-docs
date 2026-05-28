@@ -6,19 +6,17 @@ openapi: "GET /source/status"
 
 import { Field } from "/snippets/field.jsx";
 
-Check the processing status of ingested sources by their IDs. Since ingestion is asynchronous, use this endpoint to determine when content is ready to be searched.
+Since ingestion is asynchronous, use this endpoint to determine when content is ready to be searched.
 
 Pass one or more `source_id` values in `file_ids` to retrieve status. Works for files, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
 
 <RequestExample>
-```bash cURL
-curl -G 'https://api.hydradb.com/source/status' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  --data-urlencode "tenant_id=acme_corp" \
-  --data-urlencode "sub_tenant_id=team_docs" \
-  --data-urlencode "file_ids=policy_main" \
-  --data-urlencode "file_ids=runbook_deploy"
+```python Python SDK
+status = client.source.status(
+    tenant_id="acme_corp",
+    sub_tenant_id="team_docs",
+    file_ids=["policy_main", "runbook_deploy"],
+)
 ```
 ```typescript TypeScript SDK
 const status = await client.source.status({
@@ -27,12 +25,14 @@ const status = await client.source.status({
   file_ids: ["policy_main", "runbook_deploy"],
 });
 ```
-```python Python SDK
-status = client.source.status(
-    tenant_id="acme_corp",
-    sub_tenant_id="team_docs",
-    file_ids=["policy_main", "runbook_deploy"],
-)
+```bash cURL
+curl -G 'https://api.hydradb.com/source/status' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  --data-urlencode "tenant_id=acme_corp" \
+  --data-urlencode "sub_tenant_id=team_docs" \
+  --data-urlencode "file_ids=policy_main" \
+  --data-urlencode "file_ids=runbook_deploy"
 ```
 </RequestExample>
 
@@ -57,8 +57,6 @@ For multiple IDs over raw HTTP, repeat the query parameter: `/source/status?tena
 TODO: remove and fix api
 The query parameter is named `file_ids` for legacy reasons. It accepts the `source_id` returned by both file uploads and app sources and memories  -  not only file-backed sources.
 </Info>
-
-## Response
 
 `200` response body matches OpenAPI schema **`BatchProcessingStatus`** with one `ProcessingStatus` per requested ID.
 
@@ -86,15 +84,6 @@ The query parameter is named `file_ids` for legacy reasons. It accepts the `sour
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="statuses[]" type="array" /> | Array  -  one entry per requested ID. |
-| <Field name="statuses[].file_id" type="string" /> | The ID being reported on (string). |
-| <Field name="statuses[].indexing_status" type="enum" /> | Current status (enum). See [Status values](#status-values). |
-| <Field name="statuses[].error_code" type="string" /> | Diagnostic code if `errored`; empty string otherwise. |
-| <Field name="statuses[].success" type="boolean" /> | Boolean indicating the status lookup succeeded for that ID. Use `indexing_status`  -  not this boolean  -  to decide whether the source is searchable or graph-ready. |
-| <Field name="statuses[].message" type="string" /> | Detailed status message (string). |
 
 ## Status values
 
@@ -216,13 +205,17 @@ Typical processing time:
 
 - **Unknown IDs return as `errored`:** If you pass an ID that does not exist (e.g., a typo), HydraDB returns an entry with `indexing_status: "errored"` rather than silently dropping it.
 
-## Related endpoints
-
-- **Before this:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)  -  to get the IDs
-- **After completion:** [Search](/api-reference/v2/endpoint/search) · [Fetch Content](/api-reference/v2/endpoint/fetch-content) · [Source Relations](/api-reference/v2/endpoint/source-relations)
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories)
+<Tip>
+**Related Resources**
+
+- **Before this:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - to get the IDs
+- **After completion:** [Search](/api-reference/v2/endpoint/search)
+- **After completion:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
+- **After completion:** [Source Relations](/api-reference/v2/endpoint/source-relations)
+- **Read more:** [Essentials → Knowledge](/essentials/v2/knowledge)
+- **Read more:** [Essentials → Memories](/essentials/v2/memories)
+</Tip>

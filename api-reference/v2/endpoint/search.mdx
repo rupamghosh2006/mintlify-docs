@@ -18,31 +18,42 @@ Two independent dimensions control behavior:
 Read more about choosing the perfect mode for your use case [here](/api-reference/v2/endpoint/search-overview#recommended-configurations).
 <RequestExample>
 
-```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tenant_id": "acme_corp",
-    "sub_tenant_id": "user_alex",
-    "query": "What is our refund policy, and how should I explain it to this user?",
-    "source": "all",
-    "search_by": "hybrid", // or "text" or "vector"
-    "mode": "thinking",
-    "max_results": 10,
-    "alpha": "auto",
-    "recency_bias": 0.2,
-    "graph_context": true,
-    "search_forceful_relations": true,
-    "metadata_filters": {
-      "department": "support",
-      "document_metadata": {
-        "source": "policy"
-      }
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    query="What is our refund policy, and how should I explain it to this user?",
+
+    # What to search: "knowledge", "memories", or "all".
+    source="all",
+
+    # How to match: "hybrid" (default), "text" (BM25), or "vector".
+    search_by="hybrid",
+
+    # "thinking" improves quality; use "fast" for lowest latency.
+    mode="thinking",
+
+    # Ranking and response controls.
+    max_results=10,
+    alpha="auto",
+    recency_bias=0.2,
+    graph_context=True,
+
+    # Pull author-declared related sources into additional_context.
+    # Only applies when mode="thinking".
+    search_forceful_relations=True,
+
+    # Top-level keys match tenant_metadata; document_metadata is per-source.
+    metadata_filters={
+        "department": "support",
+        "document_metadata": {
+            "source": "policy",
+        },
     },
-    "additional_context": "User is asking from the billing help center."
-  }'
+
+    # Short factual hint; not a hard filter.
+    additional_context="User is asking from the billing help center.",
+)
 ```
 
 ```typescript TypeScript SDK
@@ -83,42 +94,31 @@ const result = await client.search.query({
 });
 ```
 
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    sub_tenant_id="user_alex",
-    query="What is our refund policy, and how should I explain it to this user?",
-
-    # What to search: "knowledge", "memories", or "all".
-    source="all",
-
-    # How to match: "hybrid" (default), "text" (BM25), or "vector".
-    search_by="hybrid",
-
-    # "thinking" improves quality; use "fast" for lowest latency.
-    mode="thinking",
-
-    # Ranking and response controls.
-    max_results=10,
-    alpha="auto",
-    recency_bias=0.2,
-    graph_context=True,
-
-    # Pull author-declared related sources into additional_context.
-    # Only applies when mode="thinking".
-    search_forceful_relations=True,
-
-    # Top-level keys match tenant_metadata; document_metadata is per-source.
-    metadata_filters={
-        "department": "support",
-        "document_metadata": {
-            "source": "policy",
-        },
+```bash cURL
+curl -X POST 'https://api.hydradb.com/search' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "sub_tenant_id": "user_alex",
+    "query": "What is our refund policy, and how should I explain it to this user?",
+    "source": "all",
+    "search_by": "hybrid", // or "text" or "vector"
+    "mode": "thinking",
+    "max_results": 10,
+    "alpha": "auto",
+    "recency_bias": 0.2,
+    "graph_context": true,
+    "search_forceful_relations": true,
+    "metadata_filters": {
+      "department": "support",
+      "document_metadata": {
+        "source": "policy"
+      }
     },
-
-    # Short factual hint; not a hard filter.
-    additional_context="User is asking from the billing help center.",
-)
+    "additional_context": "User is asking from the billing help center."
+  }'
 ```
 
 </RequestExample>
@@ -364,8 +364,6 @@ For `search_by: "hybrid"` and `"vector"`:
 | **Top-level keys** (`department`, `region`) | The source's `tenant_metadata`. Keys must be declared in the tenant's `tenant_metadata_schema` with `enable_match: true`, otherwise they are silently ignored. |
 | **Nested under `document_metadata`** | The source's free-form per-document fields. No schema declaration required. |
 
-## Response
-
 <ResponseExample>
 
 ```json Response
@@ -399,27 +397,6 @@ For `search_by: "hybrid"` and `"vector"`:
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="chunks[]" type="SearchChunk[]" /> | Array of ranked chunks. Preserve server order in your prompt. |
-| <Field name="chunks[].chunk_uuid" type="string" /> | Stable chunk identifier (string)  -  use to dedupe across calls. |
-| <Field name="chunks[].source_id" type="string" /> | The source this chunk belongs to (string). |
-| <Field name="chunks[].source_title" type="string" /> | Display title of the source (string). |
-| <Field name="chunks[].chunk_content" type="string" /> | The actual text snippet (string). |
-| <Field name="chunks[].relevancy_score" type="float" /> | Relevance score (float). Higher is more relevant within the same response; do not treat scores as stable probabilities across unrelated queries. |
-| <Field name="chunks[].extra_context_ids" type="string[]" /> | Array of keys into `additional_context` for forceful-relation-linked content (`thinking` mode only). |
-| <Field name="sources[]" type="SourceModel[]" /> | Deduplicated source metadata corresponding to the returned chunks. |
-| <Field name="graph_context" type="GraphContext or null" /> | Graph slice object, populated when `graph_context: true`. See [GraphContext fields](#graphcontext-fields). |
-| <Field name="additional_context" type="object" /> | Response-time map of related content from forceful relations (`thinking` mode only). Keys match values in `chunks[].extra_context_ids`, not necessarily chunk UUIDs. |
-
-### `GraphContext` fields
-
-| Field | Description |
-|---|---|
-| <Field name="query_paths[]" type="array" /> | Entity-traversal paths derived from the query. Each path is a list of `{ source, relation, target }` triplets. |
-| <Field name="chunk_relations[]" type="array" /> | Per-chunk relations grouped by `group_id`. Attach to chunks via `chunk_id_to_group_ids`. |
-| <Field name="chunk_id_to_group_ids" type="object" /> | Maps each `chunk_uuid` to one or more `group_id`s in `chunk_relations`. |
 
 A zero-result search returns empty arrays/maps rather than an error:
 
@@ -458,16 +435,19 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 </ul>
 </Tip>
 
-## Related endpoints
-
-- **Setup first:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)  -  content must be indexed
-- **Confirm indexing:** [Source Status](/api-reference/v2/endpoint/source-status)  -  wait for `completed` (or `graph_creation`)
-- **Graph follow-up:** [Source Relations](/api-reference/v2/endpoint/source-relations)  -  inspect relationships in detail
-- **Concepts:** [Essentials → Search](/essentials/v2/search) · [Essentials → Semantic Search](/essentials/v2/semantic-search) · [Essentials → Context Graphs](/essentials/v2/context-graphs)
-- **Response handling:** [Essentials → How to Use API Results](/essentials/v2/api-results)
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Search - Overview](/api-reference/v2/endpoint/search-overview)
+<Tip>
+**Related Resources**
+
+- **Setup first:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - content must be indexed
+- **Confirm indexing:** [Source Status](/api-reference/v2/endpoint/source-status) - wait for `completed` (or `graph_creation`)
+- **Graph follow-up:** [Source Relations](/api-reference/v2/endpoint/source-relations) - inspect relationships in detail
+- **Concepts:** [Essentials → Search](/essentials/v2/search)
+- **Concepts:** [Essentials → Semantic Search](/essentials/v2/semantic-search)
+- **Concepts:** [Essentials → Context Graphs](/essentials/v2/context-graphs)
+- **Response handling:** [Essentials → How to Use API Results](/essentials/v2/api-results)
+- **Read more:** [Search - Overview](/api-reference/v2/endpoint/search-overview)
+</Tip>

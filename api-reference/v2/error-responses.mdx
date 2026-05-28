@@ -22,14 +22,16 @@ HydraDB uses the same top-level envelope for successful and failed requests.
 }
 ```
 
-| Field | Description |
+
+
+Field | Description |
 |---|---|
 | `success` | `false` for errors. |
 | `data` | Always `null` for error responses. |
 | `error.code` | Machine-readable code for programmatic handling. |
 | `error.message` | Human-readable explanation of what failed. |
 | `meta.request_id` | Request identifier. Include it when contacting support. |
-| `meta.latency_ms` | Server-side processing time in milliseconds. |
+| `meta.latency_ms` | Server-side processing time in milliseconds. 
 
 <Info>
 Use `error.code` for branching and log `meta.request_id` for every failed request. The HTTP status tells you the class of failure; the error code tells you what to do.

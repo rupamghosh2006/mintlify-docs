@@ -6,9 +6,49 @@ openapi: "POST /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-Create a new tenant to provision an isolated workspace. For details on structuring your multi-tenant setup, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
+For details on structuring your multi-tenant setup, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
+```python Python SDK
+response = client.tenants.create(
+    tenant_id="my_first_tenant",
+    tenant_metadata_schema=[
+        {
+            "name": "category",
+            "data_type": "VARCHAR",
+            "max_length": 256,
+            "enable_match": True,
+        },
+        {
+            "name": "product_description",
+            "data_type": "VARCHAR",
+            "max_length": 4096,
+            "enable_dense_embedding": True,
+            "enable_sparse_embedding": True,
+        },
+    ],
+)
+```
+```typescript TypeScript SDK
+const response = await client.tenants.create({
+  tenant_id: "my_first_tenant",
+  tenant_metadata_schema: [
+    {
+      name: "category",
+      data_type: "VARCHAR",
+      max_length: 256,
+      enable_match: true,
+    },
+    {
+      name: "product_description",
+      data_type: "VARCHAR",
+      max_length: 4096,
+      enable_dense_embedding: true,
+      enable_sparse_embedding: true,
+    },
+  ],
+});
+```
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -33,46 +73,6 @@ curl -X POST 'https://api.hydradb.com/tenants' \
     ]
   }'
 ```
-```typescript TypeScript SDK
-const response = await client.tenants.create({
-  tenant_id: "my_first_tenant",
-  tenant_metadata_schema: [
-    {
-      name: "category",
-      data_type: "VARCHAR",
-      max_length: 256,
-      enable_match: true,
-    },
-    {
-      name: "product_description",
-      data_type: "VARCHAR",
-      max_length: 4096,
-      enable_dense_embedding: true,
-      enable_sparse_embedding: true,
-    },
-  ],
-});
-```
-```python Python SDK
-response = client.tenants.create(
-    tenant_id="my_first_tenant",
-    tenant_metadata_schema=[
-        {
-            "name": "category",
-            "data_type": "VARCHAR",
-            "max_length": 256,
-            "enable_match": True,
-        },
-        {
-            "name": "product_description",
-            "data_type": "VARCHAR",
-            "max_length": 4096,
-            "enable_dense_embedding": True,
-            "enable_sparse_embedding": True,
-        },
-    ],
-)
-```
 </RequestExample>
 
 
@@ -88,8 +88,6 @@ response = client.tenants.create(
 | <Field name="is_embeddings_tenant" type="boolean" /> | Set to `true` to create a pure embeddings tenant (raw vector storage rather than parsed sources). Most applications leave this `false`. (default=`false`) |
 | <Field name="embeddings_dimension" type="integer" /> | Dimensionality of the dense vector store. Only applies when `is_embeddings_tenant: true`. (default=`1536`) |
 
-## Response
-
 <ResponseExample>
 
 ```json Response
@@ -101,12 +99,6 @@ response = client.tenants.create(
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="status" type="enum" /> | Always `accepted`. Provisioning runs in the background. |
-| <Field name="tenant_id" type="string" /> | The tenant identifier provided in the request. |
-| <Field name="message" type="string" /> | Human-readable next-step hint. |
 
 ## What happens next?
 
@@ -138,14 +130,16 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 - **Default sub-tenant:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. See [Essentials → Multi-Tenant](/essentials/v2/multi-tenant) for details.
 - **Reserved field names:** Some names are reserved by the indexing layer (e.g., system fields used to track ingestion and graph state). `name` values are validated server-side; reserved names return a `422 VALIDATION_ERROR`. Use prefixes like `app_` if you're worried about collisions.
 
-## Related endpoints
-
-- **Next:** [Tenant Status](/api-reference/v2/endpoint/tenant-status)  -  poll until provisioning completes
-- **Next:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)  -  start ingesting data once status is ready
-- **Related:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant)  -  teardown
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant) · [Essentials → Metadata](/essentials/v2/metadata)
+<Tip>
+**Related Resources**
+
+- **Next:** [Tenant Status](/api-reference/v2/endpoint/tenant-status) - poll until provisioning completes
+- **Next:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - start ingesting data once status is ready
+- **Related:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant) - teardown
+- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+- **Read more:** [Essentials → Metadata](/essentials/v2/metadata)
+</Tip>

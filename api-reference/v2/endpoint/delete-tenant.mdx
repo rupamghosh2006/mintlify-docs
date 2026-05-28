@@ -6,37 +6,30 @@ openapi: "DELETE /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-Permanently delete a tenant and all of its associated data, including ingested content, memories, metadata schema, vector indices, and graphs.
-
-This action is irreversible. There is no soft-delete and no recovery window. For details on multi-tenant architecture, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
+This action is irreversible. Deleting a tenant removes all of its associated data, including ingested content, memories, metadata schema, vector indices, and graphs. There is no soft-delete and no recovery window.
 
 <RequestExample>
-```bash cURL
-curl -X DELETE 'https://api.hydradb.com/tenants?tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2"
+```python Python SDK
+response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const response = await client.tenants.delete({
   tenant_id: "my_first_tenant",
 });
 ```
-```python Python SDK
-response = client.tenants.delete(tenant_id="my_first_tenant")
+```bash cURL
+curl -X DELETE 'https://api.hydradb.com/tenants?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2"
 ```
 </RequestExample>
 
 
 
 ## Query parameters
-
-
-
 | Name | Description |
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Identifier of the tenant to delete. |
-
-## Response
 
 <ResponseExample>
 
@@ -49,12 +42,6 @@ response = client.tenants.delete(tenant_id="my_first_tenant")
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="tenant_id" type="string" /> | The tenant that was deregistered. |
-| <Field name="status" type="enum" /> | Always `deletion_scheduled` on success. Background workers continue removing data. |
-| <Field name="message" type="string" /> | Human-readable hint. |
 
 ## Deletion completion
 
@@ -72,13 +59,14 @@ After deletion completes, the same `tenant_id` can be used in a new `POST /tenan
 - **Async cleanup:** The endpoint returns immediately after deregistering the tenant. Infrastructure cleanup of vector stores, graphs, and storage objects runs in the background and may take a few minutes to complete.
 - **Repeat calls:** Deleting an already-deleted tenant returns `404 TENANT_NOT_FOUND`. Deleting a tenant that is still provisioning or deleting is treated as a request to tear down that tenant.
 
-## Related endpoints
-
-- **Before this:** [List Tenants](/api-reference/v2/endpoint/list-tenants)  -  find the tenant ID
-- **Alternative:** [Delete Source](/api-reference/v2/endpoint/delete-source)  -  remove specific knowledge or memories without deleting the whole tenant
-
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+<Tip>
+**Related Resources**
+
+- **Before this:** [List Tenants](/api-reference/v2/endpoint/list-tenants) - find the tenant ID
+- **Alternative:** [Delete Source](/api-reference/v2/endpoint/delete-source) - remove specific knowledge or memories without deleting the whole tenant
+- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+</Tip>

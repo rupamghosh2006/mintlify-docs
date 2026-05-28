@@ -6,9 +6,7 @@ openapi: "POST /source/list"
 
 import { Field } from "/snippets/field.jsx";
 
-Browse and filter ingested knowledge sources or user memories within a tenant or sub-tenant.
-
-Specify the category using the `kind` parameter:
+Specify the category using the `kind` parameter to filter and view ingested knowledge sources or user memories within a tenant or sub-tenant:
 
 - `kind=knowledge` *(default)*  -  knowledge sources (files, app sources).
 - `kind=memories`  -  user memories.
@@ -16,6 +14,32 @@ Specify the category using the `kind` parameter:
 Supports pagination, metadata filters, and field projection. For more details on metadata filters, see the [Scoping using metadata](/essentials/v2/metadata) guide.
 
 <RequestExample>
+```python Python SDK
+sources = client.source.list(
+    tenant_id="acme_corp",
+    kind="knowledge",
+    page=1,
+    page_size=50,
+    filters={
+        "tenant_metadata": {"department": "legal"},
+        "source_fields": {"type": "slack"},
+    },
+    include_fields=["title", "type", "url", "timestamp"],
+)
+```
+```typescript TypeScript SDK
+const sources = await client.source.list({
+  tenant_id: "acme_corp",
+  kind: "knowledge",
+  page: 1,
+  page_size: 50,
+  filters: {
+    tenant_metadata: { department: "legal" },
+    source_fields: { type: "slack" },
+  },
+  include_fields: ["title", "type", "url", "timestamp"],
+});
+```
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/source/list' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -32,32 +56,6 @@ curl -X POST 'https://api.hydradb.com/source/list' \
     },
     "include_fields": ["title", "type", "url", "timestamp"]
   }'
-```
-```typescript TypeScript SDK
-const sources = await client.source.list({
-  tenant_id: "acme_corp",
-  kind: "knowledge",
-  page: 1,
-  page_size: 50,
-  filters: {
-    tenant_metadata: { department: "legal" },
-    source_fields: { type: "slack" },
-  },
-  include_fields: ["title", "type", "url", "timestamp"],
-});
-```
-```python Python SDK
-sources = client.source.list(
-    tenant_id="acme_corp",
-    kind="knowledge",
-    page=1,
-    page_size=50,
-    filters={
-        "tenant_metadata": {"department": "legal"},
-        "source_fields": {"type": "slack"},
-    },
-    include_fields=["title", "type", "url", "timestamp"],
-)
 ```
 </RequestExample>
 
@@ -108,8 +106,6 @@ Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_m
 
 `include_fields` only applies to `kind=knowledge`. It is ignored for `kind=memories`.
 
-## Response
-
 <ResponseExample>
 
 ```json Response
@@ -140,12 +136,6 @@ Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `tenant_m
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="sources[]" type="SourceModel[]" /> | One entry per source (or memory when `kind=memories`). Shape matches `SourceModel`. |
-| <Field name="total" type="integer" /> | Total matching items across all pages. |
-| <Field name="pagination" type="PaginationMeta" /> | Standard `PaginationMeta` with `page`, `page_size`, `total`, `total_pages`, `has_next`, `has_previous`. |
 
 When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  -  same idea but with a `user_memories[]` array of memory items.
 
@@ -186,15 +176,17 @@ When `kind=memories`, the response shape is `ListUserMemoriesResponse` instead  
 - **`source_ids` + filters:** When `source_ids` is non-empty, only those IDs are considered, but other `filters` still apply on top  -  useful for "show me items 1, 2, 3 that also belong to department=legal".
 - **Common mistakes:** `row_count` from [Tenant Stats](/api-reference/v2/endpoint/tenant-stats) counts individual chunks, not documents. Use this endpoint's `total` when you need distinct source or memory counts.
 
-## Related endpoints
+## Errors
+
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+
+<Tip>
+**Related Resources**
 
 - **Ingest:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)
 - **Fetch content:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
 - **Relevance retrieval:** [Search](/api-reference/v2/endpoint/search)
 - **Delete:** [Delete Source](/api-reference/v2/endpoint/delete-source)
-
-## Errors
-
-Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
-
-Read more: [Essentials → Metadata](/essentials/v2/metadata) · [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+- **Read more:** [Essentials → Metadata](/essentials/v2/metadata)
+- **Read more:** [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+</Tip>

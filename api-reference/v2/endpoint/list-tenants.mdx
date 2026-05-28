@@ -6,27 +6,23 @@ openapi: "GET /tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-List all tenant IDs registered for your organization.
-
-The response separates active or provisioning tenants (in `tenant_ids`) from tenants whose provisioning failed (in `failed_tenant_ids`). For more details, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
+The response separates active or provisioning tenants (in `tenant_ids`) from tenants whose provisioning failed (in `failed_tenant_ids`). 
 
 <RequestExample>
+```python Python SDK
+response = client.tenants.list()
+```
+```typescript TypeScript SDK
+const response = await client.tenants.list();
+```
 ```bash cURL
 curl -X GET 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "API-Version: 2"
 ```
-```typescript TypeScript SDK
-const response = await client.tenants.list();
-```
-```python Python SDK
-response = client.tenants.list()
-```
 </RequestExample>
 
 
-
-## Response
 
 <ResponseExample>
 
@@ -55,28 +51,23 @@ response = client.tenants.list()
 
 If provisioning failed for a tenant, `failed_tenant_ids` contains diagnostic entries as shown in the **Provisioning Failure** tab.
 
-| Field | Description |
-|---|---|
-| <Field name="tenant_ids" type="string[]" /> | Array of string IDs of active or provisioning tenants. |
-| <Field name="failed_tenant_ids" type="array or null" /> | Array of `{ tenant_id, error }` entries, or `null` when no failures. Re-create the tenant to retry provisioning. |
-| <Field name="message" type="string" /> | Human-readable status string. |
-
-## Behavior notes
-
 <Info>
 **Includes provisioning tenants.** Tenants returned in `tenant_ids` may still be provisioning. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to confirm readiness before ingestion.
 </Info>
 
+## Behavior notes
 - **Retry failed tenants:** If a tenant appears in `failed_tenant_ids`, re-create that tenant with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
-
-## Related endpoints
-
-- **Create:** [Create Tenant](/api-reference/v2/endpoint/create-tenant)
-- **Inspect:** [Tenant Status](/api-reference/v2/endpoint/tenant-status) · [Tenant Stats](/api-reference/v2/endpoint/tenant-stats)
-- **Delete:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant)
 
 ## Errors
 
 Common codes: `401 UNAUTHORIZED`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+<Tip>
+**Related Resources**
+
+- **Create:** [Create Tenant](/api-reference/v2/endpoint/create-tenant)
+- **Inspect:** [Tenant Status](/api-reference/v2/endpoint/tenant-status)
+- **Inspect:** [Tenant Stats](/api-reference/v2/endpoint/tenant-stats)
+- **Delete:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant)
+- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+</Tip>

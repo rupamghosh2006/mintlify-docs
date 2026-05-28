@@ -6,7 +6,7 @@ openapi: "DELETE /source"
 
 import { Field } from "/snippets/field.jsx";
 
-Delete knowledge sources or memories by their IDs. Specify the resource category with the `type` parameter:
+Specify the resource category with the `type` parameter:
 
 - `type=knowledge` *(default)*  -  delete knowledge sources.
 - `type=memory`  -  delete memories.
@@ -14,6 +14,26 @@ Delete knowledge sources or memories by their IDs. Specify the resource category
 Pass one or more IDs in `request.ids`. The body wraps two fields together: `request` (the actual delete payload) and `type` (the bucket).
 
 <RequestExample>
+```python Python SDK
+client.source.delete(
+    type="knowledge",
+    request={
+        "tenant_id": "acme_corp",
+        "sub_tenant_id": "team_docs",
+        "ids": ["policy_main", "runbook_deploy"],
+    },
+)
+```
+```typescript TypeScript SDK
+await client.source.delete({
+  type: "knowledge",
+  request: {
+    tenant_id: "acme_corp",
+    sub_tenant_id: "team_docs",
+    ids: ["policy_main", "runbook_deploy"],
+  },
+});
+```
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/source' \
   -H "Authorization: Bearer <your_api_key>" \
@@ -27,26 +47,6 @@ curl -X DELETE 'https://api.hydradb.com/source' \
     },
     "type": "knowledge"
   }'
-```
-```typescript TypeScript SDK
-await client.source.delete({
-  type: "knowledge",
-  request: {
-    tenant_id: "acme_corp",
-    sub_tenant_id: "team_docs",
-    ids: ["policy_main", "runbook_deploy"],
-  },
-});
-```
-```python Python SDK
-client.source.delete(
-    type="knowledge",
-    request={
-        "tenant_id": "acme_corp",
-        "sub_tenant_id": "team_docs",
-        "ids": ["policy_main", "runbook_deploy"],
-    },
-)
 ```
 </RequestExample>
 
@@ -78,10 +78,6 @@ The body wraps two fields together.
 | <Field name="request.ids" type="string[]" required /> | One or more source IDs to delete. At least one is required. |
 | <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. (default=`"knowledge"`) |
 
-## Response
-
-### Knowledge (`type=knowledge`)
-
 <ResponseExample>
 
 ```json Response
@@ -98,16 +94,6 @@ The body wraps two fields together.
 
 </ResponseExample>
 
-| Field | Description |
-|---|---|
-| <Field name="success" type="boolean" /> | `true` if at least one ID was deleted. |
-| <Field name="results[].id" type="string" /> | The ID being reported on. |
-| <Field name="results[].deleted" type="boolean" /> | Whether deletion succeeded for this specific ID. |
-| <Field name="results[].error" type="string or null" /> | Error message if deletion failed (e.g., not found). |
-| <Field name="deleted_count" type="integer" /> | Total IDs successfully deleted. |
-
-### Memory (`type=memory`)
-
 <ResponseExample>
 
 ```json Response
@@ -119,11 +105,6 @@ The body wraps two fields together.
 
 </ResponseExample>
 
-| Field | Description |
-|---|---|
-| <Field name="success" type="boolean" /> | `true` if all listed memories were deleted. |
-| <Field name="user_memory_deleted" type="boolean" /> | `true` only when every listed memory was deleted. `false` if any deletion failed. |
-
 ## Behavior notes
 
 <Warning>
@@ -134,14 +115,16 @@ The body wraps two fields together.
 - **Search drops the source immediately:** Even before background cleanup finishes, deleted IDs disappear from `/search` and `/source/list` responses.
 - **Mixed deletes need two calls:** To delete both knowledge and memory items, send two requests  -  one with `type=knowledge`, one with `type=memory`. A single call cannot mix the two buckets.
 
-## Related endpoints
-
-- **Find IDs:** [List Documents](/api-reference/v2/endpoint/list-documents) · [Search](/api-reference/v2/endpoint/search)
-- **Re-add content:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)
-- **Bigger hammer:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant)  -  removes the entire workspace
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+<Tip>
+**Related Resources**
+
+- **Find IDs:** [List Documents](/api-reference/v2/endpoint/list-documents)
+- **Perform a search:** [Search](/api-reference/v2/endpoint/search)
+- **Re-add content:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)
+- **Bigger hammer:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant) - removes the entire workspace
+- **Read more:** [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+</Tip>

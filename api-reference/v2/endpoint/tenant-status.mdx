@@ -6,7 +6,7 @@ openapi: "GET /tenants/status"
 
 import { Field } from "/snippets/field.jsx";
 
-Check the provisioning readiness of a tenant's infrastructure. Since tenant creation is asynchronous, poll this endpoint after calling `POST /tenants` and before executing ingestion or search requests.
+Since tenant creation is asynchronous, poll this endpoint after calling `POST /tenants` and before executing ingestion or search requests.
 
 The tenant is fully ready when:
 - Both `infra.vectorstore_status.knowledge` and `infra.vectorstore_status.memory` are `true`
@@ -16,18 +16,18 @@ The tenant is fully ready when:
 For details on multi-tenant architecture and provisioning guarantees, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
-```bash cURL
-curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2"
+```python Python SDK
+status = client.tenants.status(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const status = await client.tenants.status({
   tenant_id: "my_first_tenant",
 });
 ```
-```python Python SDK
-status = client.tenants.status(tenant_id="my_first_tenant")
+```bash cURL
+curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2"
 ```
 </RequestExample>
 
@@ -40,8 +40,6 @@ status = client.tenants.status(tenant_id="my_first_tenant")
 | Name | Description |
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Identifier of the tenant to inspect. |
-
-## Response
 
 <ResponseExample>
 
@@ -62,21 +60,6 @@ status = client.tenants.status(tenant_id="my_first_tenant")
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="tenant_id" type="string" /> | The tenant being inspected (string). |
-| <Field name="org_id" type="string" /> | Owning organization ID (string). |
-| <Field name="infra" type="object" /> | Nested infrastructure status object. See [Infra fields](#infra-fields). |
-| <Field name="message" type="string" /> | Human-readable status (string). |
-
-### `Infra` fields
-
-| Field | Description |
-| --- | --- |
-| <Field name="scheduler_status" type="boolean" /> | Whether the background indexing scheduler is up. |
-| <Field name="graph_status" type="boolean" /> | Whether the knowledge-graph layer is provisioned. |
-| <Field name="vectorstore_status" type="object" /> | Vector-store readiness by bucket. Contains `knowledge` and `memory` booleans. |
 
 <Info>
 The tenant is fully ready only when both `vectorstore_status.knowledge` and `vectorstore_status.memory` are `true`.
@@ -137,13 +120,14 @@ done
 
 - **Stale tenant IDs:** If `tenant_id` does not exist, the call returns `404 TENANT_NOT_FOUND`. Always verify that the tenant was created successfully before polling.
 
-## Related endpoints
-
-- **Before this:** [Create Tenant](/api-reference/v2/endpoint/create-tenant)  -  kicks off provisioning
-- **After this:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)  -  once status is ready
-
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+<Tip>
+**Related Resources**
+
+- **Before this:** [Create Tenant](/api-reference/v2/endpoint/create-tenant) - kicks off provisioning
+- **After this:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - once status is ready
+- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+</Tip>

@@ -6,18 +6,17 @@ openapi: "GET /source/relations"
 
 import { Field } from "/snippets/field.jsx";
 
-Inspect the entity-and-relationship graph built during ingestion.
+This endpoint queries the entity-and-relationship graph built during ingestion.
 
 Pass `source_id` to scope to a single ingested item, or omit it to return all relations in the sub-tenant. Set `is_memory=true` to inspect a memory's relations instead of a knowledge source's. Cursor-based pagination handles large result sets. For more concepts, see the [Context Graphs](/essentials/v2/context-graphs) guide.
 
 <RequestExample>
-```bash cURL
-curl -G 'https://api.hydradb.com/source/relations' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  --data-urlencode "tenant_id=acme_corp" \
-  --data-urlencode "source_id=billing_runbook_v3" \
-  --data-urlencode "limit=500"
+```python Python SDK
+relations = client.source.relations(
+    tenant_id="acme_corp",
+    source_id="billing_runbook_v3",
+    limit=500,
+)
 ```
 ```typescript TypeScript SDK
 const relations = await client.source.relations({
@@ -26,12 +25,13 @@ const relations = await client.source.relations({
   limit: 500,
 });
 ```
-```python Python SDK
-relations = client.source.relations(
-    tenant_id="acme_corp",
-    source_id="billing_runbook_v3",
-    limit=500,
-)
+```bash cURL
+curl -G 'https://api.hydradb.com/source/relations' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  --data-urlencode "tenant_id=acme_corp" \
+  --data-urlencode "source_id=billing_runbook_v3" \
+  --data-urlencode "limit=500"
 ```
 </RequestExample>
 
@@ -49,8 +49,6 @@ relations = client.source.relations(
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
 | <Field name="limit" type="integer" /> | Maximum relation groups to return. Range `1–10000`. (default=`5000`) |
 | <Field name="cursor" type="number or null" /> | Opaque pagination cursor from a previous response's `next_cursor`. (default=`null`) |
-
-## Response
 
 <ResponseExample>
 
@@ -81,17 +79,6 @@ relations = client.source.relations(
 ```
 
 </ResponseExample>
-
-| Field | Description |
-|---|---|
-| <Field name="relations[]" type="ScoredPathResponse[]" /> | Array  -  each entry is a `ScoredPathResponse` containing `triplets`, `relevancy_score`, and `group_id`. |
-| <Field name="relations[].triplets" type="array" /> | Array  -  source → relation → target hops. |
-| <Field name="relations[].triplets[].source / .target" type="Entity" /> | Entity object. Common fields: `name`, `type`, `namespace`, `entity_id`, `identifier`. `name` and `type` are the most useful display fields. |
-| <Field name="relations[].triplets[].relation" type="Relation" /> | Relation object. Common fields: `canonical_predicate`, `raw_predicate`, `context`, `confidence`, and `temporal_details`. |
-| <Field name="relations[].relevancy_score" type="float" /> | Relevance score for the relation group. Higher values are more relevant within the same response. |
-| <Field name="relations[].group_id" type="string" /> | Stable group identifier for the returned relation group. |
-| <Field name="is_truncated" type="boolean" /> | Boolean  -  `true` when more results exist beyond `limit`. |
-| <Field name="next_cursor" type="number or null" /> | Opaque pagination cursor (number, or `null`). Pass to the next call's `cursor`. `null` when there are no more results. |
 
 ```json Truncated response
 {
@@ -145,14 +132,14 @@ while True:
 - **Ordering:** Treat `relations[]` as ranked by relevance within the response. Preserve order for display or LLM context, but do not compare scores across unrelated queries as absolute probabilities.
 - **Graph completeness:** Source relations only fully populate once the source's `indexing_status` reaches `completed`. Items in `graph_creation` are searchable but their relations may still be in flight.
 
-## Related endpoints
-
-- **Indexing status:** [Source Status](/api-reference/v2/endpoint/source-status)  -  confirm the graph is complete
-- **Search with graph context:** [Search](/api-reference/v2/endpoint/search) with `graph_context: true`
-- **Concepts:** [Essentials → Context Graphs](/essentials/v2/context-graphs)
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Context Graphs](/essentials/v2/context-graphs)
+<Tip>
+**Related Resources**
+
+- **Indexing status:** [Source Status](/api-reference/v2/endpoint/source-status) - confirm the graph is complete
+- **Search with graph context:** [Search](/api-reference/v2/endpoint/search) with `graph_context: true`
+- **Concepts:** [Essentials → Context Graphs](/essentials/v2/context-graphs)
+</Tip>

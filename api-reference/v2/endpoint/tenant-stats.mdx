@@ -6,23 +6,23 @@ openapi: "GET /tenants/stats"
 
 import { Field } from "/snippets/field.jsx";
 
-Retrieve usage statistics for a tenant, including storage growth, object counts, and vector dimensions.
+Get detailed metrics including storage growth, object counts, and vector dimensions.
 
-The response splits stats into two tenant-wide collections: `normal_collection` (Knowledge) and `memory_collection` (Memories), each with its own row count and embedding dimensionality. Counts aggregate across all sub-tenants in the tenant. For more details on multi-tenant architecture, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
+The response splits stats into two tenant-wide collections: `normal_collection` (Knowledge) and `memory_collection` (Memories), each with its own row count and embedding dimensionality. Counts aggregate across all sub-tenants in the tenant.
 
 <RequestExample>
-```bash cURL
-curl -X GET 'https://api.hydradb.com/tenants/stats?tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2"
+```python Python SDK
+stats = client.tenants.stats(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const stats = await client.tenants.stats({
   tenant_id: "my_first_tenant",
 });
 ```
-```python Python SDK
-stats = client.tenants.stats(tenant_id="my_first_tenant")
+```bash cURL
+curl -X GET 'https://api.hydradb.com/tenants/stats?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2"
 ```
 </RequestExample>
 
@@ -35,8 +35,6 @@ stats = client.tenants.stats(tenant_id="my_first_tenant")
 | Name | Description |
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Identifier of the tenant to report on. |
-
-## Response
 
 <ResponseExample>
 
@@ -68,20 +66,6 @@ For a new or empty tenant, both collections are present and report zero rows:
 }
 ```
 
-| Field | Description |
-|---|---|
-| <Field name="tenant_id" type="string" /> | The tenant being reported on (string). |
-| <Field name="normal_collection" type="CollectionStats" /> | Stats for the Knowledge collection. See [CollectionStats fields](#collectionstats-fields). |
-| <Field name="memory_collection" type="CollectionStats" /> | Stats for the Memories collection. See [CollectionStats fields](#collectionstats-fields). |
-| <Field name="message" type="string" /> | Human-readable status (string). |
-
-### `CollectionStats` fields
-
-| Field | Description |
-| --- | --- |
-| <Field name="row_count" type="integer" /> | Number of indexed chunks in the collection. **Chunks, not sources**  -  one document typically becomes many chunks. |
-| <Field name="dimensions" type="integer" /> | Embedding dimensionality of the collection. |
-
 ## Behavior notes
 
 <Info>
@@ -91,14 +75,15 @@ For a new or empty tenant, both collections are present and report zero rows:
 - **Both collections always exist:** Even if you've only ingested knowledge (or only memories), both collections are provisioned. Empty collections report `row_count: 0` with the configured `dimensions`.
 - **Stats are eventually consistent:** Immediately after ingestion or deletion, counts may lag until background processing completes. Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested source IDs before treating counts as final.
 
-## Related endpoints
-
-- **List sources/memories:** [List Documents](/api-reference/v2/endpoint/list-documents)
-- **List sub-tenants:** [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants)
-- **Check provisioning:** [Tenant Status](/api-reference/v2/endpoint/tenant-status)
-
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+<Tip>
+**Related Resources**
+
+- **List sources/memories:** [List Documents](/api-reference/v2/endpoint/list-documents)
+- **List sub-tenants:** [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants)
+- **Check provisioning:** [Tenant Status](/api-reference/v2/endpoint/tenant-status)
+- **Read more:** [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+</Tip>

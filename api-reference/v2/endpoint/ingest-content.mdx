@@ -8,70 +8,75 @@ import { Field } from "/snippets/field.jsx";
 
 - **`type=knowledge`** - Build your knowledge base using:
   - **Files** - Use `files` for binary uploads (PDF, DOCX, CSV, MD, TXT) that HydraDB should parse. Read more about [ingesting files](/essentials/v2/knowledge-files).
-  - **App Sources** - Use `app_knowledge` for pre-extracted JSON content (Slack threads, Notion pages, web pages). Read more about [ingesting knowledge buried in apps](/essentials/v2/app-knowledge).
+  - **App Sources** - Use `app_knowledge` for pre-extracted JSON content (Slack threads, Notion pages, web pages). Read more about [ingesting knowledge from your apps](/essentials/v2/app-knowledge).
 - **`type=memory`** - Use `memories` for per-user content, scoped with `sub_tenant_id`. Set `infer: true` to automatically extract preferences from raw signals, or `infer: false` to store the text verbatim. Read more about [ingesting memories](/essentials/v2/memory).
 
 
 <RequestExample>
 
-```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  -F "type=knowledge" \
-  -F "tenant_id=acme_corp" \
-  -F "sub_tenant_id=team_docs" \
-  -F "upsert=true" \
-  -F "files=@/path/to/policy.pdf" \
-  -F 'file_metadata=[
-    {
-      "file_id": "policy_main",
-      "tenant_metadata": { "department": "legal" },
-      "document_metadata": { "source": "policy" }
-    }
-  ]' \
-  -F 'app_knowledge=[
-    {
-      "id": "slack_thread_001",
-      "title": "Pricing discussion",
-      "type": "slack",
-      "content": { "text": "We agreed on three tiers..." },
-      "tenant_metadata": { "department": "product" },
-      "document_metadata": { "channel": "pricing" }
-    }
-  ]'
+```python Python SDK
+import json
 
-# OR: memory from raw text.
-curl -X POST 'https://api.hydradb.com/source/ingest' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  -F "type=memory" \
-  -F "tenant_id=acme_corp" \
-  -F "sub_tenant_id=user_alex" \
-  -F 'memories=[
-    {
-      "text": "Prefers concise answers and dark mode.",
-      "infer": true,
-      "user_name": "Alex"
-    }
-  ]'
+with open("/path/to/policy.pdf", "rb") as policy:
+    knowledge_result = client.source.ingest(
+        # Knowledge requests can include files, app_knowledge, or both.
+        type="knowledge",
+        tenant_id="acme_corp",
+        sub_tenant_id="team_docs",
+        upsert=True,
 
-# OR: memory from conversation pairs.
-curl -X POST 'https://api.hydradb.com/source/ingest' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  -F "type=memory" \
-  -F "tenant_id=acme_corp" \
-  -F "sub_tenant_id=user_alex" \
-  -F 'memories=[
-    {
-      "title": "Support conversation about refunds",
-      "user_assistant_pairs": [
-        { "user": "Can I get a refund?", "assistant": "Refunds are available within 30 days." }
-      ],
-      "infer": false
-    }
-  ]'
+        # Use files when HydraDB should parse PDFs, DOCX, CSV, Markdown, or text files.
+        files=[("policy.pdf", policy, "application/pdf")],
+        file_metadata=json.dumps([
+            {
+                "file_id": "policy_main",
+                "tenant_metadata": {"department": "legal"},
+                "document_metadata": {"source": "policy"},
+            }
+        ]),
+
+        # Use app_knowledge when your app already extracted the source text/metadata.
+        app_knowledge=json.dumps([
+            {
+                "id": "slack_thread_001",
+                "title": "Pricing discussion",
+                "type": "slack",
+                "content": {"text": "We agreed on three tiers..."},
+                "tenant_metadata": {"department": "product"},
+                "document_metadata": {"channel": "pricing"},
+            }
+        ]),
+    )
+
+text_memory_result = client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=json.dumps([
+        {
+            # Use text for raw notes or signals.
+            "text": "Prefers concise answers and dark mode.",
+            "infer": True,
+            "user_name": "Alex",
+        }
+    ]),
+)
+
+conversation_memory_result = client.source.ingest(
+    type="memory",
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    memories=json.dumps([
+        {
+            # Use user_assistant_pairs for conversation history instead of text.
+            "title": "Support conversation about refunds",
+            "user_assistant_pairs": [
+                {"user": "Can I get a refund?", "assistant": "Refunds are available within 30 days."},
+            ],
+            "infer": False,
+        }
+    ]),
+)
 ```
 
 ```typescript TypeScript SDK
@@ -138,69 +143,64 @@ const conversationMemoryResult = await client.source.ingest({
 });
 ```
 
-```python Python SDK
-import json
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=knowledge" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=team_docs" \
+  -F "upsert=true" \
+  -F "files=@/path/to/policy.pdf" \
+  -F 'file_metadata=[
+    {
+      "file_id": "policy_main",
+      "tenant_metadata": { "department": "legal" },
+      "document_metadata": { "source": "policy" }
+    }
+  ]' \
+  -F 'app_knowledge=[
+    {
+      "id": "slack_thread_001",
+      "title": "Pricing discussion",
+      "type": "slack",
+      "content": { "text": "We agreed on three tiers..." },
+      "tenant_metadata": { "department": "product" },
+      "document_metadata": { "channel": "pricing" }
+    }
+  ]'
 
-with open("/path/to/policy.pdf", "rb") as policy:
-    knowledge_result = client.source.ingest(
-        # Knowledge requests can include files, app_knowledge, or both.
-        type="knowledge",
-        tenant_id="acme_corp",
-        sub_tenant_id="team_docs",
-        upsert=True,
+# OR: memory from raw text.
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "text": "Prefers concise answers and dark mode.",
+      "infer": true,
+      "user_name": "Alex"
+    }
+  ]'
 
-        # Use files when HydraDB should parse PDFs, DOCX, CSV, Markdown, or text files.
-        files=[("policy.pdf", policy, "application/pdf")],
-        file_metadata=json.dumps([
-            {
-                "file_id": "policy_main",
-                "tenant_metadata": {"department": "legal"},
-                "document_metadata": {"source": "policy"},
-            }
-        ]),
-
-        # Use app_knowledge when your app already extracted the source text/metadata.
-        app_knowledge=json.dumps([
-            {
-                "id": "slack_thread_001",
-                "title": "Pricing discussion",
-                "type": "slack",
-                "content": {"text": "We agreed on three tiers..."},
-                "tenant_metadata": {"department": "product"},
-                "document_metadata": {"channel": "pricing"},
-            }
-        ]),
-    )
-
-text_memory_result = client.source.ingest(
-    type="memory",
-    tenant_id="acme_corp",
-    sub_tenant_id="user_alex",
-    memories=json.dumps([
-        {
-            # Use text for raw notes or signals.
-            "text": "Prefers concise answers and dark mode.",
-            "infer": True,
-            "user_name": "Alex",
-        }
-    ]),
-)
-
-conversation_memory_result = client.source.ingest(
-    type="memory",
-    tenant_id="acme_corp",
-    sub_tenant_id="user_alex",
-    memories=json.dumps([
-        {
-            # Use user_assistant_pairs for conversation history instead of text.
-            "title": "Support conversation about refunds",
-            "user_assistant_pairs": [
-                {"user": "Can I get a refund?", "assistant": "Refunds are available within 30 days."},
-            ],
-            "infer": False,
-        }
-    ]),
-)
+# OR: memory from conversation pairs.
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "title": "Support conversation about refunds",
+      "user_assistant_pairs": [
+        { "user": "Can I get a refund?", "assistant": "Refunds are available within 30 days." }
+      ],
+      "infer": false
+    }
+  ]'
 ```
 
 </RequestExample>
@@ -503,8 +503,6 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 </Note>
 
 
-## Response
-
 <ResponseExample>
 
 ```json Response
@@ -522,14 +520,6 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 
 </ResponseExample>
 
-| Field | Description |
-|---|---|
-| <Field name="success" type="boolean" /> | Overall ingest acceptance  -  `true` if at least one item was queued. |
-| <Field name="results[]" type="array" /> | One entry per queued item with its `source_id` and initial `status` of `queued`. |
-| <Field name="results[].source_id" type="string" /> | Use this for status polling, fetch, list, delete, and graph relations. |
-| <Field name="results[].error" type="string or null" /> | Non-null only if HydraDB rejected the item before queueing (e.g., schema validation). |
-| <Field name="success_count / failed_count" type="integer" /> | Tallies. |
-
 ## Behavior notes
 
 - **Async indexing.** `202 Accepted` only means HydraDB **queued** the work. Content is not retrievable until `indexing_status` reaches `graph_creation` (partial) or `completed` (full). Always poll [Source Status](/api-reference/v2/endpoint/source-status) before searching.
@@ -543,17 +533,19 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 - **Common mistakes.** Use `type: "memory"` for ingestion and deletion, but use `memories` for the form field and for search/list collection selectors. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
 
 
-<Tip>
-## Related endpoints
-
-- **Next:** [Source Status](/api-reference/v2/endpoint/source-status)  -  poll until `graph_creation` for search or `completed` for graph-ready results
-- **Then:** [Search](/api-reference/v2/endpoint/search)  -  retrieve indexed content
-- **Inspect:** [List Documents](/api-reference/v2/endpoint/list-documents) · [Fetch Content](/api-reference/v2/endpoint/fetch-content)
-- **Cleanup:** [Delete Source](/api-reference/v2/endpoint/delete-source)
-</Tip>
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Knowledge](/essentials/v2/knowledge) · [Essentials → Memories](/essentials/v2/memories) · [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+<Tip>
+**Related Resources**
+
+- **Next:** [Source Status](/api-reference/v2/endpoint/source-status) - poll until `graph_creation` for search or `completed` for graph-ready results
+- **Then:** [Search](/api-reference/v2/endpoint/search) - retrieve indexed content
+- **Inspect:** [List Documents](/api-reference/v2/endpoint/list-documents)
+- **Inspect:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
+- **Cleanup:** [Delete Source](/api-reference/v2/endpoint/delete-source)
+- **Read more:** [Essentials → Knowledge](/essentials/v2/knowledge)
+- **Read more:** [Essentials → Memories](/essentials/v2/memories)
+- **Read more:** [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+</Tip>

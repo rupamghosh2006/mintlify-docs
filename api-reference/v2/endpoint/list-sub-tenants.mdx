@@ -6,23 +6,21 @@ openapi: "GET /tenants/sub-tenants"
 
 import { Field } from "/snippets/field.jsx";
 
-Retrieve all sub-tenant IDs that have indexed data within a specific tenant.
-
 Sub-tenants are created implicitly during ingestion the first time a `sub_tenant_id` value is written. For details, see the [Multi-Tenant Support](/essentials/v2/multi-tenant) guide.
 
 <RequestExample>
-```bash cURL
-curl -X GET 'https://api.hydradb.com/tenants/sub-tenants?tenant_id=my_first_tenant' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2"
+```python Python SDK
+response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const response = await client.tenants.subTenants({
   tenant_id: "my_first_tenant",
 });
 ```
-```python Python SDK
-response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
+```bash cURL
+curl -X GET 'https://api.hydradb.com/tenants/sub-tenants?tenant_id=my_first_tenant' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2"
 ```
 </RequestExample>
 
@@ -35,8 +33,6 @@ response = client.tenants.sub_tenants(tenant_id="my_first_tenant")
 | Name | Description |
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Identifier of the tenant whose sub-tenants you want to list. |
-
-## Response
 
 <ResponseExample>
 
@@ -58,11 +54,6 @@ A tenant with no indexed content can return an empty list:
 }
 ```
 
-| Field | Description |
-|---|---|
-| <Field name="sub_tenant_ids" type="string[]" /> | Array of unique sub-tenant IDs that have indexed data in either collection (Knowledge or Memories). |
-| <Field name="message" type="string" /> | Human-readable status (string). |
-
 ## Behavior notes
 
 <Info>
@@ -72,14 +63,14 @@ A tenant with no indexed content can return an empty list:
 - **Default sub-tenant included:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. It appears here once any data is written without an explicit `sub_tenant_id`.
 - **Only sub-tenants with data are listed:** A sub-tenant that has been referenced in a search but never received an ingest will not show up here.
 
-## Related endpoints
-
-- **Inspect content:** [List Documents](/api-reference/v2/endpoint/list-documents)  -  scoped to a `sub_tenant_id`
-- **Inspect usage:** [Tenant Stats](/api-reference/v2/endpoint/tenant-stats)
-- **Concepts:** [Essentials → Multi-Tenant](/essentials/v2/multi-tenant)
-
 ## Errors
 
 Common codes: `404 TENANT_NOT_FOUND`, `401 UNAUTHORIZED`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Essentials → Multi-Tenant Support](/essentials/v2/multi-tenant)
+<Tip>
+**Related Resources**
+
+- **Inspect content:** [List Documents](/api-reference/v2/endpoint/list-documents) - scoped to a `sub_tenant_id`
+- **Inspect usage:** [Tenant Stats](/api-reference/v2/endpoint/tenant-stats)
+- **Concepts:** [Essentials → Multi-Tenant](/essentials/v2/multi-tenant)
+</Tip>

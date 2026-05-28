@@ -6,18 +6,17 @@ openapi: "GET /source/fetch"
 
 import { Field } from "/snippets/field.jsx";
 
-Retrieve the original content of an ingested knowledge source or memory. Specify the `source_id` of the content you want to retrieve.
+Specify the `source_id` of the knowledge source or memory you want to retrieve.
 
 <RequestExample>
 
-```bash cURL
-curl -G 'https://api.hydradb.com/source/fetch' \
-  -H "Authorization: Bearer <your_api_key>" \
-  -H "API-Version: 2" \
-  --data-urlencode "source_id=policy_main" \
-  --data-urlencode "tenant_id=acme_corp" \
-  --data-urlencode "mode=both" \
-  --data-urlencode "expiry_seconds=3600"
+```python Python SDK
+file = client.source.fetch(
+    source_id="policy_main",
+    tenant_id="acme_corp",
+    mode="both",
+    expiry_seconds=3600,
+)
 ```
 
 ```typescript TypeScript SDK
@@ -29,13 +28,14 @@ const file = await client.source.fetch({
 });
 ```
 
-```python Python SDK
-file = client.source.fetch(
-    source_id="policy_main",
-    tenant_id="acme_corp",
-    mode="both",
-    expiry_seconds=3600,
-)
+```bash cURL
+curl -G 'https://api.hydradb.com/source/fetch' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  --data-urlencode "source_id=policy_main" \
+  --data-urlencode "tenant_id=acme_corp" \
+  --data-urlencode "mode=both" \
+  --data-urlencode "expiry_seconds=3600"
 ```
 
 </RequestExample>
@@ -120,8 +120,6 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 }
 ```
 
-## Response
-
 <ResponseExample>
 
 ```json Response
@@ -139,17 +137,6 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 
 </ResponseExample>
 
-| Field | Description |
-|---|---|
-| <Field name="success" type="boolean" /> | Boolean  -  always `true` on a 200 response. |
-| <Field name="source_id" type="string" /> | The source you asked for (string). |
-| <Field name="content" type="string or null" /> | Parsed text content (string, or `null`). Present when `mode` is `content` or `both` and the file is text-parseable. |
-| <Field name="content_base64" type="string or null" /> | Base64-encoded raw file content (string, or `null`). Present when the source is binary and `mode` includes content. |
-| <Field name="presigned_url" type="string or null" /> | Direct download URL (string, or `null`). Present when `mode` is `url` or `both`. |
-| <Field name="content_type" type="string or null" /> | MIME type when known (string, or `null`). |
-| <Field name="size_bytes" type="integer or null" /> | Source file size in bytes when known (integer, or `null`). |
-| <Field name="message" type="string" /> | Human-readable status (string). |
-
 ## Behavior notes
 
 <Info>
@@ -160,14 +147,16 @@ Use `mode=url` when you need the original file. Use `mode=content` when you only
 - **Presigned URL TTL:** The URL is valid only for `expiry_seconds`. Anyone with the URL can download the file during that window, so treat it as a short-lived secret.
 - **Memory items:** Fetching a memory's `source_id` returns its raw text content. There are no presigned URLs for memory items  -  `mode=url` and `mode=both` return `presigned_url: null`.
 
-## Related endpoints
-
-- **Discover IDs:** [List Documents](/api-reference/v2/endpoint/list-documents) · [Search](/api-reference/v2/endpoint/search)
-- **Status check:** [Source Status](/api-reference/v2/endpoint/source-status)
-- **Cleanup:** [Delete Source](/api-reference/v2/endpoint/delete-source)
-
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
-Read more: [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+<Tip>
+**Related Resources**
+
+- **Discover IDs:** [List Documents](/api-reference/v2/endpoint/list-documents)
+- **Perform a search:** [Search](/api-reference/v2/endpoint/search)
+- **Status check:** [Source Status](/api-reference/v2/endpoint/source-status)
+- **Cleanup:** [Delete Source](/api-reference/v2/endpoint/delete-source)
+- **Read more:** [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+</Tip>

@@ -69,33 +69,26 @@ For full field schemas, see the [Search API Reference](/api-reference/v2/endpoin
 
 <CodeGroup>
 
-```python Python SDK
-result = client.search.query(
-    tenant_id="acme_corp",
-    query="How does the billing system handle failed payments?",
-    source="knowledge",
-    search_by="hybrid",
-    mode="thinking",
-    graph_context=True,
-)
-
-if result.graph_context:
-    for path in result.graph_context.query_paths:
-        for t in path.triplets:
-            print(
-                t.source.name,
-                " - ",
-                t.relation.canonical_predicate,
-                "→",
-                t.target.name,
-            )
+```bash cURL
+curl -X POST 'https://api.hydradb.com/search' \
+  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "acme_corp",
+    "query": "How does the billing system handle failed payments?",
+    "type": "knowledge",
+    "search_by": "hybrid",
+    "mode": "thinking",
+    "graph_context": true
+  }'
 ```
 
 ```typescript TypeScript SDK
 const result = await client.search.query({
   tenant_id: "acme_corp",
   query: "How does the billing system handle failed payments?",
-  source: "knowledge",
+  type: "knowledge",
   search_by: "hybrid",
   mode: "thinking",
   graph_context: true,
@@ -112,19 +105,26 @@ if (result.graph_context) {
 }
 ```
 
-```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
-  -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
-  -H "API-Version: 2" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tenant_id": "acme_corp",
-    "query": "How does the billing system handle failed payments?",
-    "source": "knowledge",
-    "search_by": "hybrid",
-    "mode": "thinking",
-    "graph_context": true
-  }'
+```python Python SDK
+result = client.search.query(
+    tenant_id="acme_corp",
+    query="How does the billing system handle failed payments?",
+    type="knowledge",
+    search_by="hybrid",
+    mode="thinking",
+    graph_context=True,
+)
+
+if result.graph_context:
+    for path in result.graph_context.query_paths:
+        for t in path.triplets:
+            print(
+                t.source.name,
+                " - ",
+                t.relation.canonical_predicate,
+                "→",
+                t.target.name,
+            )
 ```
 
 </CodeGroup>

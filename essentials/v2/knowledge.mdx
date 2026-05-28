@@ -9,18 +9,18 @@ import { Field } from "/snippets/field.jsx";
 
 Knowledge is the shared, tenant-wide context that every user and agent in a tenant can search  -  product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and anything else that ought to be reusable across the workspace.
 
-Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds per-user context. Both are retrievable through the same [`POST /search`](/api-reference/v2/endpoint/search) endpoint, but they live in separate stores; you pick which one to search via the `source` parameter (see [Search](/essentials/v2/search)).
+Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds per-user context. Both are retrievable through the same [`POST /search`](/api-reference/v2/endpoint/search) endpoint, but they live in separate stores; you pick which one to search via the `type` parameter (see [Search](/essentials/v2/search)).
 
 | | Knowledge | Memories |
 |---|---|---|
 | **Content** | Documents, files, app-generated content | User preferences, conversations, inferred traits |
 | **Scope** | Shared across all users in a tenant | Per-user, scoped by `sub_tenant_id` |
 | **Mutability** | Versioned  -  replaced or deleted explicitly | Dynamic  -  evolves with every interaction |
-| **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "knowledge"` | [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"` |
+| **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `type: "knowledge"` | [`POST /search`](/api-reference/v2/endpoint/search) with `type: "memory"` |
 | **`vectorstore_status`** | `vectorstore_status.knowledge` | `vectorstore_status.memories` |
 
 <Info>
-  **One endpoint, two stores.** Knowledge and memories are stored separately, but a single [`POST /search`](/api-reference/v2/endpoint/search) call can hit both via `source: "all"`  -  results are merged and re-ranked together. Pick `source: "knowledge"` for shared-doc RAG, `source: "memories"` for per-user context, or `source: "all"` for personalized answers grounded in both. See [Search](/essentials/v2/search) for the full picture.
+  **One endpoint, two stores.** Knowledge and memories are stored separately, but a single [`POST /search`](/api-reference/v2/endpoint/search) call can hit both via `type: "all"`  -  results are merged and re-ranked together. Pick `type: "knowledge"` for shared-doc RAG, `type: "memory"` for per-user context, or `type: "all"` for personalized answers grounded in both. See [Search](/essentials/v2/search) for the full picture.
 </Info>
 
 ---
@@ -440,7 +440,7 @@ See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and 
 
 | Mistake | What goes wrong | Fix |
 |---|---|---|
-| Searching Knowledge with `source: "memories"` | Nothing returned  -  wrong store | Use `source: "knowledge"` (or `"all"`) on [`POST /search`](/api-reference/v2/endpoint/search). |
+| Searching Knowledge with `type: "memory"` | Nothing returned  -  wrong store | Use `type: "knowledge"` (or `"all"`) on [`POST /search`](/api-reference/v2/endpoint/search). |
 | Using `document_metadata` for filterable fields | Filters are silently ignored unless nested correctly | Put filterable keys in `tenant_metadata` and declare them in the [tenant schema](/api-reference/v2/endpoint/create-tenant), or filter under `metadata_filters: {"document_metadata": {...}}`  -  see [Metadata](/essentials/v2/metadata). |
 | Not polling [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Chunks aren't indexed yet  -  empty search results | Wait for `indexing_status: completed` (or `graph_creation` for partial availability). |
 | Sending `file_metadata` as a JSON object instead of a JSON string | `multipart/form-data` validation fails | Stringify `file_metadata` before sending in the `-F` field. |

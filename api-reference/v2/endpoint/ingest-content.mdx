@@ -39,6 +39,8 @@ with open("/path/to/policy.pdf", "rb") as policy:
         app_knowledge=json.dumps([
             {
                 "id": "slack_thread_001",
+                "tenant_id": "acme_corp",
+                "sub_tenant_id": "team_docs",
                 "title": "Pricing discussion",
                 "type": "slack",
                 "content": {"text": "We agreed on three tiers..."},
@@ -103,6 +105,8 @@ const knowledgeResult = await client.source.ingest({
   app_knowledge: JSON.stringify([
     {
       id: "slack_thread_001",
+      tenant_id: "acme_corp",
+      sub_tenant_id: "team_docs",
       title: "Pricing discussion",
       type: "slack",
       content: { text: "We agreed on three tiers..." },
@@ -162,6 +166,8 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
   -F 'app_knowledge=[
     {
       "id": "slack_thread_001",
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "team_docs",
       "title": "Pricing discussion",
       "type": "slack",
       "content": { "text": "We agreed on three tiers..." },
@@ -269,9 +275,12 @@ import json
 client.source.ingest(
     type="knowledge",
     tenant_id="acme_corp",
+    sub_tenant_id="team_docs",
     app_knowledge=json.dumps([
         {
             "id": "slack_thread_001",
+            "tenant_id": "acme_corp",
+            "sub_tenant_id": "team_docs",
             "title": "Pricing discussion",
             "type": "slack",
             "content": {"text": "We agreed on three tiers..."},
@@ -285,9 +294,12 @@ client.source.ingest(
 await client.source.ingest({
   type: "knowledge",
   tenant_id: "acme_corp",
+  sub_tenant_id: "team_docs",
   app_knowledge: JSON.stringify([
     {
       id: "slack_thread_001",
+      tenant_id: "acme_corp",
+      sub_tenant_id: "team_docs",
       title: "Pricing discussion",
       type: "slack",
       content: { text: "We agreed on three tiers..." },
@@ -303,9 +315,12 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
   -H "API-Version: 2" \
   -F "type=knowledge" \
   -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=team_docs" \
   -F 'app_knowledge=[
     {
       "id": "slack_thread_001",
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "team_docs",
       "title": "Pricing discussion",
       "type": "slack",
       "content": { "text": "We agreed on three tiers..." },
@@ -468,7 +483,9 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 | Field | Description |
 | --- | --- |
-| <Field name="id" type="string" /> | Source ID. Treated as the upsert key. (default=auto-generated) |
+| <Field name="id" type="string" required /> | Source ID. Treated as the upsert key. Send an empty string to have one generated upstream. |
+| <Field name="tenant_id" type="string" required /> | Target tenant. Must match the form-level `tenant_id`. |
+| <Field name="sub_tenant_id" type="string" required /> | Logical partition inside the tenant. Must match the form-level `sub_tenant_id`. |
 | <Field name="title" type="string" /> | Short title or subject shown in search results. |
 | <Field name="type" type="string" /> | Source category (`slack`, `notion`, `gmail`, `webpage`, etc.). Used for filtering and display. |
 | <Field name="description" type="string" /> | Optional long-form description. |

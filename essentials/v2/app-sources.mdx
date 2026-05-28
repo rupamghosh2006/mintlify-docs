@@ -10,10 +10,8 @@ App sources are pre-parsed records from business applications  -  emails, chat m
 Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.source_ids`](#7-forceful-relations).
 
 <Info>
-  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with `app_search: true` and `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
+  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with **`search_apps: true`** and `source: "knowledge"` (or `source: "all"` to merge with [Memories](/essentials/v2/memories)).
 </Info>
-
----
 
 ## 1. What it is
 
@@ -40,17 +38,16 @@ Every app-source item maps to one HydraDB source with the fields below. The shap
 | `description` | Optional long-form summary. |
 | `url` | Canonical link back to the source item. |
 | `timestamp` | ISO-8601 creation or last-updated time. |
-| `content` | `{ "text": "..." }` or `{ "markdown": "..." }`  -  the searchable body. |
+| `kind` | Type of app object: `email`, `message`, `ticket`, `knowledge_base`, `comment`, or `custom`. |
+| `provider` | System the item came from, such as `slack`, `gmail`, `jira`, `notion`, or `salesforce`. |
+| `external_id` | Stable provider ID for this exact item. |
+| `fields` | Structured content and app-specific fields for the selected `kind`. |
 | `tenant_metadata` | Schema-aligned filterable fields (channel, project, space, region). See [Scoping using metadata](/essentials/v2/metadata). |
 | `document_metadata` | Free-form display/bookkeeping fields (author, message ts, ticket key, etc.). |
 | `attachments` | Pre-extracted files attached to this item. |
 | `relations` | Forceful links to other HydraDB sources by `source_ids`. |
 
-There is no separate `kind`, `provider`, `external_id`, `fields`, `thread_id`, `parent_id`, `linked_issue_ids`, or embedded `comments[]` array. Model those concepts using:
-
-- **Stable provider IDs** → put them in `id` (e.g. `slack_C01_1716213600_000100`, `jira_AUTH-123`).
-- **Threads, replies, comments** → ingest each as its own source and link them via [`relations.source_ids`](#7-forceful-relations).
-- **Channel/project/space scope** → put in `tenant_metadata` (filterable) or `document_metadata` (display).
+Top-level identifiers like `kind`, `provider`, and `external_id` along with the structured `fields` payload are normalized for indexing and graph creation. Put the main searchable item text in `fields` (e.g. `fields.body` or `fields.description`). Top-level generic `content` remains supported for legacy untyped payloads.
 
 ---
 
@@ -189,14 +186,20 @@ A Slack thread is several sources linked together. Use the message timestamp ins
   "id": "slack_C01_1716213600_000100",
   "title": "Auth rollback - thread root",
   "type": "slack",
+  "kind": "message",
+  "provider": "slack",
+  "external_id": "1716213600.000100",
   "url": "https://acme.slack.com/archives/C01/p1716213600000100",
   "timestamp": "2026-05-20T10:00:00Z",
-  "content": { "text": "The auth rollback notes are attached here." },
-  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
-  "document_metadata": {
-    "slack_ts": "1716213600.000100",
-    "author": "alice"
+  "fields": {
+    "kind": "message",
+    "body": "The auth rollback notes are attached here.",
+    "author": "alice",
+    "thread_id": "1716213600.000100",
+    "created_at": "2026-05-20T10:00:00Z",
+    "url": "https://acme.slack.com/archives/C01/p1716213600000100"
   },
+  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
   "attachments": [
     {
       "id": "F012AUTH",
@@ -216,14 +219,19 @@ For a reply, ingest a second source and link it back:
   "id": "slack_C01_1716213700_000200",
   "title": "Re: Auth rollback - reply",
   "type": "slack",
+  "kind": "message",
+  "provider": "slack",
+  "external_id": "1716213700.000200",
   "timestamp": "2026-05-20T10:01:40Z",
-  "content": { "text": "Looking now - will pair with Bob in 10." },
-  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
-  "document_metadata": {
-    "slack_ts": "1716213700.000200",
-    "thread_ts": "1716213600.000100",
-    "author": "carol"
+  "fields": {
+    "kind": "message",
+    "body": "Looking now - will pair with Bob in 10.",
+    "author": "carol",
+    "thread_id": "1716213600.000100",
+    "parent_id": "1716213600.000100",
+    "created_at": "2026-05-20T10:01:40Z"
   },
+  "tenant_metadata": { "channel": "engineering", "workspace": "acme" },
   "relations": {
     "source_ids": ["slack_C01_1716213600_000100"]
   }
@@ -232,26 +240,32 @@ For a reply, ingest a second source and link it back:
 
 ### Jira ticket (with linked issues)
 
-The ticket body lives in `content.text`. Workflow fields (status, priority, assignee, reporter) go into `document_metadata`. Filterable scope (project, environment) goes into `tenant_metadata`. Links to related tickets are forceful relations.
+The ticket body lives in `fields.description`. Workflow fields (status, priority, assignee, reporter) go into the nested `fields`. Filterable scope (project, environment) goes into `tenant_metadata`. Links to related tickets are forceful relations.
 
 ```json
 {
   "id": "jira_AUTH-123",
   "title": "Login page returns 500",
   "type": "jira",
+  "kind": "ticket",
+  "provider": "jira",
+  "external_id": "AUTH-123",
   "url": "https://jira.example.com/browse/AUTH-123",
   "timestamp": "2026-05-20T10:00:00Z",
-  "content": {
-    "text": "Invalid credentials return HTTP 500 instead of 401. Reproduces on staging and prod."
-  },
-  "tenant_metadata": { "project": "AUTH", "environment": "production" },
-  "document_metadata": {
-    "ticket_key": "AUTH-123",
+  "fields": {
+    "kind": "ticket",
+    "title": "Login page returns 500",
+    "description": "Invalid credentials return HTTP 500 instead of 401. Reproduces on staging and prod.",
     "status": "open",
     "priority": "high",
     "assignee": "alice",
-    "reporter": "bob"
+    "reporter": "bob",
+    "parent_id": "AUTH-100",
+    "linked_issue_ids": ["AUTH-124", "AUTH-125"],
+    "created_at": "2026-05-20T10:00:00Z",
+    "url": "https://jira.example.com/browse/AUTH-123"
   },
+  "tenant_metadata": { "project": "AUTH", "environment": "production" },
   "relations": {
     "source_ids": ["jira_AUTH-124", "jira_AUTH-125", "jira_AUTH-100"]
   }
@@ -267,15 +281,21 @@ Comments are their own sources. The link to the parent ticket goes through [`rel
   "id": "linear_comment_c123",
   "title": "Comment on AUTH-123",
   "type": "linear_comment",
+  "kind": "comment",
+  "provider": "linear",
+  "external_id": "c123",
   "url": "https://linear.app/acme/issue/AUTH-123#comment-c123",
   "timestamp": "2026-05-25T07:00:00Z",
-  "content": { "text": "I found the repro steps. Attaching HAR." },
-  "tenant_metadata": { "project": "AUTH" },
-  "document_metadata": {
-    "comment_id": "c123",
+  "fields": {
+    "kind": "comment",
+    "body": "I found the repro steps. Attaching HAR.",
     "author": "alice@acme.com",
-    "parent_ticket": "UI-001"
+    "parent_id": "UI-001",
+    "thread_id": "UI-001",
+    "created_at": "2026-05-25T07:00:00Z",
+    "url": "https://linear.app/acme/issue/AUTH-123#comment-c123"
   },
+  "tenant_metadata": { "project": "AUTH" },
   "relations": {
     "source_ids": ["linear_UI-001"]
   }
@@ -291,15 +311,23 @@ A page is one source. The space, workspace, or database goes in metadata, not th
   "id": "notion_page_abc",
   "title": "Incident response runbook",
   "type": "notion",
+  "kind": "knowledge_base",
+  "provider": "notion",
+  "external_id": "page_abc",
   "url": "https://notion.so/page_abc",
   "timestamp": "2026-05-25T07:00:00Z",
-  "content": { "markdown": "# Incident response\n\nSteps to triage production incidents..." },
-  "tenant_metadata": { "space": "Engineering", "doc_type": "runbook" },
-  "document_metadata": {
-    "page_id": "page_abc",
+  "fields": {
+    "kind": "knowledge_base",
+    "title": "Incident response runbook",
+    "body": "Steps to triage production incidents...",
+    "parent_id": "space_eng_root",
     "created_by": "alice@acme.com",
-    "updated_by": "alice@acme.com"
-  }
+    "updated_by": "alice@acme.com",
+    "created_at": "2026-05-25T07:00:00Z",
+    "updated_at": "2026-05-25T07:00:00Z",
+    "url": "https://notion.so/page_abc"
+  },
+  "tenant_metadata": { "space": "Engineering", "doc_type": "runbook" }
 }
 ```
 
@@ -312,17 +340,24 @@ Each email message is its own source. Link replies and forwards through [`relati
   "id": "gmail_msg_19a2b3c",
   "title": "Q4 launch plan",
   "type": "gmail",
+  "kind": "email",
+  "provider": "gmail",
+  "external_id": "19a2b3c",
   "url": "https://mail.google.com/mail/u/0/#inbox/19a2b3c",
   "timestamp": "2026-05-20T09:00:00Z",
-  "content": { "text": "Here is the updated plan..." },
-  "tenant_metadata": { "mailbox": "team@acme.com" },
-  "document_metadata": {
-    "gmail_message_id": "19a2b3c",
-    "gmail_thread_id": "thread_19a2",
+  "fields": {
+    "kind": "email",
+    "subject": "Q4 launch plan",
+    "body": "Here is the updated plan...",
     "from": "alice@acme.com",
     "to": ["team@acme.com"],
-    "cc": ["pm@acme.com"]
+    "cc": ["pm@acme.com"],
+    "thread_id": "thread_19a2",
+    "reply_to_id": "gmail_msg_19a1a00",
+    "created_at": "2026-05-20T09:00:00Z",
+    "url": "https://mail.google.com/mail/u/0/#inbox/19a2b3c"
   },
+  "tenant_metadata": { "mailbox": "team@acme.com" },
   "relations": {
     "source_ids": ["gmail_msg_19a1a00"]
   }
@@ -338,19 +373,24 @@ CRM records use the same flat shape. Cross-app links go through [`relations.sour
   "id": "salesforce_opp_789",
   "title": "Acme enterprise renewal",
   "type": "salesforce",
+  "kind": "custom",
+  "provider": "salesforce",
+  "external_id": "opp_789",
   "url": "https://acme.lightning.force.com/lightning/r/Opportunity/opp_789/view",
   "timestamp": "2026-05-21T08:45:00Z",
-  "content": {
-    "text": "Acme renewal in negotiation. $50k ARR. Blocked on auth fix tracked in AUTH-123."
+  "fields": {
+    "kind": "custom",
+    "parent_id": "account_456",
+    "thread_id": "opp_789_activity",
+    "data": {
+      "record_type": "opportunity",
+      "name": "Acme enterprise renewal",
+      "stage": "negotiation",
+      "amount": "50000",
+      "owner": "morgan"
+    }
   },
   "tenant_metadata": { "pipeline": "enterprise-renewals", "region": "north-america" },
-  "document_metadata": {
-    "record_type": "opportunity",
-    "stage": "negotiation",
-    "amount": "50000",
-    "owner": "morgan",
-    "account_id": "account_456"
-  },
   "relations": {
     "source_ids": ["jira_AUTH-123", "salesforce_account_456"]
   }
@@ -444,7 +484,52 @@ See [Scoping using metadata](/essentials/v2/metadata) for the full schema design
 
 ---
 
-## 10. TLDR field/type reference
+## 10. How app sources affect search
+
+When `search_apps: true` is passed to the [`POST /search`](/api-reference/v2/endpoint/search) endpoint, HydraDB runs an app-aware search lane alongside normal semantic and lexical retrieval.
+
+The app-aware lane does more than search raw text. It parses the query for app-specific hints (e.g., provider names, object types, exact external IDs, authors, thread keywords, or relationship terms like "linked to", "blocked by", "reply", or "parent") and uses these clues to build candidate sets and expand context around matching sources.
+
+| Search signal | Uses |
+| :--- | :--- |
+| `kind`, `provider` | Routes queries to specific types, such as "Slack messages" or "Jira tickets". |
+| `external_id` | Performs exact ID lookups like `AUTH-123` or page IDs. |
+| Workflow state (`status`, `priority`) | Applies structured filters when the query implies them (e.g., "open tickets"). |
+| Actors (`author`, `assignee`, etc.) | Answers queries like "tickets assigned to Alice" or "emails from Bob". |
+| Forceful Relations | Follows `reply_to`, `comment_on`, `child_of`, `linked_to`, `blocks`, or `related_to` connections. |
+| Attachments | Incorporates pre-extracted attachment text via auxiliary vector search. |
+
+This means a query like *"show me Slack replies from Alice about AUTH-123"* combines text relevance with Slack scoping, actor matching, exact ticket ID matching, and thread/reply expansion.
+
+### Parent and child search
+
+Parent/child and hierarchical search is based on provider-scoped external IDs and relationships. When HydraDB ingests a source with a parent relation or `parent_id` hierarchy link, it indexes that connection in the context graph.
+
+At recall time, `search_apps: true` lets the app-aware lane find an initial source. In `thinking` mode, if the query asks for parents, children, ancestors, descendants, epics, subtasks, accounts, deals, or similar hierarchy wording, HydraDB automatically expands around the matched source:
+
+* **To find a parent:** HydraDB matches the source's parent relation to another source's `external_id` under the same `provider`.
+* **To find children:** HydraDB looks for sources that point to the matched source's `external_id` as their parent.
+* **Granular expansion:** Context expansion is bounded and can pull in grandparent/grandchild nodes when highly relevant to the query.
+
+These expanded sources are brought into the retrieved results as connected context. Chunks retrieved through this path are tagged with `_retrieval_source: "app_relation_expansion"` in their metadata and may include an `_app_relation_type` property (e.g., `parent`, `child`, `grandparent`, `grandchild`).
+
+<Note>
+  Set `mode: "thinking"` and `search_apps: true` on your [search request](/api-reference/v2/endpoint/search) for optimal app-source behavior. This gives the relation-expansion and reranking layers the space to assemble complete conversational and workflow context.
+</Note>
+
+```json
+{
+  "tenant_id": "acme_corp",
+  "query": "show me tickets linked to AUTH-123 and comments from Alice",
+  "mode": "thinking",
+  "search_apps": true,
+  "max_results": 10
+}
+```
+
+---
+
+## 11. TLDR field/type reference
 
 Use this as the compact contract for `app_knowledge` ingestion in API v2. Unlike v1 app sources, v2 uses a flat Knowledge-source shape: `type` is a source category tag, and provider-specific structure goes in `tenant_metadata`, `document_metadata`, `attachments`, and `relations`.
 
@@ -461,6 +546,10 @@ Use this as the compact contract for `app_knowledge` ingestion in API v2. Unlike
 | <Field name="content" type="object" required /> | Searchable body. Use `content.text` for plain text or `content.markdown` for Markdown. | Primary text that HydraDB chunks, embeds, graphs, and indexes. |
 | <Field name="tenant_metadata" type="object" /> | Schema-aligned, filterable fields such as channel, project, space, mailbox, pipeline, region, or environment. | Searchable via `metadata_filters` when keys are declared in `tenant_metadata_schema`. |
 | <Field name="document_metadata" type="object" /> | Free-form display/bookkeeping fields such as author, ticket key, provider IDs, status, assignee, thread ID, or stage. | Preserved on the source and searchable/filterable under `metadata_filters.document_metadata`. |
+| <Field name="kind" type="string" recommended /> | App-source object kind, such as `email`, `message`, `ticket`, `knowledge_base`, `comment`, or `custom`. | Used by `search_apps: true` to route queries and enable specialized app search behavior. |
+| <Field name="provider" type="string" recommended /> | App system/namespace the source came from (e.g., `slack`, `gmail`, `jira`, `notion`, `salesforce`, `linear`). | Prevents ID collisions across different systems and scopes searches to specific providers. |
+| <Field name="external_id" type="string" recommended /> | Stable provider ID for this exact item in the external system. | Used for exact ID matching, resolving relations, and thread/hierarchy traversal. |
+| <Field name="fields" type="object" recommended /> | Structured kind-specific fields. | Houses author, body, thread and parent identifiers. Put primary text inside `fields` instead of raw top-level `content`. |
 | <Field name="attachments" type="array" /> | Pre-extracted files attached to this item. | Attachment text is indexed alongside the source. |
 | <Field name="relations" type="object" /> | Forceful links to other sources: `{ "source_ids": ["..."] }`. | In `thinking` mode, linked Knowledge sources can be returned in `additional_context`. |
 
@@ -573,7 +662,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 
 ---
 
-## 11. Common mistakes
+## 12. Common mistakes
 
 | Mistake | Why it breaks | Fix |
 |---|---|---|
@@ -584,7 +673,7 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 | Using a non-stable string for `id` | Re-ingests create duplicate sources instead of upserting | Compose `id` from stable provider IDs (e.g. `slack_<channel>_<ts>`, `jira_<key>`) |
 | Pointing `relations.source_ids` at memory IDs from a Knowledge source | Silently returns nothing at search | Forceful relations stay within one store - Knowledge ↔ Knowledge, Memory ↔ Memory |
 | Skipping [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Source not indexed yet; empty results | Poll until `indexing_status: "completed"` (or `graph_creation` for partial availability) |
-| Sending `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Not a supported parameter | Just call [`POST /search`](/api-reference/v2/endpoint/search)  -  app sources are already in the [Knowledge](/essentials/v2/knowledge) store |
+| Forgetting to set `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Returns only text/vector matches without the app-aware lane expansion | Always set `search_apps: true` (and use `mode: "thinking"`) when querying app-source data |
 
 ---
 ## Related

@@ -18,6 +18,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | Exact keyword match | `"sources"` | `"text"` |  -  | optionally, add `operator: "and"/ "or" for metadata filtering for scoped search` |
 | Personalized response | `"memories"` | `"hybrid"` | `"thinking"` |  |
 | Personalized + grounded | `"all"` | `"hybrid"` | `"thinking"` | One call merges both stores |
+| Search over apps | `"sources"` | `"hybrid"` | `"thinking"` | Set `search_apps: true` to enable the app-aware retrieval lane (IDs, actors, thread & parent traversal) |
 
 ---
 
@@ -38,6 +39,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | --- | --- | --- |
 | `max_results` | integer | null |
 | `recency_bias` | float `0.0`–`1.0` | Boost for newer content. Default: `0.0` (no boost). |
+| `search_apps` | boolean | Set `true` to enable the app-aware retrieval lane alongside normal retrieval (reconstructed threads, parent/child traversal, exact ID/actor lookups). See [App Sources](/essentials/v2/app-sources). Default: `false`. |
 | `additional_context` | string | null |
 | `metadata_filters` | object | null |
 
@@ -51,6 +53,7 @@ Most of the time the defaults are right. When they aren't, here's where to start
 - `max_results`  -  Start at `10`. Drop to `5` for tight context windows; raise to `20` if you rerank downstream.
 - `additional_context`  -  Use it when the query alone is ambiguous. Keep it short and factual.
 - `graph_context`  -  Set to `true` when answers benefit from entity relationships (multi-hop questions, "how does X relate to Y"). Pair with `mode: "thinking"`  -  in `"fast"` mode the graph slice is shallow.
+- `search_apps`  -  Set to `true` when querying ingested app data (Slack, Gmail, Confluence, Jira, Salesforce) to activate exact ID and actor lookups, same-thread expansion, and parent/child hierarchy traversal. Pair with `mode: "thinking"`.
 
 ---
 
@@ -154,6 +157,7 @@ If you need to keep the two streams separate  -  for instance to format user pre
 
 - **Default to** `source: "all"` for personalized answers  -  one call instead of two.
 - **Set per-call timeouts.** Generous for `thinking` (3–5 s), tight for `fast` (≤500 ms).
+- **Enable `search_apps: true`** when querying app sources to activate app-aware retrieval and thread/relation traversal.
 - **Pass** `additional_context` with known session state (page, feature, role). It sharpens retrieval without extra calls.
 
 ---

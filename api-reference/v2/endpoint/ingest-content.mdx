@@ -510,8 +510,8 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 | <Field name="custom_instructions" type="string" /> | Guides extraction when `infer: true`. Ignored when `infer: false`. |
 | <Field name="user_name" type="string" /> | The user's name. Feeds inference. (default=`"User"`) |
 | <Field name="expiry_time" type="integer" /> | TTL in seconds. Memory stops surfacing after expiry. |
-| <Field name="tenant_metadata" type="object" /> | Tenant-schema fields. (default=`{}`) |
-| <Field name="document_metadata" type="object" /> | Free-form per-document fields. (default=`{}`) |
+| <Field name="tenant_metadata" type="string (JSON object)" /> | Tenant-schema fields as a **JSON-stringified** object (e.g. `"{\"department\":\"legal\"}"`). Unlike `file_metadata` and `app_knowledge`, memory items take this as a string, not an object. (default=`""`) |
+| <Field name="document_metadata" type="string (JSON object)" /> | Free-form per-document fields as a **JSON-stringified** object. Same string-vs-object difference as `tenant_metadata` above. (default=`""`) |
 | <Field name="relations" type="object" /> | Forceful relations within the Memories store. Shape: `{ "source_ids": ["...", "..."] }` (legacy alias `cortex_source_ids` still accepted). |
 
 

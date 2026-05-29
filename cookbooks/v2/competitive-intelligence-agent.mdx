@@ -578,7 +578,7 @@ COMPETITORS = ["acme-corp", "betacorp", "gamma-ai"]
 
 
 def recall_for_question(question: str, competitor: str, recency_bias: float) -> str:
-    """Run a single /search query and return the top chunks as a text block."""
+    """Run a single /query request and return the top chunks as a text block."""
     results = client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,

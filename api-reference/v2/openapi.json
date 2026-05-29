@@ -3154,7 +3154,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebhookGetResponse"
+                  "$ref": "#/components/schemas/WebhookGetApiResponse"
                 }
               }
             }
@@ -3190,7 +3190,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebhookRegisterResponse"
+                  "$ref": "#/components/schemas/WebhookRegisterApiResponse"
                 }
               }
             }
@@ -3226,7 +3226,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebhookDeleteResponse"
+                  "$ref": "#/components/schemas/WebhookDeleteApiResponse"
                 }
               }
             }
@@ -3311,7 +3311,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryListResponse"
+                  "$ref": "#/components/schemas/WebhookDeliveryListApiResponse"
                 }
               }
             }
@@ -3360,7 +3360,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeliveryItem"
+                  "$ref": "#/components/schemas/WebhookDeliveryItemApiResponse"
                 }
               }
             }
@@ -3409,7 +3409,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RetryResponse"
+                  "$ref": "#/components/schemas/WebhookRetryApiResponse"
                 }
               }
             }
@@ -3442,7 +3442,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebhookTestResponse"
+                  "$ref": "#/components/schemas/WebhookTestApiResponse"
                 }
               }
             }
@@ -4454,12 +4454,12 @@
         "x-fern-audiences": ["v2"]
       }
     },
-    "/search": {
+    "/query": {
       "post": {
-        "tags": ["Search"],
-        "summary": "Search",
-        "description": "Unified search endpoint for all retrieval over documents, memories, or both.\n\n    Use `source` to choose what to search:\n    - \"knowledge\" (default): Search over indexed knowledge documents\n    - \"memory\": Search over user memories\n    - \"all\": Search both documents and memories, merge and rank results together\n\n    Use `search_by` to choose the search method:\n    - \"hybrid\" (default): Dense vector + BM25 sparse \u2014 best overall relevance\n    - \"text\": BM25 full-text search only \u2014 for exact keyword matching\n\n    Use `mode` to control retrieval quality (hybrid only):\n    - \"fast\" (default): Single query, faster response\n    - \"thinking\": Multi-query generation with reranking, higher quality\n\n    Use `operator` to control text matching (text search only):\n    - \"or\" (default): Match any of the search terms\n    - \"and\": Match all search terms\n    - \"phrase\": Match the exact phrase",
-        "operationId": "search_search_post",
+        "tags": ["Query"],
+        "summary": "Query",
+        "description": "Unified query endpoint for all retrieval over documents, memories, or both.\n\n    Use `source` to choose what to query:\n    - \"knowledge\" (default): Query over indexed knowledge documents\n    - \"memory\": Query over user memories\n    - \"all\": Query both documents and memories, merge and rank results together\n\n    Use `query_by` to choose the query method:\n    - \"hybrid\" (default): Dense vector + BM25 sparse \u2014 best overall relevance\n    - \"text\": BM25 full-text search only \u2014 for exact keyword matching\n\n    Use `mode` to control retrieval quality (hybrid only):\n    - \"fast\" (default): Single query, faster response\n    - \"thinking\": Multi-query generation with reranking, higher quality\n\n    Use `operator` to control text matching (text only):\n    - \"or\" (default): Match any of the search terms\n    - \"and\": Match all search terms\n    - \"phrase\": Match the exact phrase",
+        "operationId": "query_query_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4476,7 +4476,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchApiResponse"
+                  "$ref": "#/components/schemas/QueryApiResponse"
                 }
               }
             }
@@ -4567,7 +4567,6 @@
             "HTTPBearer": []
           }
         ],
-        "x-fern-sdk-group-name": "search",
         "x-fern-sdk-method-name": "query",
         "x-fern-audiences": ["v2"]
       }
@@ -7847,6 +7846,46 @@
         "title": "QnASearchResponse",
         "description": "Response model for the QnA search API."
       },
+      "QueryApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "QueryApiResponse"
+      },
+      "QueryBy": {
+        "type": "string",
+        "enum": ["hybrid", "text"],
+        "title": "QueryBy",
+        "description": "Query method to use for retrieval."
+      },
       "QueryRequest": {
         "properties": {
           "tenant_id": {
@@ -7917,7 +7956,7 @@
           "graph_context": {
             "type": "boolean",
             "title": "Graph Context",
-            "description": "Enable graph context for search results (on by default on v2; set to false to omit).",
+            "description": "Enable graph context for query results (on by default on v2; set to false to omit).",
             "default": true
           },
           "search_forceful_relations": {
@@ -7968,26 +8007,26 @@
               }
             ]
           },
-          "source": {
+          "type": {
             "$ref": "#/components/schemas/SourceType",
             "description": "What to search: 'knowledge', 'memory', or 'all' (both merged). Mirrors the same values used by /source/ingest's `type` field.",
             "default": "knowledge"
           },
-          "search_by": {
-            "$ref": "#/components/schemas/SearchBy",
-            "description": "Search method: 'hybrid' (vector + BM25) or 'text' (BM25 only)",
+          "query_by": {
+            "$ref": "#/components/schemas/QueryBy",
+            "description": "Query method: 'hybrid' (vector + BM25) or 'text' (BM25 only)",
             "default": "hybrid"
           },
           "operator": {
             "$ref": "#/components/schemas/BM25OperatorType",
-            "description": "Text search operator (only applies when search_by='text'): 'or', 'and', or 'phrase'",
+            "description": "Text search operator (only applies when query_by='text'): 'or', 'and', or 'phrase'",
             "default": "or"
           }
         },
         "type": "object",
         "required": ["tenant_id", "query"],
         "title": "QueryRequest",
-        "description": "Unified search request with search_by and source selection.\n\nOverrides ``graph_context`` to default ``True`` ."
+        "description": "Unified query request with query_by and source selection.\n\nOverrides ``graph_context`` to default ``True`` ."
       },
       "RawEmbeddingDocument": {
         "properties": {
@@ -8455,46 +8494,6 @@
         "type": "object",
         "required": ["triplets", "relevancy_score"],
         "title": "ScoredPathResponse"
-      },
-      "SearchApiResponse": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "data": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RetrievalResult"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "error": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ErrorDetail"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ResponseMeta"
-          }
-        },
-        "type": "object",
-        "title": "SearchApiResponse"
-      },
-      "SearchBy": {
-        "type": "string",
-        "enum": ["hybrid", "text"],
-        "title": "SearchBy",
-        "description": "Search method to use for retrieval."
       },
       "SourceDeleteApiResponse": {
         "properties": {
@@ -9323,7 +9322,7 @@
         "type": "string",
         "enum": ["knowledge", "memory", "all"],
         "title": "SourceType",
-        "description": "What to search over."
+        "description": "What to query over."
       },
       "SourceUploadResponse": {
         "properties": {
@@ -10204,18 +10203,51 @@
           "knowledge": {
             "type": "boolean",
             "title": "Knowledge",
-            "description": "Whether the knowledge vectorstore collection is provisioned."
+            "description": "Whether the knowledge vectorstore is provisioned."
           },
           "memories": {
             "type": "boolean",
             "title": "Memories",
-            "description": "Whether the memories vectorstore collection is provisioned."
+            "description": "Whether the memories vectorstore is provisioned."
           }
         },
         "type": "object",
         "required": ["knowledge", "memories"],
-        "title": "VectorstoreStatus",
-        "description": "V2 vectorstore status shape (typed object with named slots).\n\nv1 callers receive ``vectorstore_status`` as ``tuple[bool, bool]`` on the\n``Infra`` model below. v2 callers receive this object on ``InfraV2``."
+        "title": "VectorstoreStatus"
+      },
+      "WebhookDeleteApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebhookDeleteResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookDeleteApiResponse"
       },
       "WebhookDeleteResponse": {
         "properties": {
@@ -10232,6 +10264,108 @@
         "type": "object",
         "required": ["deleted"],
         "title": "WebhookDeleteResponse"
+      },
+      "WebhookDeliveryItemApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookDeliveryItemApiResponse"
+      },
+      "WebhookDeliveryListApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryListResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookDeliveryListApiResponse"
+      },
+      "WebhookGetApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebhookGetResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookGetApiResponse"
       },
       "WebhookGetResponse": {
         "properties": {
@@ -10270,6 +10404,40 @@
           "signing_secret_configured"
         ],
         "title": "WebhookGetResponse"
+      },
+      "WebhookRegisterApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebhookRegisterResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookRegisterApiResponse"
       },
       "WebhookRegisterRequest": {
         "properties": {
@@ -10342,6 +10510,74 @@
           "signing_secret_configured"
         ],
         "title": "WebhookRegisterResponse"
+      },
+      "WebhookRetryApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookRetryApiResponse"
+      },
+      "WebhookTestApiResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebhookTestResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "type": "object",
+        "title": "WebhookTestApiResponse"
       },
       "WebhookTestResponse": {
         "properties": {

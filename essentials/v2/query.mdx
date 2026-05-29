@@ -151,7 +151,7 @@ const completion = await openai.chat.completions.create({
 });
 ```
 
-If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call `/search` twice in parallel with `type: "knowledge"` and `type: "memory"`, then merge client-side.
+If you need to keep the two streams separate  -  for instance to format user preferences differently from documents in the prompt  -  call `/query` twice in parallel with `type: "knowledge"` and `type: "memory"`, then merge client-side.
 
 ### Production checklist
 

@@ -63,6 +63,10 @@ Open the HydraDB dashboard and go to **Webhooks**.
 Your webhook URL must be reachable from the public internet. Localhost and private network addresses are blocked.
 </Warning>
 
+<Info>
+Webhook management endpoints return their response object directly, not inside the standard v2 `{ success, data, error, meta }` envelope used by `/tenants`, `/source/*`, and `/search`.
+</Info>
+
 ### Register with cURL
 
 Use your HydraDB API key to register a webhook from your backend or terminal.
@@ -70,6 +74,7 @@ Use your HydraDB API key to register a webhook from your backend or terminal.
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/webhooks/indexing' \
   -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://api.example.com/webhooks/hydradb",
@@ -96,7 +101,8 @@ curl -X POST 'https://api.hydradb.com/webhooks/indexing' \
 
 ```bash cURL
 curl 'https://api.hydradb.com/webhooks/indexing' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 **Response:**
@@ -117,6 +123,7 @@ Use the same `POST /webhooks/indexing` endpoint to replace the existing registra
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/webhooks/indexing' \
   -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://api.example.com/webhooks/hydradb-v2",
@@ -131,7 +138,8 @@ If you omit `signing_secret` while editing, signing is disabled for future deliv
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/webhooks/indexing/test' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 **Response:**
@@ -148,7 +156,8 @@ curl -X POST 'https://api.hydradb.com/webhooks/indexing/test' \
 
 ```bash cURL
 curl -X DELETE 'https://api.hydradb.com/webhooks/indexing' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 **Response:**
@@ -361,7 +370,8 @@ Your receiver should be idempotent:
 
 ```bash cURL
 curl 'https://api.hydradb.com/webhooks/indexing/deliveries?limit=20' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 **Response:**
@@ -393,7 +403,8 @@ Delivery history uses `doc_id` internally. The outbound webhook payload uses `id
 
 ```bash cURL
 curl 'https://api.hydradb.com/webhooks/indexing/deliveries?limit=20&status=failed' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 Valid filters are:
@@ -410,7 +421,8 @@ When `next_cursor` is not `null`, pass it back as `cursor`.
 
 ```bash cURL
 curl 'https://api.hydradb.com/webhooks/indexing/deliveries?limit=20&cursor=<next_cursor>' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 `limit` can be between `1` and `100`.
@@ -421,7 +433,8 @@ Replace `<delivery_id>` with a value from a webhook payload or from the delivery
 
 ```bash cURL
 curl 'https://api.hydradb.com/webhooks/indexing/deliveries/<delivery_id>' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 ### Retry a failed delivery
@@ -430,7 +443,8 @@ Only `failed` and `permanently_failed` deliveries can be retried manually.
 
 ```bash cURL
 curl -X POST 'https://api.hydradb.com/webhooks/indexing/deliveries/<delivery_id>/retry' \
-  -H "Authorization: Bearer $HYDRADB_API_KEY"
+  -H "Authorization: Bearer $HYDRADB_API_KEY" \
+  -H "API-Version: 2"
 ```
 
 **Response:**

@@ -142,15 +142,16 @@ Schema field names are **immutable** after tenant creation. You can add per-docu
 ## Behavior notes
 
 <Warning>
-**Do not ingest content prematurely.** Tenant creation is asynchronous. Both `vectorstore_status.knowledge` and `vectorstore_status.memory`, as well as `scheduler_status` and `graph_status`, must be `true` before the tenant is ready. Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion or search call.
+**Do not ingest content prematurely.** Tenant creation is asynchronous. For normal `/source/ingest` tenants, both `vectorstore_status.knowledge` and `vectorstore_status.memories`, as well as `scheduler_status` and `graph_status`, must be `true` before the tenant is ready. Always poll [`GET /tenants/status?tenant_id=...`](/api-reference/v2/endpoint/tenant-status) before your first ingestion or search call.
 </Warning>
 
 - **Default sub-tenant:** HydraDB assigns an auto-generated default sub-tenant ID for calls that omit `sub_tenant_id`. That default is created once and reused. See [Concepts → Multi-Tenant](/essentials/v2/multi-tenant) for details.
 - **Reserved field names:** Some names are reserved by the indexing layer (e.g., system fields used to track ingestion and graph state). `name` values are validated server-side; reserved names return a `422 VALIDATION_ERROR`. Use prefixes like `app_` if you're worried about collisions.
+- **Embeddings tenants:** `is_embeddings_tenant: true` creates a raw-vector tenant for `/embeddings/*`. It is not intended for `/source/ingest`, and its tenant status may not report the memory vector store as ready.
 
 ## Errors
 
-Common codes: `400 INVALID_PARAMETERS`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+Common codes: `400 INVALID_PARAMETERS`, `403 FORBIDDEN`, `409 TENANT_ALREADY_EXISTS`, `422 VALIDATION_ERROR`. `403 FORBIDDEN` can mean the API key is not permitted to create tenants or the account has reached its tenant/plan limit. `409 TENANT_ALREADY_EXISTS` means the `tenant_id` is already visible to the current API key; use a different ID or continue with the existing tenant. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 <div className="api-before-related-resources" />
 

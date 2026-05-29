@@ -210,6 +210,30 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 </RequestExample>
 
+## Memory metadata encoding
+
+`memories` is a JSON-stringified multipart field. Inside each memory item, `tenant_metadata` is currently validated as a JSON-encoded string, while `additional_metadata` / `document_metadata` is validated as an object.
+
+```bash cURL
+curl -X POST 'https://api.hydradb.com/source/ingest' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -F "type=memory" \
+  -F "tenant_id=acme_corp" \
+  -F "sub_tenant_id=user_alex" \
+  -F 'memories=[
+    {
+      "source_id": "pref_dark_mode",
+      "text": "User prefers dark mode and concise answers.",
+      "infer": true,
+      "tenant_metadata": "{\"department\":\"support\"}",
+      "additional_metadata": { "source": "onboarding" }
+    }
+  ]'
+```
+
+If `tenant_metadata` is sent as an object in a memory item, the API returns `400 INVALID_INPUT`. Knowledge ingestion (`file_metadata` and `app_knowledge`) still uses object-valued `tenant_metadata`.
+
 ## Common use-cases and their configurations:
 <AccordionGroup>
   <Accordion title="1. Knowledge files - upload PDFs, DOCX, CSV, Markdown, or text for HydraDB to parse">

@@ -51,8 +51,12 @@ Sent on each item in `app_knowledge[]`, `file_metadata[]`, or `memories[]` on [`
 
 | Field | Type | Purpose |
 | --- | --- | --- |
-| `tenant_metadata` (alias `metadata`) | object | Tenant-schema fields. Keys must match `tenant_metadata_schema`. The fast scoping path. |
-| `additional_metadata` (deprecated alias `document_metadata`) | object | Free-form per-document fields. No schema. The flexible, slower path. |
+| `tenant_metadata` (alias `metadata`) | object for knowledge; JSON-encoded string for memory items | Tenant-schema fields. Keys must match `tenant_metadata_schema`. The fast scoping path. |
+| `additional_metadata` (deprecated alias `document_metadata`) | object | Free-form per-document or per-memory fields. No schema. The flexible, slower path. |
+
+<Warning>
+For `type=memory`, the `memories` multipart field is already JSON-stringified, and each memory item's `tenant_metadata` is currently validated as a JSON-encoded string. Keep `additional_metadata` / `document_metadata` as objects. For knowledge ingestion (`file_metadata` and `app_knowledge`), `tenant_metadata` remains an object.
+</Warning>
 
 ### Search-time scoping (in `metadata_filters`)
 

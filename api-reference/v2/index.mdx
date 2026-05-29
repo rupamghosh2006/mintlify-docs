@@ -126,7 +126,7 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 
-**Response envelope:** Raw HTTP responses are wrapped in a consistent envelope. Endpoint pages show the full envelope; the resource-specific payload lives under `data`.
+**Response envelope:** Core v2 endpoints (`/tenants`, `/source/*`, and `/search`) return a consistent envelope. Endpoint pages show the full envelope; the resource-specific payload lives under `data`. Webhook management endpoints (`/webhooks/indexing*`) are the exception: they return their documented response object directly.
 
 ```json
 {

@@ -5,7 +5,7 @@ description: "Response envelope, HTTP status codes, error codes, and retry patte
 
 ### Response envelope
 
-HydraDB uses the same top-level envelope for successful and failed requests.
+HydraDB core v2 endpoints (`/tenants`, `/source/*`, and `/search`) use the same top-level envelope for successful and failed requests. Webhook management endpoints (`/webhooks/indexing*`) return their documented response object directly and do not include this envelope.
 
 ```json
 {
@@ -57,7 +57,7 @@ Use `error.code` for branching and log `meta.request_id` for every failed reques
 |---|---|---|
 | `INVALID_PARAMETERS` | `400` | A required parameter is missing, malformed, or mutually incompatible with another parameter. |
 | `UNAUTHORIZED` | `401` | The `Authorization: Bearer <your_api_key>` header is missing or invalid. |
-| `FORBIDDEN` | `403` | The API key is valid but does not have access to the requested resource. |
+| `FORBIDDEN` | `403` | The API key is valid but does not have access to the requested resource, or the account/plan limit prevents the operation. |
 | `TENANT_ALREADY_EXISTS` | `409` | `POST /tenants` received a `tenant_id` that is already in use. |
 | `TENANT_NOT_FOUND` | `404` | The requested tenant does not exist or is not visible to the current API key. |
 | `SOURCE_NOT_FOUND` | `404` | The requested source or memory ID does not exist in the selected tenant/sub-tenant. |

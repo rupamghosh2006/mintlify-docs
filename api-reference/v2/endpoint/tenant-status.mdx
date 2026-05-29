@@ -82,19 +82,25 @@ curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
 </ResponseExample>
 
 <Info>
-The tenant is fully ready only when both `vectorstore_status.knowledge` and `vectorstore_status.memories` are `true`.
+For normal parsed-source ingestion (`/source/ingest`), the tenant is fully ready only when both `vectorstore_status.knowledge` and `vectorstore_status.memories` are `true`.
 </Info>
+
+<Note>
+For raw embeddings tenants created with `is_embeddings_tenant: true`, `ready_for_ingestion` is not the right readiness gate for normal source ingestion because these tenants are for `/embeddings/*`, not `/source/ingest`. An embeddings tenant may show `vectorstore_status.memories: false` while raw embeddings insert/search/filter/delete operations are available.
+</Note>
 
 ## Polling pattern
 
 Poll every 10–20 seconds. Stop and surface a provisioning issue if the tenant is not ready after the expected window for your plan.
 
-A tenant is ready when:
+A normal ingestion tenant is ready when:
 
 - `infra.scheduler_status === true`
 - `infra.graph_status === true`
 - `infra.vectorstore_status.knowledge === true`
 - `infra.vectorstore_status.memories === true`
+
+For an embeddings-only tenant (`is_embeddings_tenant: true`), use the embeddings endpoints instead of waiting for memory-store readiness.
 
 <CodeGroup>
 ```python Python

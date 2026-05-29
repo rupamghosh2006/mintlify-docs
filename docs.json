@@ -270,16 +270,6 @@
                   "api-reference/endpoint/fetch-content",
                   "api-reference/endpoint/graph-relations"
                 ]
-              },
-              {
-                "group": "Embeddings",
-                "pages": [
-                  "api-reference/endpoint/embeddings-overview",
-                  "api-reference/endpoint/insert-raw-embeddings",
-                  "api-reference/endpoint/search-raw-embeddings",
-                  "api-reference/endpoint/filter-raw-embeddings",
-                  "api-reference/endpoint/delete-raw-embeddings"
-                ]
               }
             ]
           }

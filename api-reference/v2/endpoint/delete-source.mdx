@@ -13,6 +13,10 @@ Specify the resource category with the `type` parameter:
 
 Pass one or more IDs in `request.ids`. The body wraps two fields together: `request` (the actual delete payload) and `type` (the bucket).
 
+<Warning>
+`type` belongs in the JSON body, not in the query string. A flat body such as `{ "tenant_id": "...", "ids": [...] }` is invalid and returns `422 VALIDATION_ERROR` because `request` is required.
+</Warning>
+
 <RequestExample>
 ```python Python SDK
 client.source.delete(

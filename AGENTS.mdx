@@ -33,7 +33,7 @@ This document is a self-contained reference designed for AI coding agents. It co
 
 ### Response envelope
 
-Raw HTTP responses are wrapped:
+Core raw HTTP responses (`/tenants`, `/source/*`, and `/search`) are wrapped:
 
 ```json
 {
@@ -47,9 +47,10 @@ Raw HTTP responses are wrapped:
 }
 ```
 
-- Parse raw HTTP payloads from `data`.
+- Parse core raw HTTP payloads from `data`.
 - SDKs unwrap the envelope and return the inner `data` object.
 - Log `meta.request_id` for failed requests.
+- Exception: webhook management endpoints (`/webhooks/indexing*`) return their documented response object directly, without the `{ success, data, error, meta }` envelope.
 
 ### Use v2 endpoints for new work
 
@@ -404,6 +405,7 @@ Notes:
 - `tenant_id` should be stable; docs recommend lowercase letters, numbers, and underscores for portability.
 - `tenant_metadata_schema` is effectively planned up front. If you need to change filterable metadata fields, expect to create a new tenant or re-ingest under a new schema.
 - `is_embeddings_tenant: true` is for raw vector storage, not normal parsed-source ingestion.
+- `POST /tenants` may return `409 TENANT_ALREADY_EXISTS` for duplicate tenant IDs and `403 FORBIDDEN` when the API key or plan cannot create more tenants.
 
 ### Check readiness
 
@@ -416,7 +418,7 @@ Ready when infrastructure reports usable status. Current docs show `infra.ready_
 - `infra.vectorstore_status.knowledge`
 - `infra.vectorstore_status.memory` / `memories`
 
-Use SDK autocomplete/returned object shape for the exact field spelling.
+Use SDK autocomplete/returned object shape for the exact field spelling. For embeddings-only tenants (`is_embeddings_tenant: true`), `ready_for_ingestion` is not the right gate for `/source/ingest`; the memory vector store may remain false while raw `/embeddings/*` operations are usable.
 
 ### Other tenant endpoints
 
@@ -559,7 +561,7 @@ client.source.ingest(
             "text": "User prefers dark mode and concise answers.",
             "infer": True,
             "user_name": "Alex",
-            "tenant_metadata": {"team": "engineering"},
+            "tenant_metadata": json.dumps({"team": "engineering"}),
             "additional_metadata": {"source": "onboarding"},
             "relations": {"source_ids": ["pref_concise"]}
         }
@@ -580,8 +582,8 @@ Memory item fields:
 | `custom_instructions` | guide inference when `infer: true` |
 | `user_name` | helps inference |
 | `expiry_time` | TTL in seconds |
-| `tenant_metadata` | schema-aligned fields |
-| `additional_metadata` / `document_metadata` | free-form fields |
+| `tenant_metadata` | schema-aligned fields; for memory items, encode as a JSON string inside the JSON-stringified `memories` field |
+| `additional_metadata` / `document_metadata` | free-form fields; keep as objects |
 | `relations` | explicit memory-to-memory links |
 
 ---
@@ -1151,7 +1153,7 @@ Endpoints present in OpenAPI:
 | `POST /embeddings/filter_raw_embeddings` | fetch/filter raw embeddings |
 | `DELETE /embeddings/delete_raw_embeddings` | delete raw embeddings |
 
-Use this only when the application owns embedding generation and chunking.
+Use this only when the application owns embedding generation and chunking. Embeddings tenants are not intended for `/source/ingest`; their status may show `vectorstore_status.memories: false` even when raw embeddings operations are available.
 
 ---
 

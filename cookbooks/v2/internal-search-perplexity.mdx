@@ -1056,7 +1056,7 @@ openai_client = OpenAI()
 
 
 def get_user_profile(user_id: str) -> str:
-    """Retrieve a user's stored memory profile via /search with source: "memories"."""
+    """Retrieve a user's stored memory profile via /query with source: "memories"."""
     result = client.query(
         source='memories',
         tenant_id=TENANT_ID,
@@ -1073,8 +1073,8 @@ def get_user_profile(user_id: str) -> str:
 def explain_decision(question: str, user_id: str) -> str:
     """
     Answer 'why' / 'what led to' questions with full provenance.
-    Step 1: search chunks + graph relations from /search (source="knowledge").
-    Step 2: retrieve user profile from /search (source="memories").
+    Step 1: search chunks + graph relations from /query (source="knowledge").
+    Step 2: retrieve user profile from /query (source="memories").
     Step 3: synthesize with citations via LLM.
     """
     # Step 1: Search with graph context

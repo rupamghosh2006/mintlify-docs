@@ -133,7 +133,7 @@ flowchart LR
 |---|---|---|
 | `queued` | No | Accepted by the server, not yet picked up by a worker. |
 | `processing` | No | Content is being parsed, chunked, and embedded. |
-| `graph_creation` | **Yes** | Indexed and retrievable; the knowledge graph is still being built. Already searchable via `/search`, but graph context may still be incomplete. |
+| `graph_creation` | **Yes** | Indexed and retrievable; the knowledge graph is still being built. Already searchable via `/query`, but graph context may still be incomplete. |
 | `completed` | Yes | Fully indexed and graphed. Ready for all retrieval modes. |
 | `errored` | No | Processing failed. Inspect `error_code` and `message`. |
 
@@ -215,7 +215,7 @@ Typical processing time:
 ## Behavior notes
 
 <Info>
-**`graph_creation` is searchable.** Items in this state are already retrievable via `/search`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
+**`graph_creation` is searchable.** Items in this state are already retrievable via `/query`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
 </Info>
 
 - **Unknown IDs return as `errored`:** If you pass an ID that does not exist (e.g., a typo), HydraDB returns an entry with `indexing_status: "errored"` rather than silently dropping it.

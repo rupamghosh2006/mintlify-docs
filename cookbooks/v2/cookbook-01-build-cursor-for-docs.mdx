@@ -252,7 +252,7 @@ RESPONSE: {"statuses": [{"source_id": "YOUR_SOURCE_ID_HERE", "indexing_status": 
 
 ### Step 4 - Run Your First Search Query
 
-**What:** Sends a POST to `/search` and receives a `chunks` array. Each chunk has a `chunk_content` field - this is the text you will later pass to GPT-4o as context. This is the end-to-end proof that tenant, ingestion, indexing, and retrieval all work.
+**What:** Sends a POST to `/query` and receives a `chunks` array. Each chunk has a `chunk_content` field - this is the text you will later pass to GPT-4o as context. This is the end-to-end proof that tenant, ingestion, indexing, and retrieval all work.
 
 **Validated first search - minimal working request:**
 
@@ -323,7 +323,7 @@ Sources: ['auth_middleware.md']
 
 **If it fails:** `chunks: []` - Indexing is not yet complete. Wait 30 seconds and retry. Re-run Step 3 to confirm `indexing_status: completed`.
 
-> ✅ **Phase 0 complete.** The same `/search` endpoint - with the same minimal three-field body - is what every later phase uses. You'll only add parameters, not change the structure. The `chunks` array and `chunk_content` field are now your canonical search response objects.
+> ✅ **Phase 0 complete.** The same `/query` endpoint - with the same minimal three-field body - is what every later phase uses. You'll only add parameters, not change the structure. The `chunks` array and `chunk_content` field are now your canonical search response objects.
 
 **What you just built:** You now have a working **retrieval system**. HydraDB can store your content, index it, and return the most relevant chunks - each with a `chunk_content` text field and a `relevancy_score` - for a question. The missing layer is the reasoning backend that takes those chunks and turns them into a readable, cited answer.
 
@@ -346,7 +346,7 @@ Ingest multiple files with structured metadata, use collections to organise cont
 
 Before writing more ingestion code, it's worth understanding what HydraDB actually returns and how to interpret it. This mental model applies to every phase.
 
-**Chunks vs. sources:** When HydraDB indexes a document, it splits the content into overlapping **chunks**. Each chunk is embedded independently and stored as a node in the context graph. When you call `/search`, you get back a `chunks` array. Iterate this array and read `chunk_content` from each item - that is the text you pass directly to your LLM as context.
+**Chunks vs. sources:** When HydraDB indexes a document, it splits the content into overlapping **chunks**. Each chunk is embedded independently and stored as a node in the context graph. When you call `/query`, you get back a `chunks` array. Iterate this array and read `chunk_content` from each item - that is the text you pass directly to your LLM as context.
 
 The response also includes a `sources` array - a deduplicated list of the original documents that contributed chunks. Use `sources` for citation labels; use `chunks` for the actual LLM context.
 
@@ -911,7 +911,7 @@ def search_docs(
     """
     PRIMARY VERIFIED PATH - build and test your backend on this function first.
 
-    Calls /search. scope (sub_tenant_id) is optional - omit to
+    Calls /query. scope (sub_tenant_id) is optional - omit to
     search all sub-tenants automatically. Response contains:
       "chunks"  - iterate this array; read chunk_content from each item for LLM context
       "sources" - deduplicated source list; use for citations
@@ -1153,7 +1153,7 @@ def ask(body: dict):
 
 Understanding the exact data path prevents debugging confusion. `build_context_block()` does the following in order:
 
-1. **Read the `chunks` array** from the search payload. `/search` returns `{"chunks": [...], "sources": [...]}` - always iterate `chunks`, never `results`.
+1. **Read the `chunks` array** from the search payload. `/query` returns `{"chunks": [...], "sources": [...]}` - always iterate `chunks`, never `results`.
 2. **Extract `chunk_content`** from each chunk object. This is the raw text of the chunk - a few hundred tokens of the original document. It is the only required field. Skip any chunk where `chunk_content` is absent or empty.
 3. **Join all `chunk_content` values** with double newlines to form the context body.
 4. **Append the sources list** from `recall_payload.sources` in `- title (id)` format so the model can cite them.
@@ -1283,7 +1283,7 @@ A good progression: Phase 0 search in the terminal → FastAPI `/ask` in Postman
 
 **Cause:** The endpoint path has a typo, extra slash, or missing segment. Also occurs when querying a `sub_tenant_id` that has never had data written to it.
 
-**Fix:** Correct paths: `/source/ingest` (file upload or JSON batch with `app_knowledge`), `/search`, `/source/status`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
+**Fix:** Correct paths: `/source/ingest` (file upload or JSON batch with `app_knowledge`), `/query`, `/source/status`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
 
 ### 400 - Provide at least one of: files or app_knowledge
 
@@ -1417,7 +1417,7 @@ client.source.ingest(
 
 ### Search - Validated Minimal Request
 
-**POST** `/search` - Primary verified path · `sub_tenant_id` optional · returns `chunks[]` and `sources[]`
+**POST** `/query` - Primary verified path · `sub_tenant_id` optional · returns `chunks[]` and `sources[]`
 
 ```json
 {
@@ -1434,7 +1434,7 @@ client.source.ingest(
 
 ### Multi-hop Search
 
-**POST** `/search` - Use for multi-hop retrieval, then generate the answer in your app layer
+**POST** `/query` - Use for multi-hop retrieval, then generate the answer in your app layer
 
 ```json
 {

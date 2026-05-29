@@ -75,7 +75,7 @@ SDK methods are grouped under three top-level namespaces  -  one per `/api-refer
 | URL prefix | SDK group | Purpose |
 |---|---|---|
 | `/source/*` and `/source` | `client.source` | Ingest, status, fetch, list, delete, graph relations |
-| `/search` | `client.search` | Unified retrieval over knowledge, memories, or both |
+| `/query` | `client.query` | Unified retrieval over knowledge, memories, or both |
 | `/tenants/*` and `/tenants` | `client.tenants` | Create, list, delete, status, sub-tenants, stats |
 
 Compared to v1, the surface is intentionally smaller  -  three groups instead of seven, one search endpoint instead of three, one ingestion endpoint instead of two.
@@ -95,7 +95,7 @@ Compared to v1, the surface is intentionally smaller  -  three groups instead of
 | `client.source.delete()` | `DELETE /source` |
 | `client.source.relations()` | `GET /source/relations` |
 
-### Search
+### Query
 
 A single method covers all retrieval. Pick `type` (`"knowledge"`, `"memory"`, `"all"`) and `query_by` (`"hybrid"`, `"text"`) to control behavior.
 
@@ -326,7 +326,7 @@ const status = await client.source.status({
 
 Wait until each `indexing_status` is `completed` (or `graph_creation` if you don't need full graph traversal). See [Sources – Overview](/api-reference/v2/endpoint/sources-overview) for the full status pipeline.
 
-### Search
+### Query
 
 A single method covers every retrieval pattern  -  switch `type` and `query_by` to control behavior:
 

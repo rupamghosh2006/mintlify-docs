@@ -15,7 +15,7 @@ Semantic search is useful because it retrieves by meaning instead of exact wordi
 | Keyword BM25 | Text with matching tokens | Error codes, identifiers, names, SKUs, exact phrases |
 | Graph | Related entities and relationships | Multi-hop questions, dependencies, ownership, project context |
 
-`POST /query` is the single search endpoint. Two parameters decide what runs:
+`POST /query` is the unified retrieval endpoint. Two parameters decide what runs:
 
 - **`type`** picks the collection: `"knowledge"` (Knowledge), `"memory"` (user-scoped Memories), or `"all"` (both, merged and re-ranked together).
 - **`query_by`** picks the retrieval method: `"hybrid"` (semantic + BM25, the default) or `"text"` (BM25 only, with `operator: "or" | "and" | "phrase"`).

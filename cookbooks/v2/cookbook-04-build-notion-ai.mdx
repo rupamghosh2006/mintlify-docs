@@ -326,7 +326,7 @@ def recall_context(
 ) -> dict:
     """
     Full search - searches knowledge base (documents).
-    To also retrieve user memories, call /search separately.
+    To also retrieve user memories, call /query separately.
     sub_tenant_id: scope to a specific workspace or user namespace.
     mode: "thinking" enables personalised ranking.
     graph_context: true enables cross-document entity linking.
@@ -523,7 +523,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 ### Full search
 
-**POST** `/search` - Searches knowledge base - returns chunks + graph_context
+**POST** `/query` - Searches knowledge base - returns chunks + graph_context
 
 ```json
 {
@@ -540,7 +540,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 ### Search for answer generation
 
-**POST** `/search` - retrieved context for app-layer answer generation
+**POST** `/query` - retrieved context for app-layer answer generation
 
 ```json
 {
@@ -574,7 +574,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 ### Search user memories
 
-**POST** `/search` - user_name key - consistent across all calls
+**POST** `/query` - user_name key - consistent across all calls
 
 ```json
 {

@@ -524,7 +524,7 @@ await storeCustomerPreference(
 
 ## Step 4 - Handle a Support Request
 
-When a customer opens a ticket, the agent makes two search calls to HydraDB, merges the results, then generates a response. `/search` searches the knowledge base; `/search` searches the customer's personal memory. Both are needed - neither alone returns the full picture.
+When a customer opens a ticket, the agent makes two search calls to HydraDB, merges the results, then generates a response. `/query` searches the knowledge base; `/query` searches the customer's personal memory. Both are needed - neither alone returns the full picture.
 
 ### Search Customer Context
 
@@ -1016,8 +1016,8 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 | `POST` | `/source/ingest` | Upload help docs and past tickets (SDK only) |
 | `POST` | `/source/status` | Check indexing status |
 | `POST` | `/source/ingest` | Store conversation turns and preferences |
-| `POST` | `/search` | Search knowledge base |
-| `POST` | `/search` | Retrieve customer personal memory |
+| `POST` | `/query` | Search knowledge base |
+| `POST` | `/query` | Retrieve customer personal memory |
 
 ### Create Tenant
 

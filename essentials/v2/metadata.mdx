@@ -18,7 +18,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | Scope by a field used on every query (department, region, plan) | `tenant_metadata` on ingest | Top-level key in `metadata_filters` | Fast path. Must declare in `tenant_metadata_schema` with `enable_match: true`. |
 | Scope by a one-off or per-document field (author, slack channel, doc ID) | `additional_metadata` on ingest | Nested under `additional_metadata` in `metadata_filters` | No schema change. ~3× over-fetch, slower than the fast path. |
 | Search inside a metadata field (semantic match on a description) | `tenant_metadata` with `enable_dense_embedding: true` | Just include the field's content in your `query` | Requires the schema field to be `VARCHAR`. |
-| Keyword match on a metadata field | `tenant_metadata` with `enable_sparse_embedding: true` | `query_by: "text"` on `/search` | BM25 over that field. |
+| Keyword match on a metadata field | `tenant_metadata` with `enable_sparse_embedding: true` | `query_by: "text"` on `/query` | BM25 over that field. |
 | Combine deterministic scoping with semantic search | Both metadata kinds | `metadata_filters` + your query | Scope runs before ranking  -  keeps search predictable. |
 | Keep draft / archived / region-specific content out of user answers | `tenant_metadata.status` (or similar) | `metadata_filters: { status: "published" }` | Classic published/unpublished pattern. |
 

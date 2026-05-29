@@ -490,7 +490,7 @@ class ChiefOfStaffOrchestrator:
     def _extract_params(self, task: str, schema: dict, user_id: str, session_id: str) -> dict:
         """
         Extract structured parameters locally after HydraDB has selected the function.
-        HydraDB should be used for retrieval (`/search`); parameter extraction
+        HydraDB should be used for retrieval (`/query`); parameter extraction
         belongs in your app/LLM layer because the schema is already in memory here.
         """
         prompt = (

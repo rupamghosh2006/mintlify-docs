@@ -423,7 +423,7 @@ def ask_about_competitor(
 
 
 def print_results(result) -> None:
-    """Pretty-print chunks and graph entities from a /search response."""
+    """Pretty-print chunks and graph entities from a /query response."""
     chunks = result.chunks or []
     print(f"\n{len(chunks)} chunks retrieved:\n")
     for chunk in chunks:
@@ -641,7 +641,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 | `POST` | `/tenants` | Create the competitive-intel tenant |
 | `POST` | `/source/ingest` | Upload a signal file (multipart form-data) |
 | `POST` | `/source/status?tenant_id=...&source_ids=...` | Check indexing status |
-| `POST` | `/search` | Query indexed signals |
+| `POST` | `/query` | Query indexed signals |
 
 ### Create Tenant
 ```json

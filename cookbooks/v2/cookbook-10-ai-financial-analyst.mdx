@@ -63,7 +63,7 @@ graph TD
     D["Board Memos\n(PDF / text)"] -->|SDK upload| B
     B --> E["Temporal Knowledge Graph\n+ Vector Index"]
     F["Analyst Profile\n(/source/ingest)"] --> E
-    E -->|"/search\nrecency_bias + graph_context"| G["Context Assembly"]
+    E -->|"/query\nrecency_bias + graph_context"| G["Context Assembly"]
     G --> I["App-Layer LLM Synthesis\n(gpt-4o / gemini)"]
     I --> J["Analyst Response\nwith Citations + Timeline"]
 ```
@@ -72,7 +72,7 @@ graph TD
 - One **tenant** for the entire financial data corpus. Sub-tenants namespace by company or analyst team.
 - **`recency_bias: 0.7`** for trend questions (surface recent but still gather historical). **`recency_bias: 0.3`** for historical comparison (spread evenly across time).
 - **`mode: "thinking"`** for all analytical queries - multi-query reranking is essential for financial reasoning.
-- **`graph_context: true`** on `/search` gives you `query_paths` - the entity relationship chains that show how a metric's value evolved across documents.
+- **`graph_context: true`** on `/query` gives you `query_paths` - the entity relationship chains that show how a metric's value evolved across documents.
 
 ---
 
@@ -1528,7 +1528,7 @@ POST /query
 }
 ```
 
-### Response Shape - `/search`
+### Response Shape - `/query`
 
 ```json
 {

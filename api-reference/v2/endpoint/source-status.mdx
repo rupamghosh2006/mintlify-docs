@@ -6,7 +6,12 @@ openapi: "api-reference/v2/openapi.json GET /source/status"
 
 import { Field } from "/snippets/field.jsx";
 
+
 Since ingestion is asynchronous, use this endpoint to determine when content is ready to be searched.
+
+<Tip>
+Prefer not to poll this endpoint? Hydra DB can notify you automatically when a source finishes processing. See [Webhooks](/essentials/v2/webhooks) to get started.
+</Tip>
 
 Pass one or more `source_id` values in `source_ids` to retrieve status. Works for files, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
 

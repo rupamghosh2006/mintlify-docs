@@ -11,7 +11,6 @@ import { Field } from "/snippets/field.jsx";
   - **App Sources** - Use `app_knowledge` for pre-extracted JSON content (Slack threads, Notion pages, emails, tickets). Read more about [ingesting knowledge from your apps](/essentials/v2/app-sources).
 - **`type=memory`** - Use `memories` for per-user content, scoped with `sub_tenant_id`. Set `infer: true` to automatically extract preferences from raw signals, or `infer: false` to store the text verbatim. Read more about [ingesting memories](/essentials/v2/memories).
 
-
 <RequestExample>
 
 ```python Python SDK
@@ -453,8 +452,6 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 
 ## Form fields
 
-
-
 | Name | Description |
 | --- | --- |
 | <Field name="type" type='"knowledge" or "memory"' /> | Use singular `"memory"` when writing memories. (default=`"knowledge"`) |
@@ -514,15 +511,13 @@ After ingestion, save every returned `results[].source_id`. Use these IDs for st
 | <Field name="document_metadata" type="string (JSON object)" /> | Free-form per-document fields as a **JSON-stringified** object. Same string-vs-object difference as `tenant_metadata` above. (default=`""`) |
 | <Field name="relations" type="object" /> | Forceful relations within the Memories store. Shape: `{ "source_ids": ["...", "..."] }` (legacy alias `cortex_source_ids` still accepted). |
 
-
 <Note>
 Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge`, `memories`) must be sent as **JSON-stringified** form values.
 </Note>
 
-
 <ResponseExample>
 
-```json Response
+```json Success
 {
   "success": true,
   "data": {
@@ -543,25 +538,6 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 }
 ```
 
-</ResponseExample>
-
-## Behavior notes
-
-- **Async indexing.** `202 Accepted` only means HydraDB **queued** the work. Content is not retrievable until `indexing_status` reaches `graph_creation` (partial) or `completed` (full). Always poll [Source Status](/api-reference/v2/endpoint/source-status) before searching.
-
-- **`type=knowledge` + `app_knowledge` and `files` mix.** You can send both in the same request. HydraDB processes each item independently and returns one `result` per source.
-
-- **Multipart, not JSON.** This is one of the few endpoints that uses `multipart/form-data`. Stringify the JSON arrays (`file_metadata`, `app_knowledge`, `memories`) before sending them in the form field.
-
-- **`tenant_metadata` keys must be declared.** Keys not in the tenant's `tenant_metadata_schema` are silently ignored at search time when used in `metadata_filters`. Plan schema fields up front via [Create Tenant](/api-reference/v2/endpoint/create-tenant).
-
-- **Common mistakes.** Use `type: "memory"` for ingestion and deletion, but use `memories` for the form field and for search/list collection selectors. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
-
-
-## Errors
-
-Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
-
 ```json Failure
 {
   "success": false,
@@ -576,6 +552,24 @@ Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_
   }
 }
 ```
+
+</ResponseExample>
+
+## Behavior notes
+
+- **Async indexing.** `202 Accepted` only means HydraDB **queued** the work. Content is not retrievable until `indexing_status` reaches `graph_creation` (partial) or `completed` (full). Always poll [Source Status](/api-reference/v2/endpoint/source-status) before searching.
+
+- **`type=knowledge` + `app_knowledge` and `files` mix.** You can send both in the same request. HydraDB processes each item independently and returns one `result` per source.
+
+- **Multipart, not JSON.** This is one of the few endpoints that uses `multipart/form-data`. Stringify the JSON arrays (`file_metadata`, `app_knowledge`, `memories`) before sending them in the form field.
+
+- **`tenant_metadata` keys must be declared.** Keys not in the tenant's `tenant_metadata_schema` are silently ignored at search time when used in `metadata_filters`. Plan schema fields up front via [Create Tenant](/api-reference/v2/endpoint/create-tenant).
+
+- **Common mistakes.** Use `type: "memory"` for ingestion and deletion, but use `memories` for the form field and for search/list collection selectors. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
+
+## Errors
+
+Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
 
 <div className="api-before-related-resources" />
 

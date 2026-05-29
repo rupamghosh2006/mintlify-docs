@@ -14,7 +14,6 @@ Two independent dimensions control behavior:
 - **`search_by`** picks **how** to match: `"hybrid"` (semantic + BM25, the default) or `"text"` (BM25 only  -  pair with `operator`).
 - **`mode`** picks **how** to rank results: `"fast"` (single-pass, low-latency), or `"thinking"` (expands query, reranks, and can include forceful-relation context).
 
-
 Read more about choosing the perfect mode for your use case [here](/api-reference/v2/endpoint/search-overview#recommended-configurations).
 <RequestExample>
 
@@ -301,8 +300,6 @@ result = client.search.query(
 
 ## Request body
 
-
-
 | Name | Description |
 | --- | --- |
 | <Field name="tenant_id" type="string" required /> | Owning tenant. |
@@ -329,7 +326,6 @@ result = client.search.query(
   <li><strong><code>max_results</code></strong>: start at <code>10</code>. Drop to <code>5</code> for tight context windows; raise to <code>20</code> if you rerank downstream.</li>
 </ul>
 </Tip>
-
 
 ### Decision matrix
 
@@ -384,7 +380,7 @@ result = client.search.query(
 
 <ResponseExample>
 
-```json Response
+```json Success
 {
   "success": true,
   "data": {
@@ -521,10 +517,6 @@ result = client.search.query(
 }
 ```
 
-</ResponseExample>
-
-A zero-result search returns empty arrays/maps rather than an error:
-
 ```json Zero results
 {
   "success": true,
@@ -547,6 +539,25 @@ A zero-result search returns empty arrays/maps rather than an error:
 }
 ```
 
+```json Failure
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "INVALID_PARAMETERS",
+    "message": "query must not be empty"
+  },
+  "meta": {
+    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+    "latency_ms": 4.8
+  }
+}
+```
+
+</ResponseExample>
+
+A zero-result search returns empty arrays/maps rather than an error, as shown in the **Zero results** tab.
+
 For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
 
 ## Behavior notes
@@ -567,21 +578,6 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 ## Errors
 
 Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, `422 VALIDATION_ERROR`, `500 INTERNAL_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
-
-```json Failure
-{
-  "success": false,
-  "data": null,
-  "error": {
-    "code": "INVALID_PARAMETERS",
-    "message": "query must not be empty"
-  },
-  "meta": {
-    "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
-    "latency_ms": 4.8
-  }
-}
-```
 
 <div className="api-before-related-resources" />
 

@@ -78,7 +78,7 @@ SDK methods are grouped under three top-level namespaces  -  one per `/api-refer
 | `/query` | `client.query` | Unified retrieval over knowledge, memories, or both |
 | `/tenants/*` and `/tenants` | `client.tenants` | Create, list, delete, status, sub-tenants, stats |
 
-Compared to v1, the surface is intentionally smaller  -  three groups instead of seven, one search endpoint instead of three, one ingestion endpoint instead of two.
+Compared to v1, the surface is intentionally smaller  -  three groups instead of seven, one query endpoint instead of three search endpoints, one ingestion endpoint instead of two.
 
 ## Method reference
 
@@ -393,7 +393,7 @@ const exact = await client.query({
 ```
 </CodeGroup>
 
-For the full parameter reference, see [Search – Overview](/api-reference/v2/endpoint/query-overview).
+For the full parameter reference, see [Query – Overview](/api-reference/v2/endpoint/query-overview).
 
 ### Browse, fetch, and inspect
 

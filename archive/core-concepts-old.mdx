@@ -47,7 +47,7 @@ Here's how they work together:
 
 User Memory captures preferences, communication style, past questions, likes, dislikes, and behavioral patterns. Each user is represented by a `sub_tenant_id`.
 
-- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memories)
+- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memory)
 - **Recall**: [`POST /recall/recall_preferences`](/api-reference/endpoint/recall-preferences)
 
 **What you can build:**
@@ -63,7 +63,7 @@ User Memory captures preferences, communication style, past questions, likes, di
 
 Knowledge Memory is your AI's factual foundation - company policies, product docs, Slack threads, emails, Notion pages, and any unstructured data your agents need.
 
-- **Ingest files**: [`POST /ingestion/upload_knowledge`](/api-reference/endpoint/add-knowledge-memories) (PDF, DOCX, TXT, etc.)
+- **Ingest files**: [`POST /ingestion/upload_knowledge`](/api-reference/endpoint/upload-knowledge) (PDF, DOCX, TXT, etc.)
 - **Ingest app knowledge**: same endpoint with `app_knowledge` form field (Gmail, Slack, Notion, etc.)
 - **Recall**: [`POST /recall/full_recall`](/api-reference/endpoint/full-recall)
 
@@ -82,7 +82,7 @@ Every piece of knowledge is parsed, chunked, and indexed for recall.
 
 Hive Memory is collective intelligence - learnings and institutional knowledge that every agent in your system can access.
 
-- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memories) (coming soon: dedicated endpoint)
+- **Ingest**: [`POST /memories/add_memory`](/api-reference/endpoint/add-memory) (coming soon: dedicated endpoint)
 - **Recall**: [`POST /recall/full_recall`](/api-reference/endpoint/full-recall)
 
 ---
@@ -151,13 +151,13 @@ Tag any memory with key-value metadata for deterministic filtering at recall tim
   <Card title="User Memories" icon="user" href="/essentials/memories">
     Deep dive into personalization
   </Card>
-  <Card title="Knowledge Base" icon="book" href="/api-reference/endpoint/add-knowledge-memories">
+  <Card title="Knowledge Base" icon="book" href="/api-reference/endpoint/upload-knowledge">
     Ingest documents and app sources
   </Card>
   <Card title="Full Recall" icon="magnifying-glass" href="/api-reference/endpoint/full-recall">
     Query your knowledge base
   </Card>
-  <Card title="Hive Memories" icon="hexagon" href="/api-reference/endpoint/add-hive-memories">
+  <Card title="Hive Memories" icon="hexagon" >
     Build collective intelligence across agents
   </Card>
 </CardGroup>

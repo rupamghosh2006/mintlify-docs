@@ -55,17 +55,17 @@ Quickstart documents endpoints that don’t match the current API reference or O
 
 | Source | Link | Problem |
 |--------|------|---------|
-| `essentials/memories.mdx` | [Generate User Memory](/api-reference/endpoint/generate-user-memory) | Page is in `archive/`; not in nav → 404 or hidden |
-| `essentials/memories.mdx` | [Retrieve User Memory](/api-reference/endpoint/retrieve-user-memory) | Same (archived) |
+| `essentials/memories.mdx` | Generate User Memory | Page is in `archive/`; not in nav → 404 or hidden |
+| `essentials/memories.mdx` | Retrieve User Memory | Same (archived) |
 | `essentials/memories.mdx` | [Delete Memory](/api-reference/endpoint/delete-memory) | Delete Memory lives at `/api-reference/delete-memory` (no `endpoint/`) |
 | `essentials/memories.mdx` | [Verify Processing](/api-reference/endpoint/verify-processing) | Archived |
 | `api-reference/endpoint/add-memories.mdx` | [Verify Processing](/api-reference/endpoint/verify-processing) | Archived |
-| `api-reference/delete-memory.mdx` | [List User Memories](/api-reference/endpoint/list-user-memories) | Archived |
-| `api-reference/delete-memory.mdx` | [Add User Memory](/api-reference/endpoint/add-user-memory) | No such slug; current is `add-memories` |
-| `essentials/context-graph.mdx` | [Knowledge Ingestion](/api-reference/endpoint/upload-document) | No current `upload-document` in API reference (in archive) |
+| `api-reference/delete-memory.mdx` | List User Memories | Archived |
+| `api-reference/delete-memory.mdx` | Add User Memory | No such slug; current is `add-memories` |
+| `essentials/context-graph.mdx` | Knowledge Ingestion | No current `upload-document` in API reference (in archive) |
 | `essentials/context-graph.mdx` | Legacy search and answer-generation links | Current endpoint list uses recall pages instead |
-| `api-reference/endpoint/add-knowledge-memories.mdx` | [Supported File Formats](/essentials/file-formats) | No `essentials/file-formats` page in repo |
-| `archive/.../upload-document.mdx` | [Supported File Formats](/essentials/file-formats) | Same missing page |
+| `api-reference/endpoint/add-knowledge-memories.mdx` | Supported File Formats | No `essentials/file-formats` page in repo |
+| `archive/.../upload-document.mdx` | Supported File Formats | Same missing page |
 
 **Recommendation:**  
 - Point all “current” docs to existing, in-nav pages only (e.g. Delete Memory → `/api-reference/delete-memory`, Add Memory → `/api-reference/endpoint/add-memories`).  

@@ -7,12 +7,12 @@ Cortex exposes **two hybrid recall endpoints** that share the same request body 
 
 | Endpoint | Use when |
 |----------|----------|
-| [**Full-context recall (sources)**](/api-reference/endpoint/full-context-recall) - `POST /recall/full_context_recall` | Search over **indexed sources** (documents, knowledge base, uploaded files). |
+| Full-context recall (sources) - `POST /recall/full_context_recall` | Search over **indexed sources** (documents, knowledge base, uploaded files). |
 | [**Recall preferences (memories)**](/api-reference/endpoint/recall-preferences) - `POST /recall/recall_preferences` | Search over **user memories** (preferences, conversations, inferred traits). |
 
 Both use the same request body (e.g. `query`, `tenant_id`, `sub_tenant_id`, `max_results`, `mode`, `alpha`, `recency_bias`, `graph_context`, `additional_context`, `metadata_filters`) and return `RetrievalResult` (chunks, graph_context).
 
-For **full-text search** with a `search_mode` (sources vs memories), use [Boolean recall](/api-reference/endpoint/keyword) (`POST /recall/boolean_recall`). For retrieval-backed answers, use `POST /recall/full_recall` and generate the final response in your application layer.
+For **full-text search** with a `search_mode` (sources vs memories), use Boolean recall (`POST /recall/boolean_recall`). For retrieval-backed answers, use `POST /recall/full_recall` and generate the final response in your application layer.
 
 ## How recall happens
 

@@ -61,7 +61,7 @@ Example: `billing_policy → governs → failed_payment_handling`
 
 **`chunk_id_to_group_ids`.** Maps each chunk ID to the path-group identifiers (e.g. `p_0`, `p_1`) it belongs to. Use it to group retrieved chunks by which graph path produced them.
 
-For full field schemas, see the [Search API Reference](/api-reference/v2/endpoint/search-overview).
+For full field schemas, see the [Search API Reference](/api-reference/v2/endpoint/query-overview).
 
 ---
 
@@ -70,7 +70,7 @@ For full field schemas, see the [Search API Reference](/api-reference/v2/endpoin
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -78,18 +78,18 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "query": "How does the billing system handle failed payments?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "mode": "thinking",
     "graph_context": true
   }'
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme_corp",
   query: "How does the billing system handle failed payments?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   graph_context: true,
 });
@@ -106,11 +106,11 @@ if (result.graph_context) {
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme_corp",
     query="How does the billing system handle failed payments?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
     graph_context=True,
 )
@@ -188,8 +188,8 @@ The helper formats triplets as:
 
 ## Related
 
-- [Search](/essentials/v2/search) - how chunks and graph context are retrieved together
+- [Query](/essentials/v2/query) - how chunks and graph context are retrieved together
 - [Memories](/essentials/v2/memories) - user-scoped context for personalization
 - [Knowledge](/essentials/v2/knowledge) - document-level context for shared retrieval
 - [How to Use API Results](/essentials/v2/api-results) - formatting graph context for LLM prompts
-- [Full Search API Reference](/api-reference/v2/endpoint/search-overview) - full graph response schema
+- [Full Search API Reference](/api-reference/v2/endpoint/query-overview) - full graph response schema

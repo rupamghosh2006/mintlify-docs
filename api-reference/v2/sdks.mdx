@@ -59,8 +59,8 @@ The REST API uses **snake_case** for all request and response fields. The SDKs a
 | | Method naming | Parameter field naming | Example |
 |---|---|---|---|
 | **Raw HTTP / cURL** |  -  | snake_case | `tenant_id`, `sub_tenant_id` |
-| **Python SDK** | snake_case | snake_case | method: `query()`, params: `tenant_id`, `search_by` |
-| **TypeScript SDK** | camelCase | snake_case | method: `query()`, params: `tenant_id`, `search_by` |
+| **Python SDK** | snake_case | snake_case | method: `query()`, params: `tenant_id`, `query_by` |
+| **TypeScript SDK** | camelCase | snake_case | method: `query()`, params: `tenant_id`, `query_by` |
 
 <Info>
 **TypeScript SDK uses snake_case for all parameter field names.** Only method names are camelCase (e.g., `client.source.list({tenant_id: "...", page_size: 50})`). This applies to every request object passed to an SDK method.
@@ -97,11 +97,11 @@ Compared to v1, the surface is intentionally smaller  -  three groups instead of
 
 ### Search
 
-A single method covers all retrieval. Pick `type` (`"knowledge"`, `"memory"`, `"all"`) and `search_by` (`"hybrid"`, `"text"`) to control behavior.
+A single method covers all retrieval. Pick `type` (`"knowledge"`, `"memory"`, `"all"`) and `query_by` (`"hybrid"`, `"text"`) to control behavior.
 
 | Method | Endpoint |
 |---|---|
-| `client.search.query()` | `POST /search` |
+| `client.query()` | `POST /query` |
 
 ### Tenants
 
@@ -125,9 +125,9 @@ The v2 SDKs are a deliberate consolidation. A few common v1 → v2 method swaps:
 | `client.upload.knowledge(...)` | `client.source.ingest(type="knowledge", ...)` |
 | `client.upload.addMemory(...)` | `client.source.ingest(type="memory", ...)` |
 | `client.upload.verifyProcessing(...)` | `client.source.status(...)` |
-| `client.search.fullRecall(...)` | `client.search.query(type="knowledge", ...)` |
-| `client.search.recallPreferences(...)` | `client.search.query(type="memory", ...)` |
-| `client.search.booleanRecall(...)` | `client.search.query(search_by="text", ...)` |
+| `client.search.fullRecall(...)` | `client.query(type="knowledge", ...)` |
+| `client.search.recallPreferences(...)` | `client.query(type="memory", ...)` |
+| `client.search.booleanRecall(...)` | `client.query(query_by="text", ...)` |
 | `client.fetch.listData(...)` | `client.source.list(...)` |
 | `client.fetch.graphRelationsBySourceId(...)` | `client.source.relations(...)` |
 | `client.fetch.content(...)` | `client.source.fetch(...)` |
@@ -328,72 +328,72 @@ Wait until each `indexing_status` is `completed` (or `graph_creation` if you don
 
 ### Search
 
-A single method covers every retrieval pattern  -  switch `type` and `search_by` to control behavior:
+A single method covers every retrieval pattern  -  switch `type` and `query_by` to control behavior:
 
 <CodeGroup>
 ```python Python SDK
 # Knowledge over documents
-knowledge = client.search.query(
+knowledge = client.query(
     tenant_id="my_first_tenant",
     query="What are the pricing tiers?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
     graph_context=True,
 )
 
 # Personalized — searches knowledge AND user memories together
-personalized = client.search.query(
+personalized = client.query(
     tenant_id="my_first_tenant",
     sub_tenant_id="user_alex",
     query="What are the pricing tiers, and how should I explain them to this user?",
     type="all",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
 )
 
 # Exact-phrase BM25 search
-exact = client.search.query(
+exact = client.query(
     tenant_id="my_first_tenant",
     query="ERROR_429 rate limit",
     type="knowledge",
-    search_by="text",
+    query_by="text",
     operator="phrase",
 )
 ```
 ```typescript TypeScript SDK
 // Knowledge over documents
-const knowledge = await client.search.query({
+const knowledge = await client.query({
   tenant_id: "my_first_tenant",
   query: "What are the pricing tiers?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   graph_context: true,
 });
 
 // Personalized — searches knowledge AND user memories together
-const personalized = await client.search.query({
+const personalized = await client.query({
   tenant_id: "my_first_tenant",
   sub_tenant_id: "user_alex",
   query: "What are the pricing tiers, and how should I explain them to this user?",
   type: "all",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
 });
 
 // Exact-phrase BM25 search
-const exact = await client.search.query({
+const exact = await client.query({
   tenant_id: "my_first_tenant",
   query: "ERROR_429 rate limit",
   type: "knowledge",
-  search_by: "text",
+  query_by: "text",
   operator: "phrase",
 });
 ```
 </CodeGroup>
 
-For the full parameter reference, see [Search – Overview](/api-reference/v2/endpoint/search-overview).
+For the full parameter reference, see [Search – Overview](/api-reference/v2/endpoint/query-overview).
 
 ### Browse, fetch, and inspect
 
@@ -491,7 +491,7 @@ Both SDKs are fully typed:
 - **Type checking** for request and response objects
 - **Inline documentation** for each parameter, sourced from the OpenAPI spec
 - **Compile-time validation** for required vs optional fields
-- **Enum-typed values** for `type`, `search_by`, `operator` and `mode`
+- **Enum-typed values** for `type`, `query_by`, `operator` and `mode`
 </Check>
 
 The SDKs provide exact type parity with the API specification:
@@ -510,7 +510,7 @@ Both SDKs throw exceptions for non-2xx responses. Error objects expose the envel
 from hydra_db import HydraDBError
 
 try:
-    result = client.search.query(
+    result = client.query(
         tenant_id="my_first_tenant",
         query="...",
         type="knowledge",
@@ -532,7 +532,7 @@ except HydraDBError as e:
 import { HydraDBError } from "@hydradb/sdk";
 
 try {
-  const result = await client.search.query({
+  const result = await client.query({
     tenant_id: "my_first_tenant",
     query: "...",
     type: "knowledge",
@@ -572,5 +572,5 @@ This works because the SDKs are fully typed with comprehensive parameter docs so
 - [API Reference](/api-reference/v2)  -  complete endpoint documentation
 - [Error Responses](/api-reference/v2/error-responses)  -  HTTP codes, error codes, retry patterns
 - [Quickstart](/get-started/v2/quickstart)  -  build your first integration in five minutes
-- [Search](/essentials/v2/search)  -  conceptual overview of `POST /search`
+- [Query](/essentials/v2/query)  -  conceptual overview of `POST /query`
 - [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories)  -  ingestion deep-dives

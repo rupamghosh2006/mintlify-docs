@@ -3,9 +3,9 @@ title: "Scoping using metadata"
 description: "How HydraDB uses metadata to scope and rank search results deterministically — schema-aligned tenant fields, free-form per-document fields, and how they combine at search time."
 ---
 
-Metadata is structured data attached to [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) so you can scope search to a known set **before** semantic retrieval runs. It bridges the gap between vector similarity (great for "things like X") and exact scoping (essential for "must be in environment=production, must be customer=acme, must be a runbook"). HydraDB exposes two metadata layers  -  one declared up front and fast, one free-form and slower  -  and lets you combine them in a single [`POST /search`](/api-reference/v2/endpoint/search) call.
+Metadata is structured data attached to [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) so you can scope search to a known set **before** semantic retrieval runs. It bridges the gap between vector similarity (great for "things like X") and exact scoping (essential for "must be in environment=production, must be customer=acme, must be a runbook"). HydraDB exposes two metadata layers  -  one declared up front and fast, one free-form and slower  -  and lets you combine them in a single [`POST /query`](/api-reference/v2/endpoint/query) call.
 
-For the full request and response schema, see [Search  -  API Reference](/api-reference/v2/endpoint/search).
+For the full request and response schema, see [Query  -  API Reference](/api-reference/v2/endpoint/query).
 
 ---
 
@@ -18,7 +18,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | Scope by a field used on every query (department, region, plan) | `tenant_metadata` on ingest | Top-level key in `metadata_filters` | Fast path. Must declare in `tenant_metadata_schema` with `enable_match: true`. |
 | Scope by a one-off or per-document field (author, slack channel, doc ID) | `additional_metadata` on ingest | Nested under `additional_metadata` in `metadata_filters` | No schema change. ~3× over-fetch, slower than the fast path. |
 | Search inside a metadata field (semantic match on a description) | `tenant_metadata` with `enable_dense_embedding: true` | Just include the field's content in your `query` | Requires the schema field to be `VARCHAR`. |
-| Keyword match on a metadata field | `tenant_metadata` with `enable_sparse_embedding: true` | `search_by: "text"` on `/search` | BM25 over that field. |
+| Keyword match on a metadata field | `tenant_metadata` with `enable_sparse_embedding: true` | `query_by: "text"` on `/search` | BM25 over that field. |
 | Combine deterministic scoping with semantic search | Both metadata kinds | `metadata_filters` + your query | Scope runs before ranking  -  keeps search predictable. |
 | Keep draft / archived / region-specific content out of user answers | `tenant_metadata.status` (or similar) | `metadata_filters: { status: "published" }` | Classic published/unpublished pattern. |
 
@@ -56,7 +56,7 @@ Sent on each item in `app_knowledge[]`, `file_metadata[]`, or `memories[]` on [`
 
 ### Search-time scoping (in `metadata_filters`)
 
-Sent on [`POST /search`](/api-reference/v2/endpoint/search). Two scopes in the same object, mixed freely:
+Sent on [`POST /query`](/api-reference/v2/endpoint/query). Two scopes in the same object, mixed freely:
 
 | Where the key lives | What it scopes | Performance |
 | --- | --- | --- |
@@ -211,7 +211,7 @@ Mix tenant-level (top-level) and document-level (nested) scopes in the same `met
 
 <CodeGroup>
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -219,7 +219,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "query": "How does authentication control review work?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "metadata_filters": {
       "compliance_framework": "SOC2",
       "additional_metadata": { "author": "alice" }
@@ -227,11 +227,11 @@ curl -X POST 'https://api.hydradb.com/search' \
   }'
 ```
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme_corp",
   query: "How does authentication control review work?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   metadata_filters: {
     compliance_framework: "SOC2",
     additional_metadata: { author: "alice" },
@@ -239,11 +239,11 @@ const result = await client.search.query({
 });
 ```
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme_corp",
     query="How does authentication control review work?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     metadata_filters={
         "compliance_framework": "SOC2",
         "additional_metadata": {"author": "alice"},
@@ -265,7 +265,7 @@ Top-level `compliance_framework` is the fast scope, applied in the vector store 
 | Schema field changes don't take effect | Schema is immutable after tenant creation | Create a new tenant with the corrected schema. There's no in-place schema migration. |
 | Metadata values on a source don't update | Ingested metadata is immutable | Re-ingest the source with `upsert: true` and the same `source_id`. |
 | Search returns 0 results after adding a scope | Over-scoping  -  combined constraints exclude everything | Start with the minimum hard constraints; add scopes one at a time and re-check counts. |
-| Range / contains / fuzzy scope doesn't work | `metadata_filters` is equality-only | Move that constraint into the `query` text, use a different `search_by`, or apply it in your own post-scoping. |
+| Range / contains / fuzzy scope doesn't work | `metadata_filters` is equality-only | Move that constraint into the `query` text, use a different `query_by`, or apply it in your own post-scoping. |
 | Fields used in `metadata` but missing from response objects | Field declared as embedding-only without `enable_match` | Embedding-enabled doesn't imply scoping-enabled. Add `enable_match: true` to use it in `metadata_filters`. |
 | `additional_metadata` scope feels slow | It is  -  over-fetches ~3× to compensate for post-retrieval matching | Move the hot field into `tenant_metadata` and declare it in the schema. |
 
@@ -288,6 +288,6 @@ Top-level `compliance_framework` is the fast scope, applied in the vector store 
 - [Knowledge](/essentials/v2/knowledge)  -  what attaches to knowledge sources
 - [Memories](/essentials/v2/memories)  -  metadata fields on memory items
 - [Multi-Tenant Support](/essentials/v2/multi-tenant)  -  partitioning vs scoping
-- [Search](/essentials/v2/search)  -  how `metadata_filters` interact with ranking
+- [Query](/essentials/v2/query)  -  how `metadata_filters` interact with ranking
 - [Create Tenant  -  API Reference](/api-reference/v2/endpoint/create-tenant)  -  full `tenant_metadata_schema` reference
-- [Search  -  API Reference](/api-reference/v2/endpoint/search)  -  full `metadata_filters` reference
+- [Query  -  API Reference](/api-reference/v2/endpoint/query)  -  full `metadata_filters` reference

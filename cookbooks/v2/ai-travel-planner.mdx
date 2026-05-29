@@ -251,7 +251,7 @@ class TravelAssistant {
 
   async planTrip(query, userProfile) {
     // Use HydraDB's thinking mode for complex travel planning
-    const response = await this.client.search.query({
+    const response = await this.client.query({
       query: query,
       tenant_id: userProfile.tenantId,
       sub_tenant_id: userProfile.subTenantId,
@@ -306,7 +306,7 @@ class PersonalizationEngine {
 
   async getPersonalizedRecommendations(tenantId, subTenantId, destination) {
     // Retrieve user memories to provide personalized recommendations
-    const memories = await this.client.search.query({
+    const memories = await this.client.query({
       source: 'memories',
       tenant_id: tenantId,
       sub_tenant_id: subTenantId,
@@ -335,7 +335,7 @@ const searchTravelExperiences = async (query, tenantId, subTenantId, filters = {
                        ${filters.budget ? `budget ${filters.budget}` : ''}
                        ${filters.travelStyle ? `${filters.travelStyle} travel` : ''}`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: searchQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -361,7 +361,7 @@ const handleTravelQuery = async (query, context) => {
   // Use mode: "fast" for single-category lookups (hotels only, flights only).
   const isComplex = /itinerary|plan|trip|vacation|week|days/i.test(query);
 
-  const response = await client.search.query({
+  const response = await client.query({
     query,
     tenant_id: context.tenantId,
     sub_tenant_id: context.subTenantId,
@@ -383,7 +383,7 @@ const handleTravelQuery = async (query, context) => {
 
 ```javascript
 const planFamilyVacation = async (query, userProfile) => {
-  const response = await client.search.query({
+  const response = await client.query({
     query: query,
     tenant_id: userProfile.tenantId,
     sub_tenant_id: userProfile.subTenantId,
@@ -412,7 +412,7 @@ const planFamilyVacation = async (query, userProfile) => {
 
 ```javascript
 const planBusinessTravel = async (query, userProfile) => {
-  const response = await client.search.query({
+  const response = await client.query({
     query: query,
     tenant_id: userProfile.tenantId,
     sub_tenant_id: userProfile.subTenantId,
@@ -433,7 +433,7 @@ const planBusinessTravel = async (query, userProfile) => {
 
 ```javascript
 const planAdventureTravel = async (query, userProfile) => {
-  const response = await client.search.query({
+  const response = await client.query({
     query: query,
     tenant_id: userProfile.tenantId,
     sub_tenant_id: userProfile.subTenantId,
@@ -456,7 +456,7 @@ const planAdventureTravel = async (query, userProfile) => {
 const getWeatherBasedRecommendations = async (destination, travelDate, tenantId, subTenantId) => {
   const weatherQuery = `What activities and attractions are best in ${destination} during ${travelDate} considering weather conditions?`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: weatherQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -476,7 +476,7 @@ const getWeatherBasedRecommendations = async (destination, travelDate, tenantId,
 const getCulturalEventRecommendations = async (destination, travelDate, tenantId, subTenantId) => {
   const eventQuery = `What cultural events, festivals, or seasonal experiences are happening in ${destination} during ${travelDate}?`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: eventQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -522,7 +522,7 @@ const analyzeBookingPatterns = async (tenantId, subTenantId, bookingData) => {
 const refineSearch = async (originalQuery, userFeedback, tenantId, subTenantId) => {
   const refinedQuery = `${originalQuery}. User feedback: ${userFeedback}. Please adjust recommendations accordingly.`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: refinedQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -544,7 +544,7 @@ const refineSearch = async (originalQuery, userFeedback, tenantId, subTenantId) 
 const handleMultiLanguageQuery = async (query, language, destination, tenantId, subTenantId) => {
   const localizedQuery = `${query} (query in ${language} for ${destination})`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: localizedQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -626,7 +626,7 @@ const monitorPriceChanges = async (travelPlan) => {
 const checkAvailability = async (hotelId, checkIn, checkOut, tenantId, subTenantId) => {
   const availabilityQuery = `Check availability for ${hotelId} from ${checkIn} to ${checkOut}`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: availabilityQuery,
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
@@ -646,7 +646,7 @@ const checkAvailability = async (hotelId, checkIn, checkOut, tenantId, subTenant
 const getDynamicPricing = async (searchResults, userProfile) => {
   const pricingQuery = `Get current pricing for these travel options considering user's booking history and preferences`;
 
-  const response = await client.search.query({
+  const response = await client.query({
     query: pricingQuery,
     tenant_id: userProfile.tenantId,
     sub_tenant_id: userProfile.subTenantId,

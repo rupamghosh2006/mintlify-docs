@@ -9,18 +9,18 @@ import { Field } from "/snippets/field.jsx";
 
 Knowledge is the shared, tenant-wide context that every user and agent in a tenant can search  -  product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and anything else that ought to be reusable across the workspace.
 
-Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds per-user context. Both are retrievable through the same [`POST /search`](/api-reference/v2/endpoint/search) endpoint, but they live in separate stores; you pick which one to search via the `type` parameter (see [Search](/essentials/v2/search)).
+Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds per-user context. Both are retrievable through the same [`POST /query`](/api-reference/v2/endpoint/query) endpoint, but they live in separate stores; you pick which one to search via the `type` parameter (see [Query](/essentials/v2/query)).
 
 | | Knowledge | Memories |
 |---|---|---|
 | **Content** | Documents, files, app-generated content | User preferences, conversations, inferred traits |
 | **Scope** | Shared across all users in a tenant | Per-user, scoped by `sub_tenant_id` |
 | **Mutability** | Versioned  -  replaced or deleted explicitly | Dynamic  -  evolves with every interaction |
-| **Search via** | [`POST /search`](/api-reference/v2/endpoint/search) with `type: "knowledge"` | [`POST /search`](/api-reference/v2/endpoint/search) with `type: "memory"` |
+| **Search via** | [`POST /query`](/api-reference/v2/endpoint/query) with `type: "knowledge"` | [`POST /query`](/api-reference/v2/endpoint/query) with `type: "memory"` |
 | **`vectorstore_status`** | `vectorstore_status.knowledge` | `vectorstore_status.memories` |
 
 <Info>
-  **One endpoint, two stores.** Knowledge and memories are stored separately, but a single [`POST /search`](/api-reference/v2/endpoint/search) call can hit both via `type: "all"`  -  results are merged and re-ranked together. Pick `type: "knowledge"` for shared-doc RAG, `type: "memory"` for per-user context, or `type: "all"` for personalized answers grounded in both. See [Search](/essentials/v2/search) for the full picture.
+  **One endpoint, two stores.** Knowledge and memories are stored separately, but a single [`POST /query`](/api-reference/v2/endpoint/query) call can hit both via `type: "all"`  -  results are merged and re-ranked together. Pick `type: "knowledge"` for shared-doc RAG, `type: "memory"` for per-user context, or `type: "all"` for personalized answers grounded in both. See [Query](/essentials/v2/query) for the full picture.
 </Info>
 
 ---
@@ -33,7 +33,7 @@ When you call [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content)
 2. **Chunks** the content into semantically coherent segments.
 3. **Extracts entities and relationships**, building graph nodes and edges (see [Context Graphs](/essentials/v2/context-graphs)).
 4. **Embeds** every chunk into the dense and sparse vector stores.
-5. **Indexes** the result so it becomes searchable via [`POST /search`](/api-reference/v2/endpoint/search).
+5. **Indexes** the result so it becomes searchable via [`POST /query`](/api-reference/v2/endpoint/query).
 
 The pipeline runs **asynchronously**. The ingest call returns `202 Accepted` with `source_id`s; the content isn't searchable until `indexing_status` reaches at least `graph_creation`. Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) to track progress  -  see the full status table at [Source Status](/api-reference/v2/endpoint/source-status).
 
@@ -216,7 +216,7 @@ All endpoints return this envelope shape. Access the payload via `response.data`
 
 ## 5. Verifying processing
 
-Ingestion is async, so you need to confirm each source actually finished before it'll show up in [search](/essentials/v2/search). Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) with the `source_id`s you got back from ingestion. The snippets below loop until every item reaches a terminal state (`completed` or `errored`):
+Ingestion is async, so you need to confirm each source actually finished before it'll show up in [search](/essentials/v2/query). Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) with the `source_id`s you got back from ingestion. The snippets below loop until every item reaches a terminal state (`completed` or `errored`):
 
 <CodeGroup>
 ```python Python SDK
@@ -289,7 +289,7 @@ done
 Status values move forward through `queued` → `processing` → `graph_creation` → `completed` (or land in `errored` on failure). Poll every few seconds; most documents complete in 1–5 minutes. The full table  -  including the `success` alias that occasionally appears for `completed`  -  is on [Source Status](/api-reference/v2/endpoint/source-status).
 
 <Info>
-**`graph_creation` is already searchable.** Items in this state are retrievable via [`POST /search`](/api-reference/v2/endpoint/search). Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
+**`graph_creation` is already searchable.** Items in this state are retrievable via [`POST /query`](/api-reference/v2/endpoint/query). Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
 </Info>
 
 ---
@@ -401,7 +401,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 ```
 </CodeGroup>
 
-At search time, linked sources are returned in the `additional_context` field of the [search response](/api-reference/v2/endpoint/search). `search_forceful_relations` defaults to `true`  -  you only need to set it explicitly if you want to disable forceful-relation expansion.
+At search time, linked sources are returned in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). `search_forceful_relations` defaults to `true`  -  you only need to set it explicitly if you want to disable forceful-relation expansion.
 
 <Warning>
 **Knowledge sources only.** Forceful relations work within the same store. Pointing a Knowledge source at a Memory source ID (or vice versa) will silently return nothing at search time.
@@ -440,7 +440,7 @@ See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and 
 
 | Mistake | What goes wrong | Fix |
 |---|---|---|
-| Searching Knowledge with `type: "memory"` | Nothing returned  -  wrong store | Use `type: "knowledge"` (or `"all"`) on [`POST /search`](/api-reference/v2/endpoint/search). |
+| Searching Knowledge with `type: "memory"` | Nothing returned  -  wrong store | Use `type: "knowledge"` (or `"all"`) on [`POST /query`](/api-reference/v2/endpoint/query). |
 | Using `document_metadata` for filterable fields | Filters are silently ignored unless nested correctly | Put filterable keys in `tenant_metadata` and declare them in the [tenant schema](/api-reference/v2/endpoint/create-tenant), or filter under `metadata_filters: {"document_metadata": {...}}`  -  see [Metadata](/essentials/v2/metadata). |
 | Not polling [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Chunks aren't indexed yet  -  empty search results | Wait for `indexing_status: completed` (or `graph_creation` for partial availability). |
 | Sending `file_metadata` as a JSON object instead of a JSON string | `multipart/form-data` validation fails | Stringify `file_metadata` before sending in the `-F` field. |
@@ -452,7 +452,7 @@ See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and 
 ## Related
 
 - [Memories](/essentials/v2/memories)  -  the per-user counterpart to Knowledge
-- [Search](/essentials/v2/search)  -  how [`POST /search`](/api-reference/v2/endpoint/search) retrieves Knowledge
+- [Query](/essentials/v2/query)  -  how [`POST /query`](/api-reference/v2/endpoint/query) retrieves Knowledge
 - [Metadata](/essentials/v2/metadata)  -  designing filterable schemas
 - [Context Graphs](/essentials/v2/context-graphs)  -  how the graph layer enriches retrieval
 - [Ingest Content  -  API Reference](/api-reference/v2/endpoint/ingest-content)

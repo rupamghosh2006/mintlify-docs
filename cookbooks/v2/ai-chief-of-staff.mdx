@@ -196,7 +196,7 @@ class Orchestrator {
 
   async handleTask(task: string, userContext: { tenantId: string; subTenantId: string }) {
     // 1️⃣ Ask HydraDB which function best matches the task
-    const result = await this.client.search.query({
+    const result = await this.client.query({
       tenant_id: userContext.tenantId,
       sub_tenant_id: userContext.subTenantId,
       query: task,

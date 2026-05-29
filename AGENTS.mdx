@@ -13,10 +13,10 @@ This document is a self-contained reference designed for AI coding agents. It co
 2. **`GET /tenants/status`** (`client.tenants.status()`): Poll until `infra.ready_for_ingestion` is true.
 3. **`POST /source/ingest`** (`client.source.ingest()`): Ingest documents, app records, or memories under `type="knowledge"` or `type="memory"`.
 4. **`GET /source/status`** (`client.source.status()`): Poll status using `source_ids` until `indexing_status` is `completed` or `graph_creation`.
-5. **`POST /search`** (`client.search.query()`): Retrieve context via `type: "knowledge"`, `"memory"`, or `"all"`.
+5. **`POST /query`** (`client.query()`): Retrieve context via `type: "knowledge"`, `"memory"`, or `"all"`.
 
 
-> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/source/*`, and `/search`.
+> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/source/*`, and `/query`.
 
 ---
 
@@ -62,7 +62,7 @@ Raw HTTP responses are wrapped:
 | Tenant stats | `GET /tenants/stats` · `client.tenants.stats()` |
 | Ingest files, app sources, memories | `POST /source/ingest` · `client.source.ingest()` |
 | Check indexing | `GET /source/status` · `client.source.status()` |
-| Search knowledge/memories/both | `POST /search` · `client.search.query()` |
+| Search knowledge/memories/both | `POST /query` · `client.query()` |
 | List sources/memories | `POST /source/list` · `client.source.list()` |
 | Fetch source content | `GET /source/fetch` · `client.source.fetch()` |
 | Delete sources/memories | `DELETE /source` · `client.source.delete()` |
@@ -87,7 +87,7 @@ Failure status:
 
 ### Search parameter naming
 
-The canonical request field for `POST /search` is `type`:
+The canonical request field for `POST /query` is `type`:
 
 - `type: "knowledge"`
 - `type: "memory"`
@@ -133,7 +133,7 @@ Recommended patterns:
 Knowledge is shared context: documents, PDFs, Markdown, CSVs, Slack threads, Notion pages, Gmail threads, tickets, webpages, etc.
 
 - Ingest with `POST /source/ingest`, `type=knowledge`.
-- Search with `POST /search`, `type: "knowledge"`.
+- Search with `POST /query`, `type: "knowledge"`.
 - Use for content that should be reusable across users.
 - Mutability is explicit: re-ingest with the same ID and `upsert: true`, or delete.
 
@@ -142,14 +142,14 @@ Knowledge is shared context: documents, PDFs, Markdown, CSVs, Slack threads, Not
 Memories are user/workspace/session-scoped context: preferences, conversation history, behavioral signals, decisions, inferred traits.
 
 - Ingest with `POST /source/ingest`, `type=memory`.
-- Search with `POST /search`, `type: "memory"` or `type: "all"`.
+- Search with `POST /query`, `type: "memory"` or `type: "all"`.
 - Always pass the same `sub_tenant_id` used at ingestion.
 - Use `infer: true` when the input is raw signal and HydraDB should extract the durable preference/fact.
 - Use `infer: false` when the memory is already structured and should be stored verbatim.
 
 ### Search
 
-`POST /search` is the single retrieval endpoint.
+`POST /query` is the single retrieval endpoint.
 
 It can search:
 
@@ -159,8 +159,8 @@ It can search:
 
 It supports:
 
-- `search_by: "hybrid"` for semantic + BM25 retrieval.
-- `search_by: "text"` for BM25 keyword/phrase search.
+- `query_by: "hybrid"` for semantic + BM25 retrieval.
+- `query_by: "text"` for BM25 keyword/phrase search.
 - `mode: "fast"` for low latency.
 - `mode: "thinking"` for query expansion, reranking, richer graph traversal, and forceful-relation expansion.
 
@@ -239,7 +239,7 @@ SDK naming:
 
 - Python methods: snake_case.
 - TypeScript methods: camelCase where the method itself needs it, e.g. `client.tenants.subTenants()`.
-- Request/response fields remain snake_case in both SDKs, e.g. `tenant_id`, `sub_tenant_id`, `page_size`, `search_by`.
+- Request/response fields remain snake_case in both SDKs, e.g. `tenant_id`, `sub_tenant_id`, `page_size`, `query_by`.
 
 ---
 
@@ -298,12 +298,12 @@ while True:
     time.sleep(2)
 
 # 5. Search memories.
-result = client.search.query(
+result = client.query(
     tenant_id=tenant_id,
     sub_tenant_id="user_alex",
     query="What does the user prefer?",
     type="memory",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
 )
 
@@ -360,12 +360,12 @@ while (true) {
   await new Promise((resolve) => setTimeout(resolve, 2_000));
 }
 
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: tenantId,
   sub_tenant_id: "user_alex",
   query: "What does the user prefer?",
   type: "memory",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
 });
 
@@ -677,7 +677,7 @@ Rules:
 
 ## 8. Search API
 
-`POST /search` · `client.search.query()`
+`POST /query` · `client.query()`
 
 ### Request fields that matter
 
@@ -687,8 +687,8 @@ Rules:
 | `sub_tenant_id` | string/null | required for per-user memory searches |
 | `query` | string | required |
 | `type` | `knowledge`, `memory`, `all` | docs/SDK store selector; OpenAPI may expose alias `source` |
-| `search_by` | `hybrid`, `text` | default hybrid |
-| `operator` | `or`, `and`, `phrase` | only for `search_by: "text"` |
+| `query_by` | `hybrid`, `text` | default hybrid |
+| `operator` | `or`, `and`, `phrase` | only for `query_by: "text"` |
 | `mode` | `fast`, `thinking` | applies to hybrid; thinking improves quality but adds latency |
 | `max_results` | integer/null | default around 10; max documented as 50 |
 | `alpha` | `0.0`–`1.0` or `auto` | hybrid weight; `1.0` semantic, `0.0` BM25 |
@@ -703,24 +703,24 @@ Rules:
 
 | Goal | Request shape |
 |---|---|
-| Fast document RAG | `type: "knowledge"`, `search_by: "hybrid"`, `mode: "fast"`, `graph_context: false`, `max_results: 5-10` |
-| Highest-quality document RAG | `type: "knowledge"`, `search_by: "hybrid"`, `mode: "thinking"`, `graph_context: true`, `alpha: "auto"` |
-| Personalized grounded answer | `type: "all"`, include `sub_tenant_id`, `search_by: "hybrid"`, `mode: "thinking"` |
-| User preferences only | `type: "memory"`, include `sub_tenant_id`, `search_by: "hybrid"` |
-| Exact keyword / phrase | `type: "knowledge"`, `search_by: "text"`, `operator: "phrase"` |
-| Recent operational updates | `search_by: "hybrid"`, `recency_bias: 0.2-0.4`, metadata filter to doc type/status |
-| App search | `type: "knowledge"`, `search_by: "hybrid"`, `mode: "thinking"`, `search_apps: true`; still searches non-app knowledge too |
+| Fast document RAG | `type: "knowledge"`, `query_by: "hybrid"`, `mode: "fast"`, `graph_context: false`, `max_results: 5-10` |
+| Highest-quality document RAG | `type: "knowledge"`, `query_by: "hybrid"`, `mode: "thinking"`, `graph_context: true`, `alpha: "auto"` |
+| Personalized grounded answer | `type: "all"`, include `sub_tenant_id`, `query_by: "hybrid"`, `mode: "thinking"` |
+| User preferences only | `type: "memory"`, include `sub_tenant_id`, `query_by: "hybrid"` |
+| Exact keyword / phrase | `type: "knowledge"`, `query_by: "text"`, `operator: "phrase"` |
+| Recent operational updates | `query_by: "hybrid"`, `recency_bias: 0.2-0.4`, metadata filter to doc type/status |
+| App search | `type: "knowledge"`, `query_by: "hybrid"`, `mode: "thinking"`, `search_apps: true`; still searches non-app knowledge too |
 
 ### Search examples
 
 Knowledge RAG:
 
 ```ts
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme_corp",
   query: "What is our refund policy?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   max_results: 10,
   graph_context: true,
@@ -730,12 +730,12 @@ const result = await client.search.query({
 Personalized answer using knowledge and memories:
 
 ```ts
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
   type: "all",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   alpha: "auto",
 });
@@ -744,11 +744,11 @@ const result = await client.search.query({
 Exact phrase:
 
 ```python
-result = client.search.query(
+result = client.query(
     tenant_id="acme_corp",
     query="ERROR_429 rate limit",
     type="knowledge",
-    search_by="text",
+    query_by="text",
     operator="phrase",
 )
 ```
@@ -760,7 +760,7 @@ Metadata-scoped search:
   "tenant_id": "acme_corp",
   "query": "authentication control review",
   "type": "knowledge",
-  "search_by": "hybrid",
+  "query_by": "hybrid",
   "metadata_filters": {
     "compliance_framework": "SOC2",
     "additional_metadata": {
@@ -847,12 +847,12 @@ openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 question = "How does authentication work?"
 
-result = hydra.search.query(
+result = hydra.query(
     tenant_id="your-tenant",
     sub_tenant_id="your-sub-tenant",
     query=question,
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=5,
 )
 
@@ -881,12 +881,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const question = "How does authentication work?";
 
-const result = await hydra.search.query({
+const result = await hydra.query({
   tenant_id: "your-tenant",
   sub_tenant_id: "your-sub-tenant",
   query: question,
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   max_results: 5,
 });
 
@@ -1094,7 +1094,7 @@ SDK errors:
 from hydra_db import HydraDBError
 
 try:
-    result = client.search.query(
+    result = client.query(
         tenant_id="acme_corp",
         query="pricing tiers",
         type="knowledge",
@@ -1111,7 +1111,7 @@ except HydraDBError as exc:
 import { HydraDBError } from "@hydradb/sdk";
 
 try {
-  const result = await client.search.query({
+  const result = await client.query({
     tenant_id: "acme_corp",
     query: "pricing tiers",
     type: "knowledge",
@@ -1162,9 +1162,9 @@ Use this only when the application owns embedding generation and chunking.
 | `client.upload.knowledge(...)` | `client.source.ingest(type="knowledge", ...)` |
 | `client.upload.addMemory(...)` | `client.source.ingest(type="memory", ...)` |
 | `client.upload.verifyProcessing(...)` | `client.source.status(...)` |
-| `client.search.fullRecall(...)` | `client.search.query(type="knowledge", ...)` |
-| `client.search.recallPreferences(...)` | `client.search.query(type="memory", ...)` |
-| `client.search.booleanRecall(...)` | `client.search.query(search_by="text", ...)` |
+| `client.search.fullRecall(...)` | `client.query(type="knowledge", ...)` |
+| `client.search.recallPreferences(...)` | `client.query(type="memory", ...)` |
+| `client.search.booleanRecall(...)` | `client.query(query_by="text", ...)` |
 | `client.fetch.listData(...)` | `client.source.list(...)` |
 | `client.fetch.graphRelationsBySourceId(...)` | `client.source.relations(...)` |
 | `client.fetch.content(...)` | `client.source.fetch(...)` |
@@ -1228,7 +1228,7 @@ Common architecture across cookbooks:
 - [ ] Setting `graph_context: false` and expecting graph fields.
 - [ ] Re-sorting chunks before prompting without a deliberate reranker.
 - [ ] Passing too many chunks to the LLM.
-- [ ] Using `operator` without `search_by: "text"`.
+- [ ] Using `operator` without `query_by: "text"`.
 - [ ] Forgetting to verify webhook signatures when a signing secret is configured.
 
 ---
@@ -1245,7 +1245,7 @@ Common architecture across cookbooks:
 | `client.source.list()` | `POST /source/list` | Browse knowledge or memories |
 | `client.source.delete()` | `DELETE /source` | Delete sources or memories |
 | `client.source.relations()` | `GET /source/relations` | Inspect graph relationships |
-| `client.search.query()` | `POST /search` | Unified search over knowledge, memories, or both |
+| `client.query()` | `POST /query` | Unified search over knowledge, memories, or both |
 | `client.tenants.create()` | `POST /tenants` | Create a new isolated workspace |
 | `client.tenants.list()` | `GET /tenants` | List all tenants registered for the organization |
 | `client.tenants.delete()` | `DELETE /tenants` | Permanently remove a tenant |
@@ -1263,7 +1263,7 @@ Common architecture across cookbooks:
 | Source | `client.source.list()` | `POST /source/list` | Browse knowledge or memories |
 | Source | `client.source.delete()` | `DELETE /source` | Delete sources or memories |
 | Source | `client.source.relations()` | `GET /source/relations` | Inspect graph relationships |
-| Search | `client.search.query()` | `POST /search` | Unified search over knowledge, memories, or both |
+| Search | `client.query()` | `POST /query` | Unified search over knowledge, memories, or both |
 | Tenants | `client.tenants.create()` | `POST /tenants` | Create a new isolated workspace |
 | Tenants | `client.tenants.list()` | `GET /tenants` | List all tenants registered for the organization |
 | Tenants | `client.tenants.delete()` | `DELETE /tenants` | Permanently remove a tenant |
@@ -1312,11 +1312,11 @@ curl -s -G 'https://api.hydradb.com/source/status' \
   | jq '.data.statuses[0]'
 
 # 5. Search memories.
-curl -s -X POST 'https://api.hydradb.com/search' \
+curl -s -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
-  -d "{\"tenant_id\":\"${TENANT_ID}\",\"sub_tenant_id\":\"${SUB_TENANT_ID}\",\"query\":\"How should I answer Alex?\",\"source\":\"memory\",\"search_by\":\"hybrid\",\"mode\":\"thinking\"}" \
+  -d "{\"tenant_id\":\"${TENANT_ID}\",\"sub_tenant_id\":\"${SUB_TENANT_ID}\",\"query\":\"How should I answer Alex?\",\"source\":\"memory\",\"query_by\":\"hybrid\",\"mode\":\"thinking\"}" \
   | jq '.data.chunks'
 ```
 
@@ -1361,7 +1361,7 @@ curl -s -X POST 'https://api.hydradb.com/source/ingest' \
 Search it with app-aware retrieval:
 
 ```bash
-curl -s -X POST 'https://api.hydradb.com/search' \
+curl -s -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -1369,7 +1369,7 @@ curl -s -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme_corp",
     "query": "What pricing tiers did product agree on?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "mode": "thinking",
     "search_apps": true,
     "graph_context": true

@@ -565,7 +565,7 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 
 - **`tenant_metadata` keys must be declared.** Keys not in the tenant's `tenant_metadata_schema` are silently ignored at search time when used in `metadata_filters`. Plan schema fields up front via [Create Tenant](/api-reference/v2/endpoint/create-tenant).
 
-- **Common mistakes.** Use `type: "memory"` for ingestion, listing, deletion, and memory-only search. Use `type: "all"` on `POST /search` when an answer should combine knowledge and memories. The multipart form input field is always named `memories`. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
+- **Common mistakes.** Use `type: "memory"` for ingestion, listing, deletion, and memory-only search. Use `type: "all"` on `POST /query` when an answer should combine knowledge and memories. The multipart form input field is always named `memories`. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
 
 ## Errors
 
@@ -577,7 +577,7 @@ Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_
 **Related Resources**
 
 - **Next:** [Source Status](/api-reference/v2/endpoint/source-status) - poll until `graph_creation` for search or `completed` for graph-ready results
-- **Then:** [Search](/api-reference/v2/endpoint/search) - retrieve indexed content
+- **Then:** [Query](/api-reference/v2/endpoint/query) - retrieve indexed content
 - **Inspect:** [List Documents](/api-reference/v2/endpoint/list-documents)
 - **Inspect:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
 - **Cleanup:** [Delete Source](/api-reference/v2/endpoint/delete-source)

@@ -10,7 +10,7 @@ App sources are pre-parsed records from business applications  -  emails, chat m
 Every app item becomes one [Knowledge](/essentials/v2/knowledge) source under a flat shape. There are no typed `kind`/`provider`/`fields` discriminators. Threads, replies, and comments are modeled as **separate sources** linked together with [`relations.source_ids`](#7-forceful-relations).
 
 <Info>
-  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /search`](/api-reference/v2/endpoint/search) with **`search_apps: true`** and `type: "knowledge"` (or `type: "all"` to merge with [Memories](/essentials/v2/memories)).
+  App sources land in the [Knowledge](/essentials/v2/knowledge) store and are searchable through [`POST /query`](/api-reference/v2/endpoint/query) with **`search_apps: true`** and `type: "knowledge"` (or `type: "all"` to merge with [Memories](/essentials/v2/memories)).
 </Info>
 
 ## 1. What it is
@@ -401,7 +401,7 @@ CRM records use the same flat shape. Cross-app links go through [`relations.sour
 
 ## 7. Forceful relations
 
-`relations.source_ids` declares explicit links between sources. When a query matches one side of the link, HydraDB pulls the linked sources into the `additional_context` field of the [search response](/api-reference/v2/endpoint/search) alongside the primary chunks.
+`relations.source_ids` declares explicit links between sources. When a query matches one side of the link, HydraDB pulls the linked sources into the `additional_context` field of the [query response](/api-reference/v2/endpoint/query) alongside the primary chunks.
 
 Use forceful relations for connections the text alone can't express:
 
@@ -421,7 +421,7 @@ Use forceful relations for connections the text alone can't express:
 
 <Warning>
 - Forceful relations work **within the same store**  -  Knowledge → Knowledge or Memory → Memory. Pointing a Knowledge source at a Memory source ID (or vice versa) silently returns nothing at search.
-- Forceful-relation context is only fetched when `mode: "thinking"` is set on the [search request](/api-reference/v2/endpoint/search). In `fast` mode, `search_forceful_relations` is ignored.
+- Forceful-relation context is only fetched when `mode: "thinking"` is set on the [query request](/api-reference/v2/endpoint/query). In `fast` mode, `search_forceful_relations` is ignored.
 </Warning>
 
 See [Knowledge - Forceful relations](/essentials/v2/knowledge#7-forceful-relations) for the full retrieval contract.
@@ -486,7 +486,7 @@ See [Scoping using metadata](/essentials/v2/metadata) for the full schema design
 
 ## 10. How app sources affect search
 
-When `search_apps: true` is passed to the [`POST /search`](/api-reference/v2/endpoint/search) endpoint, HydraDB runs an app-aware search lane alongside normal semantic and lexical retrieval. The query still searches the full selected knowledge scope; `search_apps: true` does **not** limit results to only app sources. It improves app-source matching and expansion while preserving regular knowledge-base retrieval.
+When `search_apps: true` is passed to the [`POST /query`](/api-reference/v2/endpoint/query) endpoint, HydraDB runs an app-aware search lane alongside normal semantic and lexical retrieval. The query still searches the full selected knowledge scope; `search_apps: true` does **not** limit results to only app sources. It improves app-source matching and expansion while preserving regular knowledge-base retrieval.
 
 The app-aware lane does more than search raw text. It parses the query for app-specific hints (e.g., provider names, object types, exact external IDs, authors, thread keywords, or relationship terms like "linked to", "blocked by", "reply", or "parent") and uses these clues to build candidate sets and expand context around matching sources.
 
@@ -514,7 +514,7 @@ At recall time, `search_apps: true` lets the app-aware lane find an initial sour
 These expanded sources are brought into the retrieved results as connected context. Chunks retrieved through this path are tagged with `_retrieval_source: "app_relation_expansion"` in their metadata and may include an `_app_relation_type` property (e.g., `parent`, `child`, `grandparent`, `grandchild`).
 
 <Note>
-  Set `mode: "thinking"` and `search_apps: true` on your [search request](/api-reference/v2/endpoint/search) for optimal app-source behavior. This keeps normal knowledge-base retrieval active and gives the app-aware relation-expansion and reranking layers the space to assemble complete conversational and workflow context.
+  Set `mode: "thinking"` and `search_apps: true` on your [query request](/api-reference/v2/endpoint/query) for optimal app-source behavior. This keeps normal knowledge-base retrieval active and gives the app-aware relation-expansion and reranking layers the space to assemble complete conversational and workflow context.
 </Note>
 
 ```json
@@ -673,14 +673,14 @@ Only link to source IDs in the same store. For app sources, that means Knowledge
 | Using a non-stable string for `id` | Re-ingests create duplicate sources instead of upserting | Compose `id` from stable provider IDs (e.g. `slack_<channel>_<ts>`, `jira_<key>`) |
 | Pointing `relations.source_ids` at memory IDs from a Knowledge source | Silently returns nothing at search | Forceful relations stay within one store - Knowledge ↔ Knowledge, Memory ↔ Memory |
 | Skipping [`/source/status`](/api-reference/v2/endpoint/source-status) before searching | Source not indexed yet; empty results | Poll until `indexing_status: "completed"` (or `graph_creation` for partial availability) |
-| Forgetting to set `search_apps: true` on [`POST /search`](/api-reference/v2/endpoint/search) | Returns only text/vector matches without the app-aware lane expansion | Always set `search_apps: true` (and use `mode: "thinking"`) when querying app-source data |
+| Forgetting to set `search_apps: true` on [`POST /query`](/api-reference/v2/endpoint/query) | Returns only text/vector matches without the app-aware lane expansion | Always set `search_apps: true` (and use `mode: "thinking"`) when querying app-source data |
 
 ---
 ## Related
 
 - [Knowledge](/essentials/v2/knowledge)  -  the broader ingestion path; Path B covers `app_knowledge` end-to-end
 - [Memories](/essentials/v2/memories)  -  the per-user counterpart
-- [Search](/essentials/v2/search)  -  how [`POST /search`](/api-reference/v2/endpoint/search) retrieves app sources
+- [Query](/essentials/v2/query)  -  how [`POST /query`](/api-reference/v2/endpoint/query) retrieves app sources
 - [Scoping using metadata](/essentials/v2/metadata)  -  designing filterable schemas
 - [Context Graphs](/essentials/v2/context-graphs)  -  the graph layer built automatically from ingested text
 - [Ingest Content  -  API Reference](/api-reference/v2/endpoint/ingest-content)

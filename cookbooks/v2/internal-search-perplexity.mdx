@@ -7,7 +7,7 @@ This guide walks you through building a **company-wide internal search engine** 
 
 > **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](https://app.hydradb.com).
 
-> **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns - simple factual lookup, decision provenance, and cross-source synthesis - all through `POST /search`.
+> **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns - simple factual lookup, decision provenance, and cross-source synthesis - all through `POST /query`.
 
 ---
 
@@ -45,15 +45,15 @@ The critical capability that makes this possible is HydraDB's context graph. It 
 graph LR
     A["Slack · Gmail · Confluence<br/>GitHub · Linear · Notion"] -->|"multipart upload"| B["Ingestion Layer<br/>connectors/slack.py<br/>connectors/gmail.py<br/>connectors/confluence.py<br/>connectors/github.py"]
     B -->|"POST /source/ingest"| C["HydraDB<br/>tenant: company-knowledge<br/>sub_tenants: slack, email, docs, github"]
-    D["User / Slack bot / Web UI"] -->|"POST /search"| C
+    D["User / Slack bot / Web UI"] -->|"POST /query"| C
     C -->|"ranked chunks + graph_context"| D
     E["POST /source/ingest"] -->|"user profile"| C
-    C -->|"POST /search"| D
+    C -->|"POST /query"| D
 ```
 
 - **Ingestion Layer**: Six connector scripts that format source content and upload to HydraDB via `POST /source/ingest` using multipart form-data.
 - **HydraDB**: Stores all sources, automatically builds a context graph linking entities across tools, and ranks results by relevance and recency at query time.
-- **User Memory**: Per-user profiles stored via `POST /source/ingest` and retrieved via `POST /search` to personalize answer depth and format.
+- **User Memory**: Per-user profiles stored via `POST /source/ingest` and retrieved via `POST /query` to personalize answer depth and format.
 
 ---
 
@@ -924,9 +924,9 @@ await storeUserProfile(
 
 ## Step 5 - Search Interface
 
-Three query patterns cover every internal search use case. All use `POST /search` with different parameters. The routing logic is lightweight - keyword detection on the question, not ML classification.
+Three query patterns cover every internal search use case. All use `POST /query` with different parameters. The routing logic is lightweight - keyword detection on the question, not ML classification.
 
-> **Important**: Use `POST /search` with a `query` field for all three query patterns below. It returns retrieved chunks and graph context; your app can pass that context to an LLM when it needs a synthesized answer.
+> **Important**: Use `POST /query` with a `query` field for all three query patterns below. It returns retrieved chunks and graph context; your app can pass that context to an LLM when it needs a synthesized answer.
 
 ### 5.1 Simple Factual Lookup - "What is X?" / "How does X work?"
 
@@ -954,7 +954,7 @@ def search(
     user_id personalizes answer depth based on stored profile.
     mode="thinking" enables multi-query reranking automatically.
     """
-    return client.search.query(
+    return client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=max_results,
@@ -1015,7 +1015,7 @@ async function search(
   };
   if (subTenant) payload["sub_tenant_id"] = subTenant;
 
-  return await client.search.query(payload);
+  return await client.query(payload);
 }
 
 function printResults(result: any): void {
@@ -1057,7 +1057,7 @@ openai_client = OpenAI()
 
 def get_user_profile(user_id: str) -> str:
     """Retrieve a user's stored memory profile via /search with source: "memories"."""
-    result = client.search.query(
+    result = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"user-{user_id}",
@@ -1078,7 +1078,7 @@ def explain_decision(question: str, user_id: str) -> str:
     Step 3: synthesize with citations via LLM.
     """
     # Step 1: Search with graph context
-    data            = client.search.query(
+    data            = client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=18,
@@ -1155,7 +1155,7 @@ const openai = new OpenAI();
 
 async function getUserProfile(userId: string): Promise<string> {
   /** Retrieve a user's stored memory profile via recallPreferences. */
-  const resp = await client.search.query({
+  const resp = await client.query({
     source: 'memories',
     tenant_id: TENANT_ID,
     sub_tenant_id: `user-${userId}`,
@@ -1177,7 +1177,7 @@ async function explainDecision(
    * Step 3: synthesize with citations via LLM.
    */
   // Step 1: Search with graph context
-  const data = await client.search.query({
+  const data = await client.query({
     tenant_id: TENANT_ID,
     query: question,
     max_results: 18,
@@ -1272,10 +1272,10 @@ def smart_search(question: str, user_id: str) -> dict:
 
 ## Step 6 - Search User Preferences
 
-To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as any [`/search`](/api-reference/v2/endpoint/search) call  -  an array of `chunks`.
+To personalize any answer, retrieve the user's stored memory profile before calling the LLM. This is the same response structure as any [`/query`](/api-reference/v2/endpoint/query) call  -  an array of `chunks`.
 
 ```bash
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1303,7 +1303,7 @@ curl -X POST 'https://api.hydradb.com/search' \
 }
 ```
 
-> **Reading the response**: [`/search`](/api-reference/v2/endpoint/search) returns the same structure regardless of `source`  -  read the profile from `chunks[0].chunk_content`. `additional_metadata` will be `null` for memory entries; that's expected.
+> **Reading the response**: [`/query`](/api-reference/v2/endpoint/query) returns the same structure regardless of `source`  -  read the profile from `chunks[0].chunk_content`. `additional_metadata` will be `null` for memory entries; that's expected.
 
 ---
 

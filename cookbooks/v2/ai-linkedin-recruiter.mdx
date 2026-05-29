@@ -349,7 +349,7 @@ class AIRecruitingSearch {
     const hiringContext = this.buildHiringInstructions(recruiterContext);
     const enrichedQuery = hiringContext ? `${hiringContext}\n\n${query}` : query;
 
-    const results = await this.client.search.query({
+    const results = await this.client.query({
       tenant_id: this.tenantId,
       query: enrichedQuery,
 

@@ -101,7 +101,7 @@ async function withRetry<T>(
 }
 
 const result = await withRetry(() =>
-  client.search.query({
+  client.query({
         tenant_id: "my_first_tenant",
         query: "What are the pricing tiers?",
         type: "knowledge",
@@ -126,7 +126,7 @@ def with_retry(operation, max_retries=3):
             delay = (2 ** attempt) + random.uniform(0, 0.25)
             time.sleep(delay)
 
-result = with_retry(lambda: client.search.query(
+result = with_retry(lambda: client.query(
     tenant_id="my_first_tenant",
     query="What are the pricing tiers?",
     type="knowledge",
@@ -234,10 +234,10 @@ Empty results are not always errors. Check these first:
 - Source status may still be `queued` or `processing`; poll [`GET /source/status`](/api-reference/v2/endpoint/source-status).
 - `metadata_filters` may be too restrictive or may target the wrong metadata namespace.
 - The query may be scoped to the wrong `tenant_id` or `sub_tenant_id`.
-- The `type` value may exclude the collection you need. Use `type: "all"` when combining knowledge and memories in `POST /search`.
+- The `type` value may exclude the collection you need. Use `type: "all"` when combining knowledge and memories in `POST /query`.
 
 ## Related sections
 
 - [API Reference](/api-reference/v2) - endpoint inventory and conventions
 - [Source Status](/api-reference/v2/endpoint/source-status) - async ingestion state
-- [Search](/api-reference/v2/endpoint/search) - retrieval parameters and response shape
+- [Query](/api-reference/v2/endpoint/query) - retrieval parameters and response shape

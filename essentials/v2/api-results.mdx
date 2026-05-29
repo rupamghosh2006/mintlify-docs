@@ -3,7 +3,7 @@ title: "How to Use API Results"
 description: "Turn a search response into an LLM prompt."
 ---
 
-`POST /search` returns structured JSON. Before you can pass it to an LLM, you need to convert the retrieval payload into a plain string. This page shows how.
+`POST /query` returns structured JSON. Before you can pass it to an LLM, you need to convert the retrieval payload into a plain string. This page shows how.
 
 The same pattern works regardless of whether you set `type: "knowledge"`, `type: "memory"`, or `type: "all"` - the response shape is identical.
 
@@ -11,9 +11,9 @@ The same pattern works regardless of whether you set `type: "knowledge"`, `type:
 
 ## 1. What the response looks like
 
-The SDKs return the inner `data` payload from `POST /search`. Raw HTTP responses wrap the same payload under `data` inside the standard response envelope.
+The SDKs return the inner `data` payload from `POST /query`. Raw HTTP responses wrap the same payload under `data` inside the standard response envelope.
 
-The retrieval payload has the same core shape regardless of `type` or `search_by`:
+The retrieval payload has the same core shape regardless of `type` or `query_by`:
 
 ```json
 {
@@ -86,7 +86,7 @@ The raw object has too much noise for an LLM — IDs, timestamps, metadata. Sect
 
 ## 2. Transforming the response into LLM context
 
-Use `build_string` / `buildString` from the SDK. It takes any `POST /search` result and returns a formatted plain string.
+Use `build_string` / `buildString` from the SDK. It takes any `POST /query` result and returns a formatted plain string.
 
 <CodeGroup>
 ```python Python SDK
@@ -94,12 +94,12 @@ from hydra_db import HydraDB, build_string
 
 client = HydraDB(token="YOUR_API_KEY")
 
-result = client.search.query(
+result = client.query(
     tenant_id="your-tenant",
     sub_tenant_id="your-sub-tenant",
     query="How does authentication work?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=5,
     mode="fast",
     graph_context=True,
@@ -112,12 +112,12 @@ import { HydraDBClient, buildString } from "@hydradb/sdk";
 
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "your-tenant",
   sub_tenant_id: "your-sub-tenant",
   query: "How does authentication work?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   max_results: 5,
   mode: "fast",
   graph_context: true,
@@ -130,12 +130,12 @@ from hydra_db import AsyncHydraDB, build_string
 
 client = AsyncHydraDB(token="YOUR_API_KEY")
 
-result = await client.search.query(
+result = await client.query(
     tenant_id="your-tenant",
     sub_tenant_id="your-sub-tenant",
     query="How does authentication work?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=5,
     mode="fast",
     graph_context=True,
@@ -159,11 +159,11 @@ openai_client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
 question = "How does authentication work?"
 
-result = hydra.search.query(
+result = hydra.query(
     tenant_id="your-tenant",
     query=question,
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="fast",
     graph_context=True,
 )
@@ -195,11 +195,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const question = "How does authentication work?";
 
-const result = await hydra.search.query({
+const result = await hydra.query({
   tenant_id: "your-tenant",
   query: question,
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "fast",
   graph_context: true,
 });
@@ -231,11 +231,11 @@ openai_client = AsyncOpenAI(api_key="YOUR_OPENAI_API_KEY")
 
 question = "How does authentication work?"
 
-result = await hydra.search.query(
+result = await hydra.query(
     tenant_id="your-tenant",
     query=question,
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="fast",
     graph_context=True,
 )
@@ -264,7 +264,7 @@ print(completion.choices[0].message.content)
 
 ## 4. Combining Knowledge and Memories
 
-The simplest path is one `POST /search` with `type: "all"` - HydraDB searches both stores in parallel and returns one merged, ranked result set.
+The simplest path is one `POST /query` with `type: "all"` - HydraDB searches both stores in parallel and returns one merged, ranked result set.
 
 <CodeGroup>
 ```python Python SDK
@@ -276,12 +276,12 @@ openai_client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
 question = "What is our refund policy?"
 
-result = hydra.search.query(
+result = hydra.query(
     tenant_id="acme_corp",
     sub_tenant_id="user_123",
     query=question,
     type="all",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
 )
 
@@ -306,12 +306,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const question = "What is our refund policy?";
 
-const result = await hydra.search.query({
+const result = await hydra.query({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_123",
   query: question,
   type: "all",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
 });
 
@@ -336,12 +336,12 @@ openai_client = AsyncOpenAI(api_key="YOUR_OPENAI_API_KEY")
 
 question = "What is our refund policy?"
 
-result = await hydra.search.query(
+result = await hydra.query(
     tenant_id="acme_corp",
     sub_tenant_id="user_123",
     query=question,
     type="all",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
 )
 
@@ -359,7 +359,7 @@ print(completion.choices[0].message.content)
 ```
 </CodeGroup>
 
-If you need to format knowledge and memories in separate labeled sections, call `POST /search` twice in parallel:
+If you need to format knowledge and memories in separate labeled sections, call `POST /query` twice in parallel:
 
 <CodeGroup>
 ```python Python SDK
@@ -369,19 +369,19 @@ from hydra_db import AsyncHydraDB, build_string
 hydra = AsyncHydraDB(token="YOUR_HYDRA_DB_API_KEY")
 
 knowledge_result, memory_result = await asyncio.gather(
-    hydra.search.query(
+    hydra.query(
         tenant_id="acme_corp",
         query="refund policy",
         type="knowledge",
-        search_by="hybrid",
+        query_by="hybrid",
         mode="thinking",
     ),
-    hydra.search.query(
+    hydra.query(
         tenant_id="acme_corp",
         sub_tenant_id="user_123",
         query="answer style preferences",
         type="memory",
-        search_by="hybrid",
+        query_by="hybrid",
     ),
 )
 
@@ -397,19 +397,19 @@ import { HydraDBClient, buildString } from "@hydradb/sdk";
 const hydra = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
 const [knowledgeResult, memoryResult] = await Promise.all([
-  hydra.search.query({
+  hydra.query({
     tenant_id: "acme_corp",
     query: "refund policy",
     type: "knowledge",
-    search_by: "hybrid",
+    query_by: "hybrid",
     mode: "thinking",
   }),
-  hydra.search.query({
+  hydra.query({
     tenant_id: "acme_corp",
     sub_tenant_id: "user_123",
     query: "answer style preferences",
     type: "memory",
-    search_by: "hybrid",
+    query_by: "hybrid",
   }),
 ]);
 
@@ -452,16 +452,16 @@ If memory search fails or times out, fall back to the knowledge-only prompt.
 
 ## Related
 
-- [Search](/essentials/v2/search) - request parameters and response shape
-- [Memories](/essentials/v2/memories) - what `POST /search` with `type: "memory"` searches
-- [Knowledge](/essentials/v2/knowledge) - what `POST /search` with `type: "knowledge"` searches
+- [Query](/essentials/v2/query) - request parameters and response shape
+- [Memories](/essentials/v2/memories) - what `POST /query` with `type: "memory"` searches
+- [Knowledge](/essentials/v2/knowledge) - what `POST /query` with `type: "knowledge"` searches
 - [Context Graphs](/essentials/v2/context-graphs) - what `graph_context` fields contain
 
 ---
 
 <Accordion title="Full flow without SDK">
 
-If you are not using the SDK, use the helper below to call `POST /search`, format the response, and pass the result to your LLM.
+If you are not using the SDK, use the helper below to call `POST /query`, format the response, and pass the result to your LLM.
 
 <CodeGroup>
 ```python Python
@@ -549,7 +549,7 @@ def build_context_string(result: dict) -> str:
 
 # Call the API and format the result
 response = httpx.post(
-    "https://api.hydradb.com/search",
+    "https://api.hydradb.com/query",
     headers={
         "Authorization": "Bearer YOUR_HYDRA_DB_API_KEY",
         "API-Version": "2",
@@ -558,7 +558,7 @@ response = httpx.post(
         "tenant_id": "your-tenant",
         "query": "How does authentication work?",
         "type": "knowledge",
-        "search_by": "hybrid",
+        "query_by": "hybrid",
         "mode": "fast",
         "graph_context": True,
     },
@@ -642,7 +642,7 @@ function buildContextString(result: any): string {
 }
 
 // Call the API and format the result
-const res = await fetch("https://api.hydradb.com/search", {
+const res = await fetch("https://api.hydradb.com/query", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -653,7 +653,7 @@ const res = await fetch("https://api.hydradb.com/search", {
     tenant_id: "your-tenant",
     query: "How does authentication work?",
     type: "knowledge",
-    search_by: "hybrid",
+    query_by: "hybrid",
     mode: "fast",
     graph_context: true,
   }),

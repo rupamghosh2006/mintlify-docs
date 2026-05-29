@@ -76,7 +76,7 @@ Four HydraDB capabilities make a Chief of Staff possible:
 
 - **Functions as knowledge objects** - each callable function is uploaded to HydraDB via `POST /source/ingest` with `type: "function"`. The function's natural-language description becomes the retrieval surface. HydraDB matches tasks to functions semantically - not by keyword - so "tell the team about the delay" correctly surfaces `send_slack_announcement` even though neither word appears in the function name.
 - **Personalized function selection** - when a user frequently chooses Slack over email for urgent updates, HydraDB's AI Memories encode that preference. Future function suggestions for that user automatically favour `send_slack_message` over `send_email`. This happens without any manual configuration - the pattern emerges from usage stored via `POST /source/ingest`.
-- **Multi-step plan generation** - `mode: "thinking"` on `POST /search` enables multi-query reasoning. Ask HydraDB to return a JSON array of functions with dependencies and it decomposes a complex request like "onboard the new hire" into a sequenced execution plan automatically.
+- **Multi-step plan generation** - `mode: "thinking"` on `POST /query` enables multi-query reasoning. Ask HydraDB to return a JSON array of functions with dependencies and it decomposes a complex request like "onboard the new hire" into a sequenced execution plan automatically.
 - **Self-improving function routing** - feeding execution results back to HydraDB via `POST /source/ingest` closes the learning loop. Slow functions, failed calls, and successful sequences all become training signal. The agent gets measurably smarter with every run, without any manual tuning.
 
 
@@ -443,7 +443,7 @@ class ChiefOfStaffOrchestrator:
         session_id = session_id or str(uuid.uuid4())
 
         # Step 1 - Ask HydraDB for the best function
-        search = client.search.query(
+        search = client.query(
             tenant_id=TENANT_ID,
             sub_tenant_id=sub_tenant,
             query=task,
@@ -876,7 +876,7 @@ def generate_execution_plan(
     max_steps: cap the plan length to avoid runaway chains.
     """
     # Step 1: search candidate functions with thinking mode
-    search = client.search.query(
+    search = client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=sub_tenant,
         query=task,
@@ -897,7 +897,7 @@ def generate_execution_plan(
     )
 
     # Search user preferences to personalise the plan
-    user_prefs = client.search.query(
+    user_prefs = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"user-{user_id}",
@@ -1548,7 +1548,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Search function suggestions (single-step)
 
 
-**`POST /search`** - Returns top-matched function knowledge objects
+**`POST /query`** - Returns top-matched function knowledge objects
 
 
 ```json title="body"
@@ -1567,7 +1567,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Search function candidates (multi-step planning)
 
 
-**`POST /search`** - graph_context: true surfaces composed function chains
+**`POST /query`** - graph_context: true surfaces composed function chains
 
 
 ```json title="body"
@@ -1586,7 +1586,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Search user preferences (personalise suggestions)
 
 
-**`POST /search`** - Returns channel preferences, urgency signals, communication style
+**`POST /query`** - Returns channel preferences, urgency signals, communication style
 
 
 ```json title="body"

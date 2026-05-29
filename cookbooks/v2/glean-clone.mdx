@@ -19,7 +19,7 @@ This guide will walk you through building an extremely powerful workplace search
 
 By the end of this cookbook, you'll be able to:
 - Ingest documents from multiple data sources (Slack, email, Google Drive, Jira) into a unified HydraDB knowledge base
-- Run natural language workplace search across all sources with a single [`/search`](/api-reference/v2/endpoint/search) call
+- Run natural language workplace search across all sources with a single [`/query`](/api-reference/v2/endpoint/query) call
 - Personalize search results per user by storing and retrieving AI memories
 - Generate grounded AI answers from retrieved context using any LLM
 
@@ -307,7 +307,7 @@ client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 def search(query: str, tenant_id: str, sub_tenant_id: str = None,
            max_results: int = 10, mode: str = "fast",
            metadata: dict = None):
-    return client.search.query(
+    return client.query(
         query=query,
         tenant_id=tenant_id,
         sub_tenant_id=sub_tenant_id,
@@ -319,11 +319,11 @@ def search(query: str, tenant_id: str, sub_tenant_id: str = None,
     )
 
 # Filter search by source type
-def search_by_source_type(query: str, tenant_id: str, source_type: str):
+def query_by_source_type(query: str, tenant_id: str, source_type: str):
     return search(query, tenant_id, metadata={"source_type": source_type})
 
 # Filter search by source title
-def search_by_source_title(query: str, tenant_id: str, source_title: str):
+def query_by_source_title(query: str, tenant_id: str, source_title: str):
     return search(query, tenant_id, metadata={"source_title": source_title})
 ```
 ```typescript TypeScript SDK
@@ -346,7 +346,7 @@ const search = async (query: string, tenantId: string, options: SearchOptions = 
     metadata,
   } = options;
 
-  return await client.search.query({
+  return await client.query({
     query,
     tenant_id: tenantId,
     sub_tenant_id,
@@ -396,7 +396,7 @@ def search_with_filters(query: str, tenant_id: str, source_types: str = None, so
     if source_titles:
         metadata["source_title"] = source_titles
 
-    return client.search.query(
+    return client.query(
         query=query,
         tenant_id=tenant_id,
         max_results=10,
@@ -408,7 +408,7 @@ def search_with_filters(query: str, tenant_id: str, source_types: str = None, so
 
 # Guide retrieval with additional context — prepend context to the query string
 def search_with_context(query: str, tenant_id: str, context: str):
-    return client.search.query(
+    return client.query(
         query=f"{context}\n\n{query}" if context else query,
         tenant_id=tenant_id,
         max_results=10,
@@ -424,7 +424,7 @@ def conversational_search(query: str, tenant_id: str, conversation_history: list
         f"Previous conversation context: {json.dumps(history)}\n\n{query}"
         if history else query
     )
-    return client.search.query(
+    return client.query(
         query=enriched_query,
         tenant_id=tenant_id,
         max_results=10,
@@ -448,7 +448,7 @@ const searchWithFilters = async (
   if (filters.sourceTypes) metadata.source_type = filters.sourceTypes;
   if (filters.sourceTitles) metadata.source_title = filters.sourceTitles;
 
-  return await client.search.query({
+  return await client.query({
     query,
     tenant_id: tenantId,
     max_results: 10,
@@ -461,7 +461,7 @@ const searchWithFilters = async (
 
 // Guide retrieval with additional context — prepend context to the query string
 const searchWithContext = async (query: string, tenantId: string, context: string) =>
-  client.search.query({
+  client.query({
     query: context ? `${context}\n\n${query}` : query,
     tenant_id: tenantId,
     max_results: 10,
@@ -476,7 +476,7 @@ const conversationalSearch = async (
   tenantId: string,
   conversationHistory: object[] = []
 ) =>
-  client.search.query({
+  client.query({
     query: conversationHistory.length
       ? `Previous conversation context: ${JSON.stringify(conversationHistory)}\n\n${query}`
       : query,
@@ -566,7 +566,7 @@ def search_with_memory(query: str, tenant_id: str, user_id: str):
     if profile["preferred_source_types"]:
         kwargs["metadata"] = {"source_type": profile["preferred_source_types"]}
 
-    search_results = client.search.query(**kwargs)
+    search_results = client.query(**kwargs)
 
     # Update local profile history
     profile["search_history"].append({
@@ -634,7 +634,7 @@ const searchWithMemory = async (query: string, tenantId: string, userId: string)
   const userProfile = getUserProfile(userId);
   const enrichedQuery = `${buildPersonalizedInstructions(userProfile, query)}\n\n${query}`;
 
-  const searchResults = await client.search.query({
+  const searchResults = await client.query({
     query: enrichedQuery,
     tenant_id: tenantId,
     sub_tenant_id: userId,
@@ -1591,7 +1591,7 @@ Remember to monitor performance, gather user feedback, and continuously iterate 
 | Date | Change |
 |------|--------|
 | 2026-05-14 | Replaced raw `fetch()`-based `HydraDBDataIngestion` class with official SDK calls (`client.source.ingest`, `client.source.status`) |
-| 2026-05-14 | Replaced raw `fetch()`-based `GleanSearch` class with `client.search.query` SDK call |
+| 2026-05-14 | Replaced raw `fetch()`-based `GleanSearch` class with `client.query` SDK call |
 | 2026-05-14 | Replaced `AdvancedSearch` class with standalone SDK helper functions (`searchWithFilters`, `searchWithContext`, `conversationalSearch`) |
 | 2026-05-14 | Replaced `PersonalizedSearch` class with flat SDK-based `searchWithMemory` function |
 | 2026-05-14 | Replaced webhook `cortexIngestion.uploadBatch()` call with `client.source.ingest()` SDK call |

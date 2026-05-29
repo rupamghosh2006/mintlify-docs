@@ -29,10 +29,10 @@ HydraDB fixes this with two capabilities:
 ```mermaid
 graph LR
     A["Decision logs<br/>Org charts<br/>Meeting notes<br/>Product specs"] -->|"upload.knowledge()"| B["HydraDB<br/>tenant: onboarding<br/>sub_tenant: company-context"]
-    C["New hire question"] -->|"search.query()"| B
+    C["New hire question"] -->|"query()"| B
     B -->|"retrieved context"| D["Onboarding agent"]
     D -->|"upload.add_memory()"| E["HydraDB<br/>sub_tenant: hire-{id}"]
-    E -->|"search.query() with source: memories"| F["Manager dashboard"]
+    E -->|"query() with source: memories"| F["Manager dashboard"]
 ```
 
 - **Phase 0**: Install SDK, create tenant, upload one document, run the first search query.
@@ -244,7 +244,7 @@ from hydra_db import HydraDB
 client = HydraDB(token=API_KEY)
 
 def retrieve_context(question: str):
-    return client.search.query(
+    return client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=5,
@@ -275,7 +275,7 @@ Rationale:
 
 If no chunks are returned, the document is still indexing. Wait 30 seconds and re-run.
 
-> Phase 0 complete. The same `client.search.query()` retrieval pattern is used in every later phase. Your application can pass returned chunks into an LLM to generate the final answer.
+> Phase 0 complete. The same `client.query()` retrieval pattern is used in every later phase. Your application can pass returned chunks into an LLM to generate the final answer.
 
 ---
 
@@ -573,7 +573,7 @@ TEST_QUESTIONS = [
 
 for question in TEST_QUESTIONS:
     print(f"\nQ: {question}")
-    result = client.search.query(
+    result = client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=5,
@@ -718,14 +718,14 @@ def ask_onboarding(hire_id: str, question: str, topic: str = "") -> str:
     """
     log_question(hire_id, question, topic)
 
-    company_context = client.search.query(
+    company_context = client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=5,
         mode="thinking",
         graph_context=True,
     )
-    hire_context = client.search.query(
+    hire_context = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=hire_sub(hire_id),
@@ -776,7 +776,7 @@ def generate_progress_report(hire_id: str) -> dict:
 
     report = {}
     for key, query in queries.items():
-        result = client.search.query(
+        result = client.query(
             source='memories',
             tenant_id=TENANT_ID,
             sub_tenant_id=hire_sub(hire_id),
@@ -834,8 +834,8 @@ All SDK methods used in this cookbook.
 | `client.source.ingest(tenant_id=..., files=..., file_metadata=...)` | Upload company knowledge documents |
 | `client.source.ingest(
     type='memory',tenant_id=..., sub_tenant_id=..., memories=[...])` | Store per-hire memory |
-| `client.search.query(tenant_id=..., query=..., max_results=..., mode=...)` | Retrieve company context for a hire question |
-| `client.search.query(
+| `client.query(tenant_id=..., query=..., max_results=..., mode=...)` | Retrieve company context for a hire question |
+| `client.query(
     source='memories',tenant_id=..., sub_tenant_id=..., query=...)` | Search hire memory for manager dashboard |
 
 ### client.source.ingest - key parameters
@@ -846,7 +846,7 @@ All SDK methods used in this cookbook.
 | `files` | `list[IO[bytes]]` | Required. Open file handles - not file paths, not dicts. |
 | `file_metadata` | `str` | Optional. JSON **string** (not dict) with per-file `source_id` and `additional_metadata`. |
 
-### client.search.query - key parameters
+### client.query - key parameters
 
 | Parameter | Type | Notes |
 |---|---|---|

@@ -37,8 +37,8 @@ Standard AI support chatbots answer the same way for every customer. Ask about a
 
 HydraDB fixes this. Every interaction is stored as a memory. Every help doc and past ticket resolution is ingested as knowledge. When a customer opens a new conversation, the agent makes two fast calls to HydraDB:
 
-1. `POST /search` - retrieves knowledge base context: help articles, past ticket resolutions, and linked documents relevant to the customer's message.
-2. `POST /search` - retrieves the customer's personal memory: their plan, past issues, inferred preferences, and conversation history.
+1. `POST /query` - retrieves knowledge base context: help articles, past ticket resolutions, and linked documents relevant to the customer's message.
+2. `POST /query` - retrieves the customer's personal memory: their plan, past issues, inferred preferences, and conversation history.
 
 Both results are merged and passed to the LLM. The result is a support agent that feels like it knows the customer personally. Because it does.
 
@@ -50,7 +50,7 @@ Three HydraDB primitives power this use case:
 
 - **Knowledge memories** - help docs, FAQs, past ticket resolutions. Uploaded once via `client.source.ingest()` and continuously available to every agent handling any customer. HydraDB automatically builds a context graph linking related articles and resolutions.
 - **User memories** - per-customer context stored via `POST /source/ingest` with the customer's `user_name`. Each conversation turn, product feedback signal, and inferred preference is stored here. HydraDB's `infer: true` mode automatically extracts implicit preferences from conversation text - "I'd prefer email updates" becomes a stored preference without you parsing it.
-- **Two-call search pattern** - when a customer opens a ticket, the agent calls `POST /search` to search the knowledge base and `POST /search` to retrieve personal memory. Results are merged before the LLM call. Use `mode: "thinking"` on both calls to enable personalised ranking.
+- **Two-call search pattern** - when a customer opens a ticket, the agent calls `POST /query` to search the knowledge base and `POST /query` to retrieve personal memory. Results are merged before the LLM call. Use `mode: "thinking"` on both calls to enable personalised ranking.
 
 ---
 
@@ -59,8 +59,8 @@ Three HydraDB primitives power this use case:
 ```mermaid
 graph LR
     A["Customer Message"] -->|"new ticket"| B["Support Agent"]
-    B -->|"POST /search"| C["HydraDB\nKnowledge Base"]
-    B -->|"POST /search"| D["HydraDB\nCustomer Memory"]
+    B -->|"POST /query"| C["HydraDB\nKnowledge Base"]
+    B -->|"POST /query"| D["HydraDB\nCustomer Memory"]
     C -->|"ranked help docs + resolved tickets"| E["Merge Context"]
     D -->|"preferences + history + plan"| E
     E -->|"full context"| F["LLM (GPT-4o)"]
@@ -546,7 +546,7 @@ def recall_customer_context(
     sub_tenant_id scopes each call to the right data store.
     """
     # Call 1: knowledge base - help docs, resolved tickets, FAQs
-    kb_data = client.search.query(
+    kb_data = client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=KB_SUB_TENANT,
         query=customer_msg,
@@ -557,7 +557,7 @@ def recall_customer_context(
     )
 
     # Call 2: customer personal memory - preferences, history, account facts
-    mem_data = client.search.query(
+    mem_data = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=customer_sub_tenant(customer_id),
@@ -598,7 +598,7 @@ async function recallCustomerContext(
      * sub_tenant_id scopes each call to the right data store.
      */
     // Call 1: knowledge base - help docs, resolved tickets, FAQs
-    const kbData = await client.search.query({
+    const kbData = await client.query({
         tenant_id:     TENANT_ID,
         sub_tenant_id: KB_SUB_TENANT,
         query:         customerMsg,
@@ -609,7 +609,7 @@ async function recallCustomerContext(
     });
 
     // Call 2: customer personal memory - preferences, history, account facts
-    const memData = await client.search.query({
+    const memData = await client.query({
         source: 'memories',
         tenant_id:     TENANT_ID,
         sub_tenant_id: `customer-${customerId}`,
@@ -765,7 +765,7 @@ async function handleTicket(
 ```
 </CodeGroup>
 
-> **Alternative - skip the LLM**: Use `POST /search` with `mode: "thinking"` and `sub_tenant_id: customer_id` to have HydraDB generate the answer directly. Faster, but less control over the system prompt and tone.
+> **Alternative - skip the LLM**: Use `POST /query` with `mode: "thinking"` and `sub_tenant_id: customer_id` to have HydraDB generate the answer directly. Faster, but less control over the system prompt and tone.
 
 ---
 
@@ -788,7 +788,7 @@ def escalate_to_human(
     Returns the escalation payload ready to send to Zendesk, Linear, etc.
     """
     # Search full customer memory profile
-    customer_profile = client.search.query(
+    customer_profile = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=customer_sub_tenant(customer_id),
@@ -796,7 +796,7 @@ def escalate_to_human(
     )
 
     # Search similar past tickets resolved by humans
-    similar_data = client.search.query(
+    similar_data = client.query(
         tenant_id=TENANT_ID,
         query=f"{customer_msg} resolved escalated human agent",
         max_results=5,
@@ -851,7 +851,7 @@ async function escalateToHuman(
      * Returns the escalation payload ready to send to Zendesk, Linear, etc.
      */
     // Search full customer memory profile
-    const customerProfile = await client.search.query({
+    const customerProfile = await client.query({
         source: 'memories',
         tenant_id:     TENANT_ID,
         sub_tenant_id: `customer-${customerId}`,
@@ -859,7 +859,7 @@ async function escalateToHuman(
     });
 
     // Search similar past tickets resolved by humans
-    const similarData = await client.search.query({
+    const similarData = await client.query({
         tenant_id:   TENANT_ID,
         query:       `${customerMsg} resolved escalated human agent`,
         max_results: 5,

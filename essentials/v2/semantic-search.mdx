@@ -15,10 +15,10 @@ Semantic search is useful because it retrieves by meaning instead of exact wordi
 | Keyword BM25 | Text with matching tokens | Error codes, identifiers, names, SKUs, exact phrases |
 | Graph | Related entities and relationships | Multi-hop questions, dependencies, ownership, project context |
 
-`POST /search` is the single search endpoint. Two parameters decide what runs:
+`POST /query` is the single search endpoint. Two parameters decide what runs:
 
 - **`type`** picks the collection: `"knowledge"` (Knowledge), `"memory"` (user-scoped Memories), or `"all"` (both, merged and re-ranked together).
-- **`search_by`** picks the retrieval method: `"hybrid"` (semantic + BM25, the default) or `"text"` (BM25 only, with `operator: "or" | "and" | "phrase"`).
+- **`query_by`** picks the retrieval method: `"hybrid"` (semantic + BM25, the default) or `"text"` (BM25 only, with `operator: "or" | "and" | "phrase"`).
 
 ---
 
@@ -32,13 +32,13 @@ Pure vector search can miss important production constraints:
 - Different users can need different context for the same query.
 - Relationship questions need graph context, not only similar text chunks.
 
-That is why HydraDB exposes semantic retrieval through `search_by: "hybrid"` inside the unified `/search` endpoint rather than as a separate pure-vector mode.
+That is why HydraDB exposes semantic retrieval through `query_by: "hybrid"` inside the unified `/search` endpoint rather than as a separate pure-vector mode.
 
 ---
 
 ## The `alpha` Parameter
 
-`alpha` controls the semantic-vs-keyword-bm25 blend when `search_by: "hybrid"`. Higher values lean semantic. Lower values lean keyword bm25.
+`alpha` controls the semantic-vs-keyword-bm25 blend when `query_by: "hybrid"`. Higher values lean semantic. Lower values lean keyword bm25.
 
 | `alpha` | Behavior | Use When |
 |---|---|---|
@@ -48,7 +48,7 @@ That is why HydraDB exposes semantic retrieval through `search_by: "hybrid"` ins
 | `0.2` | Keyword BM25-leaning | Queries with product names, error strings, or IDs |
 | `0.0` | Keyword BM25-heavy | Debugging exact-match behavior |
 
-Start with the API default (`0.8`) and tune from observed results. If users search for exact IDs and get loosely related content, lower `alpha`. If they ask broad conceptual questions and get sparse results, raise it. `alpha` applies only to `search_by: "hybrid"`; it is ignored for `"text"`.
+Start with the API default (`0.8`) and tune from observed results. If users search for exact IDs and get loosely related content, lower `alpha`. If they ask broad conceptual questions and get sparse results, raise it. `alpha` applies only to `query_by: "hybrid"`; it is ignored for `"text"`.
 
 ---
 
@@ -57,7 +57,7 @@ Start with the API default (`0.8`) and tune from observed results. If users sear
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -66,7 +66,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "sub_tenant_id": "team-mobile",
     "query": "How do we rotate API keys?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "max_results": 8,
     "alpha": 0.8,
     "recency_bias": 0.2,
@@ -78,12 +78,12 @@ curl -X POST 'https://api.hydradb.com/search' \
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme",
   sub_tenant_id: "team-mobile",
   query: "How do we rotate API keys?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   max_results: 8,
   alpha: 0.8,
   recency_bias: 0.2,
@@ -93,12 +93,12 @@ const result = await client.search.query({
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme",
     sub_tenant_id="team-mobile",
     query="How do we rotate API keys?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=8,
     alpha=0.8,
     recency_bias=0.2,
@@ -122,7 +122,7 @@ Use the default semantic-leaning blend for natural-language questions over docum
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -130,29 +130,29 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme",
     "query": "How does onboarding work?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "max_results": 8,
     "alpha": 0.8
   }'
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme",
   query: "How does onboarding work?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   max_results: 8,
   alpha: 0.8,
 });
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme",
     query="How does onboarding work?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=8,
     alpha=0.8,
 )
@@ -167,7 +167,7 @@ Lower `alpha` when names, IDs, and literal strings matter.
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -175,7 +175,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme",
     "query": "TimeoutError in payments-worker v4.2.1",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "max_results": 5,
     "alpha": 0.3,
     "recency_bias": 0.4
@@ -183,11 +183,11 @@ curl -X POST 'https://api.hydradb.com/search' \
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme",
   query: "TimeoutError in payments-worker v4.2.1",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   max_results: 5,
   alpha: 0.3,
   recency_bias: 0.4,
@@ -195,11 +195,11 @@ const result = await client.search.query({
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme",
     query="TimeoutError in payments-worker v4.2.1",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     max_results=5,
     alpha=0.3,
     recency_bias=0.4,
@@ -215,7 +215,7 @@ Use metadata filters to keep retrieval inside a project, team, customer, data cl
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -224,7 +224,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "sub_tenant_id": "team-mobile",
     "query": "What is the current sprint status?",
     "type": "knowledge",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "metadata_filters": {
       "project": "phoenix"
     }
@@ -232,23 +232,23 @@ curl -X POST 'https://api.hydradb.com/search' \
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme",
   sub_tenant_id: "team-mobile",
   query: "What is the current sprint status?",
   type: "knowledge",
-  search_by: "hybrid",
+  query_by: "hybrid",
   metadata_filters: { project: "phoenix" },
 });
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme",
     sub_tenant_id="team-mobile",
     query="What is the current sprint status?",
     type="knowledge",
-    search_by="hybrid",
+    query_by="hybrid",
     metadata_filters={"project": "phoenix"},
 )
 ```
@@ -257,12 +257,12 @@ result = client.search.query(
 
 ### Exact Phrase Search
 
-Switch to `search_by: "text"` with `operator: "phrase"` when a literal match is the point of the query.
+Switch to `query_by: "text"` with `operator: "phrase"` when a literal match is the point of the query.
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -270,29 +270,29 @@ curl -X POST 'https://api.hydradb.com/search' \
     "tenant_id": "acme",
     "query": "mechanical engineer",
     "type": "knowledge",
-    "search_by": "text",
+    "query_by": "text",
     "operator": "phrase",
     "max_results": 10
   }'
 ```
 
 ```typescript TypeScript SDK
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme",
   query: "mechanical engineer",
   type: "knowledge",
-  search_by: "text",
+  query_by: "text",
   operator: "phrase",
   max_results: 10,
 });
 ```
 
 ```python Python SDK
-result = client.search.query(
+result = client.query(
     tenant_id="acme",
     query="mechanical engineer",
     type="knowledge",
-    search_by="text",
+    query_by="text",
     operator="phrase",
     max_results=10,
 )
@@ -304,9 +304,9 @@ result = client.search.query(
 
 ## Reading The Response
 
-`POST /search` returns ranked chunks and source metadata, not an answer. A typical application flow is:
+`POST /query` returns ranked chunks and source metadata, not an answer. A typical application flow is:
 
-1. Call `POST /search` with the right `type` and `search_by` for the query.
+1. Call `POST /query` with the right `type` and `query_by` for the query.
 2. Keep the chunks that are relevant enough for your use case.
 3. Format `chunk_content`, source titles, and graph context into a prompt.
 4. Ask your LLM to answer using only that context.
@@ -317,13 +317,13 @@ See [How to Use API Results](/essentials/v2/api-results) for complete context-bu
 
 ## Mental Model
 
-Semantic search finds text that means the same thing. Keyword BM25 search finds text that says the same thing. Graph context finds connected entities. Metadata filters decide what is allowed to be searched. `POST /search` combines all four behind one endpoint via `type`, `search_by`, `metadata_filters`, and `graph_context` so your agents get context that is scoped, relevant, and explainable.
+Semantic search finds text that means the same thing. Keyword BM25 search finds text that says the same thing. Graph context finds connected entities. Metadata filters decide what is allowed to be searched. `POST /query` combines all four behind one endpoint via `type`, `query_by`, `metadata_filters`, and `graph_context` so your agents get context that is scoped, relevant, and explainable.
 
 ---
 
 ## Related
 
-- [Search](/essentials/v2/search) - full parameter reference and parallel search patterns
+- [Query](/essentials/v2/query) - full parameter reference and parallel search patterns
 - [Context Graphs](/essentials/v2/context-graphs) - how graph context enriches retrieval
 - [Metadata](/essentials/v2/metadata) - designing filterable schemas
 - [How to Use API Results](/essentials/v2/api-results) - turning the response into an LLM prompt

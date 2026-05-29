@@ -1,10 +1,10 @@
 ---
-title: "Search"
-description: "How HydraDB retrieves the right context for each query — Knowledge, Memories, and the context graph, all behind a single /search endpoint."
+title: "Query"
+description: "How HydraDB retrieves the right context for each query — Knowledge, Memories, and the context graph, all behind a single /query endpoint."
 ---
-Search turns stored context into the *right* context for a specific query. One endpoint  -  `POST /search`  -  searches [Knowledge](/essentials/v2/knowledge) (documents, files, app sources), [Memories](/essentials/v2/memories) (user preferences, conversation history, inferred content), or both. Three signals drive this relevance up: dense-vector similarity, BM25 keyword matching, and [context-graph](/essentials/v2/context-graphs) traversal. The parameters below control all of it. This helps you tune the search results to get the best context for your query.
+Search turns stored context into the *right* context for a specific query. One endpoint  -  `POST /query`  -  searches [Knowledge](/essentials/v2/knowledge) (documents, files, app sources), [Memories](/essentials/v2/memories) (user preferences, conversation history, inferred content), or both. Three signals drive this relevance up: dense-vector similarity, BM25 keyword matching, and [context-graph](/essentials/v2/context-graphs) traversal. The parameters below control all of it. This helps you tune the search results to get the best context for your query.
 
-For the full request and response schema, see [Search - API Reference](/api-reference/v2/endpoint/search-overview).
+For the full request and response schema, see [Query - API Reference](/api-reference/v2/endpoint/query-overview).
 
 ---
 
@@ -12,7 +12,7 @@ For the full request and response schema, see [Search - API Reference](/api-refe
 
 Pick the row that matches your goal and use the parameters as a starting point:
 
-| I want to… | `type` | `search_by` | `mode` | Notes |
+| I want to… | `type` | `query_by` | `mode` | Notes |
 | --- | --- | --- | --- | --- |
 | Document Q&A / RAG | `"knowledge"` | `"hybrid"` | `"thinking"` | Set `graph_context: true` for richer context-graph as a part of api response |
 | Exact keyword match | `"knowledge"` | `"text"` |  -  | optionally, add `operator: "and"/ "or" for metadata filtering for scoped search` |
@@ -59,7 +59,7 @@ Most of the time the defaults are right. When they aren't, here's where to start
 
 ## 4. Minimal working example
 
-The canonical personalized-answer flow takes a single call: `POST /search` with `type: "all"` returns merged knowledge and per-user memory in one ranked result set.
+The canonical personalized-answer flow takes a single call: `POST /query` with `type: "all"` returns merged knowledge and per-user memory in one ranked result set.
 
 ### Setup
 
@@ -87,7 +87,7 @@ client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 ### One call  -  Knowledge and Memories together
 
 ```bash
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -96,7 +96,7 @@ curl -X POST 'https://api.hydradb.com/search' \
     "sub_tenant_id": "user_john_123",
     "query": "How do I reset my password?",
     "type": "all",
-    "search_by": "hybrid",
+    "query_by": "hybrid",
     "mode": "thinking",
     "max_results": 8,
     "graph_context": true
@@ -104,12 +104,12 @@ curl -X POST 'https://api.hydradb.com/search' \
 ```
 
 ```typescript
-const result = await client.search.query({
+const result = await client.query({
   tenant_id: "acme_corp",
   sub_tenant_id: "user_john_123",
   query: "How do I reset my password?",
   type: "all",
-  search_by: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   max_results: 8,
   graph_context: true,
@@ -117,12 +117,12 @@ const result = await client.search.query({
 ```
 
 ```python
-result = client.search.query(
+result = client.query(
     tenant_id="acme_corp",
     sub_tenant_id="user_john_123",
     query="How do I reset my password?",
     type="all",
-    search_by="hybrid",
+    query_by="hybrid",
     mode="thinking",
     max_results=8,
     graph_context=True,
@@ -171,18 +171,18 @@ If you need to keep the two streams separate  -  for instance to format user pre
 | `metadata_filters` doesn't narrow results | Filter key is undeclared, not match-enabled, or in wrong shape | Declare filterable keys in `tenant_metadata_schema` with `enable_match: true` before ingestion. For free-form per-document fields, nest under `document_metadata`. |
 | Memories missing from a `type: "knowledge"` search | Wrong store selected | Use `type: "memory"` or `type: "all"`. |
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
-| `operator: "phrase"` ignored | `search_by` not set to `"text"` | `operator` only applies to BM25 text search  -  switch `search_by` to `"text"`. |
+| `operator: "phrase"` ignored | `query_by` not set to `"text"` | `operator` only applies to BM25 text search  -  switch `query_by` to `"text"`. |
 | `search_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |
 
 ---
 
 ## 6. Advanced patterns
 
-**Hybrid + text in two parallel calls.** When a query mixes a literal token (error code, SKU, function name) with natural-language intent, run `search_by: "hybrid"` and `search_by: "text"` in parallel, dedupe by chunk ID, and treat text hits as a "must include" floor.
+**Hybrid + text in two parallel calls.** When a query mixes a literal token (error code, SKU, function name) with natural-language intent, run `query_by: "hybrid"` and `query_by: "text"` in parallel, dedupe by chunk ID, and treat text hits as a "must include" floor.
 
 **Recall-then-rerank.** Ask for more chunks than you actually need (`max_results: 20`) and apply your own reranker  -  recency windows, compliance filters, business rules  -  before picking the final top-k for the prompt.
 
-**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_id, query, type, search_by)`. Recall is fast, but skipping it entirely is faster.
+**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_id, query, type, query_by)`. Recall is fast, but skipping it entirely is faster.
 
 ---
 
@@ -193,4 +193,4 @@ If you need to keep the two streams separate  -  for instance to format user pre
 - [Metadata](/essentials/v2/metadata)  -  designing filterable fields
 - [Context Graphs](/essentials/v2/context-graphs)  -  how graph traversal enriches recall
 - [How to Use API Results](/essentials/v2/api-results)  -  turning `RetrievalResult` into an LLM prompt
-- [Search - API Reference](/api-reference/v2/endpoint/search)  -  full parameter and response schema
+- [Query - API Reference](/api-reference/v2/endpoint/query)  -  full parameter and response schema

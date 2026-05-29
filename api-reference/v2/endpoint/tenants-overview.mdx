@@ -26,7 +26,7 @@ For a new tenant from scratch:
 2. Wait for provisioning: `GET /tenants/status` until `scheduler_status`, `graph_status`, `vectorstore_status.knowledge`, and `vectorstore_status.memory` are all `true`
 3. Ingest content: `POST /source/ingest`
 4. Wait for indexing: `GET /source/status` until sources are searchable
-5. Retrieve context: `POST /search`
+5. Retrieve context: `POST /query`
 6. Inspect usage or clean up: `GET /tenants/stats` or `DELETE /tenants`
 
 For routine operations on an existing tenant:

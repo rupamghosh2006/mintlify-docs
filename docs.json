@@ -50,7 +50,7 @@
                       "essentials/v2/app-sources"
                     ]
                   },
-                  "essentials/v2/search",
+                  "essentials/v2/query",
                   "essentials/v2/metadata",
                   "essentials/v2/api-results"
                 ]
@@ -135,10 +135,10 @@
                 ]
               },
               {
-                "group": "Search",
+                "group": "Query",
                 "pages": [
-                  "api-reference/v2/endpoint/search-overview",
-                  "api-reference/v2/endpoint/search"
+                  "api-reference/v2/endpoint/query-overview",
+                  "api-reference/v2/endpoint/query"
                 ]
               },
               {

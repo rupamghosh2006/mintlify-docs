@@ -7,7 +7,7 @@ This guide walks you through building a **competitive intelligence agent with pe
 
 > **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](https://app.hydradb.com).
 
-> **Goal**: Build an agent that ingests four signal types from competitor sources, verifies indexing, and answers competitive queries using `POST /search` with `recency_bias` tuned per query type - point-in-time or trend. Full round-trip under 200ms.
+> **Goal**: Build an agent that ingests four signal types from competitor sources, verifies indexing, and answers competitive queries using `POST /query` with `recency_bias` tuned per query type - point-in-time or trend. Full round-trip under 200ms.
 
 ---
 
@@ -50,7 +50,7 @@ HydraDB fixes this with three capabilities that standard vector search can't rep
 graph LR
     A["Signal Sources<br/>RSS · LinkedIn · G2 · Earnings PDFs"] -->|"raw text"| B["Ingestion Layer<br/>connectors/press.py<br/>connectors/jobs.py<br/>connectors/reviews.py<br/>connectors/earnings.py"]
     B -->|"POST /source/ingest<br/>multipart form-data"| C["HydraDB<br/>tenant: competitive-intel<br/>sub_tenant: acme-corp"]
-    D["Analyst / Agent"] -->|"POST /search<br/>query + recency_bias"| C
+    D["Analyst / Agent"] -->|"POST /query<br/>query + recency_bias"| C
     C -->|"ranked chunks + graph_context"| D
     D -->|"weekly briefing"| E["Slack #sales-intel<br/>Slack #product-intel"]
 ```
@@ -58,7 +58,7 @@ graph LR
 - **Signal Sources**: Press releases via RSS, job postings from LinkedIn/Greenhouse, customer reviews from G2/Capterra, earnings transcripts as plain text or PDF.
 - **Ingestion Layer**: Connector scripts that format content and upload to HydraDB via `POST /source/ingest`.
 - **HydraDB**: Stores all signals with timestamps, builds a context graph, and ranks results by recency at query time.
-- **Analyst / Agent**: A human analyst, a Slack bot, or an LLM that calls `POST /search` with a natural language query.
+- **Analyst / Agent**: A human analyst, a Slack bot, or an LLM that calls `POST /query` with a natural language query.
 
 ---
 
@@ -371,10 +371,10 @@ Indexed ✓ (d25fb5a6-0378-4bcb-8cbc-2012c3d12ca2)
 
 ## Step 4 - Query: Point-in-Time Questions
 
-Use `POST /search` to answer "What is Competitor X doing right now?". Set `recency_bias: 0.8` so HydraDB strongly weights the most recent signals. Set `mode: "thinking"` to enable multi-query reranking.
+Use `POST /query` to answer "What is Competitor X doing right now?". Set `recency_bias: 0.8` so HydraDB strongly weights the most recent signals. Set `mode: "thinking"` to enable multi-query reranking.
 
 ```bash
-curl -X POST 'https://api.hydradb.com/search' \
+curl -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -410,7 +410,7 @@ def ask_about_competitor(
     recency_bias: 0.8 = point-in-time, 0.3 = trend
     Returns the full API response with chunks, sources, and graph_context.
     """
-    return client.search.query(
+    return client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         query=question,
@@ -533,7 +533,7 @@ print_results(result2)
 
 ## Step 6 - Weekly Briefing Agent
 
-Push a proactive Monday-morning briefing to each analyst's Slack channel. Each analyst profile runs a set of questions through [`/search`](/api-reference/v2/endpoint/search) with `recency_bias: 0.85` to surface the freshest signals.
+Push a proactive Monday-morning briefing to each analyst's Slack channel. Each analyst profile runs a set of questions through [`/query`](/api-reference/v2/endpoint/query) with `recency_bias: 0.85` to surface the freshest signals.
 
 ```python
 # briefing/weekly.py
@@ -579,7 +579,7 @@ COMPETITORS = ["acme-corp", "betacorp", "gamma-ai"]
 
 def recall_for_question(question: str, competitor: str, recency_bias: float) -> str:
     """Run a single /search query and return the top chunks as a text block."""
-    results = client.search.query(
+    results = client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         query=question,

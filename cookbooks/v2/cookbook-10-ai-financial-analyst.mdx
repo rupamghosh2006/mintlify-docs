@@ -594,7 +594,7 @@ def query_point_in_time(
     recency_bias: 0.7 - prefer the targeted period but allow adjacent context.
     mode: "thinking" - multi-query reranking, personalised search.
     """
-    return client.search.query(
+    return client.query(
         tenant_id=TENANT_ID,
         sub_tenant_id=f"analyst-{user_id}",
         query=question,
@@ -662,7 +662,7 @@ def query_trend(
     if fiscal_year:
         filters["fiscal_year"] = fiscal_year
 
-    search = client.search.query(
+    search = client.query(
         tenant_id=TENANT_ID,
         query=question,
         max_results=20,    # more results needed to cover all quarters
@@ -702,7 +702,7 @@ def query_trend(
         context_parts.append(f"[Graph path - temporal]: {str(path)}")
 
     # Retrieve analyst profile for answer personalization
-    analyst_prefs = client.search.query(
+    analyst_prefs = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"analyst-{user_id}",
@@ -795,7 +795,7 @@ def cross_source_reconciliation(
     """
 
     def search(sub_tenant_id: str, doc_type_filter: str) -> list[dict]:
-        resp = client.search.query(
+        resp = client.query(
             tenant_id=TENANT_ID,
             query=f"{ticker} {period_label} financial performance",
             max_results=8,
@@ -919,7 +919,7 @@ def track_narrative_shift(
     recency_bias: 0.2 - want even spread across all quarters, oldest to newest.
     alpha: 0.3 - lean keyword for topic-specific terms like "churn", "guidance".
     """
-    search = client.search.query(
+    search = client.query(
         tenant_id=TENANT_ID,
         query=f"{ticker} management commentary {topic}",
         max_results=n_quarters * 4,   # 4 chunks per quarter
@@ -1001,7 +1001,7 @@ print(arc)
 
 ## Step 5 - Analyst Search Interface
 
-For analyst chat interfaces, use `POST /search` to retrieve chunks, sources, and graph context. Generate the final answer in your application layer with your LLM provider so citations, formatting, and conversation memory stay under your control.
+For analyst chat interfaces, use `POST /query` to retrieve chunks, sources, and graph context. Generate the final answer in your application layer with your LLM provider so citations, formatting, and conversation memory stay under your control.
 
 ```python
 # query/financial_recall.py
@@ -1053,7 +1053,7 @@ def financial_recall(
     if filters:
         payload["metadata_filters"] = filters
 
-    result = client.search.query(**payload)
+    result = client.query(**payload)
     result["session_id"] = analyst_sessions[user_id]
     return result
 
@@ -1164,7 +1164,7 @@ def generate_quarterly_briefing(
 
     # ── 1. This quarter - all sources ────────────────────────────────────
     print("[1/4] Searching current quarter...")
-    current_q = client.search.query(
+    current_q = client.query(
         tenant_id=TENANT_ID,
         query=f"{ticker} {period_label} performance revenue margin guidance",
         max_results=15,
@@ -1208,7 +1208,7 @@ def generate_quarterly_briefing(
     )
 
     # Search analyst profile
-    analyst_prefs = client.search.query(
+    analyst_prefs = client.query(
         source='memories',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"analyst-{analyst_user_id}",
@@ -1448,7 +1448,7 @@ POST /source/ingest
 ### Point-in-Time Search
 
 ```http
-POST /search
+POST /query
 ```
 
 ```json
@@ -1472,7 +1472,7 @@ POST /search
 ### Trend Search (raw chunks + graph paths)
 
 ```http
-POST /search
+POST /query
 ```
 
 ```json
@@ -1494,7 +1494,7 @@ POST /search
 ### Historical Comparison (very low recency_bias)
 
 ```http
-POST /search
+POST /query
 ```
 
 ```json
@@ -1516,7 +1516,7 @@ POST /search
 ### Search Analyst Preferences
 
 ```http
-POST /search
+POST /query
 ```
 
 ```json

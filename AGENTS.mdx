@@ -1203,7 +1203,7 @@ Common architecture across cookbooks:
 2. Ingest shared knowledge/app sources with stable IDs.
 3. Ingest user/session memories with `sub_tenant_id`.
 4. Poll status or use webhooks.
-5. Query `/search` with `type: "knowledge"`, `"memory"`, or `"all"`.
+5. Query `/query` with `type: "knowledge"`, `"memory"`, or `"all"`.
 6. Format chunks, graph paths, and additional context into an LLM prompt.
 7. Cite sources and handle missing context explicitly.
 
@@ -1211,7 +1211,7 @@ Common architecture across cookbooks:
 
 ## 16. Common mistakes checklist
 
-- [ ] Using v1 endpoints for new code instead of `/tenants`, `/source/*`, `/search`.
+- [ ] Using v1 endpoints for new code instead of `/tenants`, `/source/*`, `/query`.
 - [ ] Forgetting `API-Version: 2` in raw HTTP calls.
 - [ ] Parsing raw HTTP response from the top level instead of `data`.
 - [ ] Assuming SDK responses include the raw envelope; SDKs unwrap `data`.
@@ -1273,7 +1273,7 @@ Common architecture across cookbooks:
 
 ### 17.3 Minimal cURL example
 
-Use `source` on raw `/search` requests because that is the OpenAPI field. The raw API response is wrapped; read payloads from `.data`.
+Use `source` on raw `/query` requests because that is the OpenAPI field. The raw API response is wrapped; read payloads from `.data`.
 
 ```bash
 export HYDRA_DB_API_KEY="your_api_key"

@@ -565,7 +565,7 @@ Sends `multipart/form-data`. Nested JSON fields (`file_metadata`, `app_knowledge
 
 - **`tenant_metadata` keys must be declared.** Keys not in the tenant's `tenant_metadata_schema` are silently ignored at search time when used in `metadata_filters`. Plan schema fields up front via [Create Tenant](/api-reference/v2/endpoint/create-tenant).
 
-- **Common mistakes.** Use `type: "memory"` for ingestion and deletion, but use `memories` for the form field and for search/list collection selectors. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
+- **Common mistakes.** Use `type: "memory"` for ingestion, listing, deletion, and memory-only search. Use `type: "all"` on `POST /search` when an answer should combine knowledge and memories. The multipart form input field is always named `memories`. If you omit `sub_tenant_id`, HydraDB writes to the default sub-tenant; list available sub-tenants with [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants).
 
 ## Errors
 

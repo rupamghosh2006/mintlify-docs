@@ -13,7 +13,7 @@ This document is a self-contained reference designed for AI coding agents. It co
 2. **`GET /tenants/status`** (`client.tenants.status()`): Poll until `infra.ready_for_ingestion` is true.
 3. **`POST /source/ingest`** (`client.source.ingest()`): Ingest documents, app records, or memories under `type="knowledge"` or `type="memory"`.
 4. **`GET /source/status`** (`client.source.status()`): Poll status using `source_ids` until `indexing_status` is `completed` or `graph_creation`.
-5. **`POST /search`** (`client.search.query()`): Retrieve context via `source: "knowledge"`, `"memory"`, or `"all"`.
+5. **`POST /search`** (`client.search.query()`): Retrieve context via `type: "knowledge"`, `"memory"`, or `"all"`.
 
 
 > **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/source/*`, and `/search`.
@@ -87,13 +87,13 @@ Failure status:
 
 ### Search parameter naming
 
-The canonical OpenAPI request field for `POST /search` is `source`:
+The canonical request field for `POST /search` is `type`:
 
-- `source: "knowledge"`
-- `source: "memory"`
-- `source: "all"`
+- `type: "knowledge"`
+- `type: "memory"`
+- `type: "all"`
 
-Several v2 SDK/doc examples use `type` as a friendly alias because `/source/ingest` uses `type`. For maximum raw-HTTP correctness, use `source` in cURL/fetch examples. In SDK code, follow the generated client type/autocomplete; if both are accepted, prefer the field shown by the SDK docs for that language.
+Use the same `type` enum across source lifecycle APIs and search. Search additionally accepts `"all"` to query knowledge and memories together.
 
 ### Metadata naming
 
@@ -697,7 +697,7 @@ Rules:
 | `search_forceful_relations` | boolean | only effective in `thinking` mode |
 | `additional_context` | string | short factual hint; not a hard filter |
 | `metadata_filters` | object | deterministic filters before/around ranking |
-| `search_apps` | boolean | app-aware retrieval lane for app sources |
+| `search_apps` | boolean | app-aware retrieval lane for app sources; still searches the full selected knowledge scope |
 
 ### Recommended configurations
 
@@ -709,7 +709,7 @@ Rules:
 | User preferences only | `type: "memory"`, include `sub_tenant_id`, `search_by: "hybrid"` |
 | Exact keyword / phrase | `type: "knowledge"`, `search_by: "text"`, `operator: "phrase"` |
 | Recent operational updates | `search_by: "hybrid"`, `recency_bias: 0.2-0.4`, metadata filter to doc type/status |
-| App search | `type: "knowledge"`, `search_by: "hybrid"`, `mode: "thinking"`, `search_apps: true` |
+| App search | `type: "knowledge"`, `search_by: "hybrid"`, `mode: "thinking"`, `search_apps: true`; still searches non-app knowledge too |
 
 ### Search examples
 
@@ -851,7 +851,7 @@ result = hydra.search.query(
     tenant_id="your-tenant",
     sub_tenant_id="your-sub-tenant",
     query=question,
-    source="knowledge",
+    type="knowledge",
     search_by="hybrid",
     max_results=5,
 )
@@ -885,7 +885,7 @@ const result = await hydra.search.query({
   tenant_id: "your-tenant",
   sub_tenant_id: "your-sub-tenant",
   query: question,
-  source: "knowledge",
+  type: "knowledge",
   search_by: "hybrid",
   max_results: 5,
 });
@@ -1368,7 +1368,7 @@ curl -s -X POST 'https://api.hydradb.com/search' \
   -d '{
     "tenant_id": "acme_corp",
     "query": "What pricing tiers did product agree on?",
-    "source": "knowledge",
+    "type": "knowledge",
     "search_by": "hybrid",
     "mode": "thinking",
     "search_apps": true,

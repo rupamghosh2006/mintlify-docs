@@ -74,7 +74,7 @@ When you ingest a memory with `infer: true`, HydraDB automatically extracts the 
 
 When you ingest a memory with `infer: false` (the default), HydraDB stores exactly what you send - useful for facts you've already captured.
 
-Memories are retrieved by calling [`POST /search`](/api-reference/v2/endpoint/search) with `source: "memories"`.
+Memories are retrieved by calling [`POST /search`](/api-reference/v2/endpoint/search) with `type: "memory"`.
 
 Read More: [Usage → Memories](/essentials/v2/memories)
 
@@ -86,7 +86,7 @@ Knowledge is shared, tenant-wide context ingested from documents and app sources
 
 HydraDB parses, chunks, embeds, and links each source into the context graph at write time. Entities and relationships are extracted automatically. At search time, the graph traversal step surfaces structurally connected material that vector search alone would miss.
 
-Knowledge is retrieved by calling [`POST /search`](/api-reference/v2/endpoint/search) with `source: "sources"`. Combine memories and knowledge in one call with `source: "all"`.
+Knowledge is retrieved by calling [`POST /search`](/api-reference/v2/endpoint/search) with `type: "knowledge"`. Combine memories and knowledge in one call with `type: "all"`.
 
 Read More: [Usage → Knowledge](/essentials/v2/knowledge)
 
@@ -101,10 +101,10 @@ Memories and Knowledge are distinct at the storage layer, not just conceptually:
 | **Content** | User preferences, conversation history, inferred traits | Documents, files, app-generated content |
 | **Scope** | Per-user (scoped by `sub_tenant_id`) | Shared across all users in a tenant |
 | **Mutability** | Dynamic - evolves with every interaction | Versioned - replaced or deleted explicitly |
-| **Search `source`** | `"memories"` | `"sources"` |
+| **Search `type`** | `"memory"` | `"knowledge"` |
 | **Inference** | `infer` flag extracts traits automatically | Not applicable - content is parsed and chunked |
 
-For personalized answers grounded in shared documents, call `POST /search` with `source: "all"` to merge both stores in a single request. See [How to Use API Results](/essentials/v2/api-results).
+For personalized answers grounded in shared documents, call `POST /search` with `type: "all"` to merge both stores in a single request. See [How to Use API Results](/essentials/v2/api-results).
 
 ---
 

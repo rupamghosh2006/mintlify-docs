@@ -469,7 +469,9 @@ All responses are wrapped in a consistent envelope:
 ```json
 {
   "success": true,
-  "data": { /* the resource-specific payload */ },
+  "data": {
+    "message": "Success"
+  },
   "error": null,
   "meta": {
     "request_id": "<uuid>",

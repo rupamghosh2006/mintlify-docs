@@ -5,7 +5,7 @@ description: "Build your first working search in five minutes."
 
 This guide walks you through the full HydraDB loop end-to-end  -  create a workspace, ingest some content, wait for indexing, and run a search  -  using the [API](/api-reference/v2). By the end you'll have a working personalized-RAG flow that you can plug into your own LLM prompt.
 
-If you're new to HydraDB, the [Core Concepts](/get-started/core-concepts) page is a useful 5-minute primer first. If you want the architecture-level story, see [Architecture](/essentials/v2/architecture).
+If you're new to HydraDB, the [Core Concepts](/get-started/v2/core-concepts) page is a useful 5-minute primer first. If you want the architecture-level story, see [Architecture](/essentials/v2/architecture).
 
 ### Install and initialize
 - Grab an API key from [app.hydradb.com](https://app.hydradb.com)
@@ -86,7 +86,7 @@ while True:
 # 5. Search memories.
 results = client.search.query(
     tenant_id=tenant_id,
-    source="memories",
+    type="memory",
     query="What does the user prefer?",
 )
 
@@ -134,7 +134,7 @@ while (true) {
 // 5. Search memories.
 const results = await client.search.query({
   tenant_id: tenantId,
-  source: "memories",
+  type: "memory",
   query: "What does the user prefer?",
 });
 
@@ -195,7 +195,7 @@ curl -s -X POST 'https://api.hydradb.com/search' \
   --data-binary @- <<EOF | jq '.data.chunks'
 {
   "tenant_id": "${TENANT_ID}",
-  "source": "memories",
+  "type": "memory",
   "query": "What does the user prefer?"
 }
 EOF
@@ -206,7 +206,7 @@ EOF
 
 ## What you have built
 
-You have built a working **production grade super scalable search that scales from 10 documents to 10,000+ with no code changes** and reaches across content that extends to **millions of tokens**. HydraDB does the parsing, chunking, embedding, graph construction, and hybrid retrieval; your application sends the query and gets back the right slice of context  -  ready to feed into an LLM prompt.
+You have built the full retrieval loop: create an isolated workspace, ingest context, wait for indexing, search it, and pass the returned context to an LLM. HydraDB handles parsing, chunking, embedding, graph construction, and hybrid retrieval; your application sends the query and gets back the right slice of context.
 
 ```mermaid
 flowchart LR
@@ -241,6 +241,6 @@ That's the full HydraDB v2 loop: [create a tenant](/api-reference/v2/endpoint/cr
 | Scope data per user or workspace | [Multi-Tenant](/essentials/v2/multi-tenant) |
 | Format the LLM prompt from `RetrievalResult` | [How to Use API Results](/essentials/v2/api-results) |
 | See the full endpoint reference | [API Reference](/api-reference/v2) |
-| Pick from real-world recipes | [Cookbooks](/cookbooks/index) |
+| Pick from real-world recipes | [Cookbooks](/cookbooks/v2/index) |
 
 Stuck? Reach out at [founders@hydradb.com](mailto:founders@hydradb.com).

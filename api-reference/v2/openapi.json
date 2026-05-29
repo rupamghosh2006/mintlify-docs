@@ -4591,7 +4591,7 @@
           "Search"
         ],
         "summary": "Search",
-        "description": "Unified search endpoint for all retrieval over documents, memories, or both.\n\n    Use `source` to choose what to search:\n    - \"knowledge\" (default): Search over indexed knowledge documents\n    - \"memory\": Search over user memories\n    - \"all\": Search both documents and memories, merge and rank results together\n\n    Use `search_by` to choose the search method:\n    - \"hybrid\" (default): Dense vector + BM25 sparse \u2014 best overall relevance\n    - \"text\": BM25 full-text search only \u2014 for exact keyword matching\n\n    Use `mode` to control retrieval quality (hybrid only):\n    - \"fast\" (default): Single query, faster response\n    - \"thinking\": Multi-query generation with reranking, higher quality\n\n    Use `operator` to control text matching (text search only):\n    - \"or\" (default): Match any of the search terms\n    - \"and\": Match all search terms\n    - \"phrase\": Match the exact phrase",
+        "description": "Unified search endpoint for all retrieval over documents, memories, or both.\n\n    Use `type` to choose what to search:\n    - \"knowledge\" (default): Search over indexed knowledge documents\n    - \"memory\": Search over user memories\n    - \"all\": Search both documents and memories, merge and rank results together\n\n    Use `search_by` to choose the search method:\n    - \"hybrid\" (default): Dense vector + BM25 sparse \u2014 best overall relevance\n    - \"text\": BM25 full-text search only \u2014 for exact keyword matching\n\n    Use `mode` to control retrieval quality (hybrid only):\n    - \"fast\" (default): Single query, faster response\n    - \"thinking\": Multi-query generation with reranking, higher quality\n\n    Use `operator` to control text matching (text search only):\n    - \"or\" (default): Match any of the search terms\n    - \"and\": Match all search terms\n    - \"phrase\": Match the exact phrase",
         "operationId": "search_search_post",
         "requestBody": {
           "content": {
@@ -8206,7 +8206,7 @@
           "search_apps": {
             "type": "boolean",
             "title": "Search Apps",
-            "description": "Temporary retrieval vertical switch. When True, a parallel app-aware retrieval lane runs alongside the standard lane and results are fused into one ranked list. When False (default), current behavior is preserved exactly. Memory searches ignore this flag.",
+            "description": "When true, a parallel app-aware retrieval lane runs alongside normal knowledge retrieval and results are fused into one ranked list. This improves app-source matching, exact ID/actor lookup, and thread/relation traversal while still searching the full selected knowledge scope. It does not restrict results to only app sources. Memory searches ignore this flag.",
             "default": false
           },
           "metadata_filters": {
@@ -8233,9 +8233,9 @@
               }
             ]
           },
-          "source": {
-            "$ref": "#/components/schemas/SourceType",
-            "description": "What to search: 'knowledge', 'memory', or 'all' (both merged). Mirrors the same values used by /source/ingest's `type` field.",
+          "type": {
+            "$ref": "#/components/schemas/SearchType",
+            "description": "What to search: 'knowledge', 'memory', or 'all' (both merged). Search uses the same `type` field as the source lifecycle APIs and additionally accepts 'all'.",
             "default": "knowledge"
           },
           "search_by": {
@@ -8255,7 +8255,7 @@
           "query"
         ],
         "title": "QueryRequest",
-        "description": "Unified search request with search_by and source selection.\n\nOverrides ``graph_context`` to default ``True`` ."
+        "description": "Unified search request with search_by and type selection.\n\nOverrides ``graph_context`` to default ``True`` ."
       },
       "RawEmbeddingDocument": {
         "properties": {
@@ -8468,7 +8468,7 @@
           "search_apps": {
             "type": "boolean",
             "title": "Search Apps",
-            "description": "Temporary retrieval vertical switch. When True, a parallel app-aware retrieval lane runs alongside the standard lane and results are fused into one ranked list. When False (default), current behavior is preserved exactly. Memory searches ignore this flag.",
+            "description": "When true, a parallel app-aware retrieval lane runs alongside normal knowledge retrieval and results are fused into one ranked list. This improves app-source matching, exact ID/actor lookup, and thread/relation traversal while still searching the full selected knowledge scope. It does not restrict results to only app sources. Memory searches ignore this flag.",
             "default": false
           },
           "metadata_filters": {
@@ -9633,15 +9633,15 @@
         "type": "object",
         "title": "SourceStatusApiResponse"
       },
-      "SourceType": {
+      "SearchType": {
         "type": "string",
         "enum": [
           "knowledge",
           "memory",
           "all"
         ],
-        "title": "SourceType",
-        "description": "What to search over."
+        "title": "SearchType",
+        "description": "Search `type` enum. Use `knowledge`, `memory`, or `all`."
       },
       "SourceUploadResponse": {
         "properties": {

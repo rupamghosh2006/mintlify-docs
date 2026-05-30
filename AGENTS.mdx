@@ -48,7 +48,7 @@ Core raw HTTP responses (`/tenants`, `/source/*`, and `/search`) are wrapped:
 ```
 
 - Parse core raw HTTP payloads from `data`.
-- SDKs unwrap the envelope and return the inner `data` object.
+- The SDKs return the full envelope object; read the payload from its `data` field (e.g. `response.data`). On failure they raise a typed exception rather than returning an envelope with `error` set.
 - Log `meta.request_id` for failed requests.
 - Exception: webhook management endpoints (`/webhooks/indexing*`) return their documented response object directly, without the `{ success, data, error, meta }` envelope.
 
@@ -263,7 +263,7 @@ client.tenants.create(tenant_id=tenant_id)
 # 2. Wait until the tenant can accept data.
 while True:
     status = client.tenants.status(tenant_id=tenant_id)
-    if status.infra.ready_for_ingestion:
+    if status.data.infra.ready_for_ingestion:
         break
     time.sleep(5)
 
@@ -282,7 +282,7 @@ ingest = client.source.ingest(
     ]),
 )
 
-source_id = ingest.results[0].source_id
+source_id = ingest.data.results[0].source_id
 
 # 4. Wait until searchable.
 while True:
@@ -290,12 +290,12 @@ while True:
         tenant_id=tenant_id,
         sub_tenant_id="user_alex",
         source_ids=[source_id],
-    ).statuses[0]
+    ).data.statuses[0]
 
-    if status.indexing_status in ("graph_creation", "completed"):
+    if status.get("indexing_status") in ("graph_creation", "completed"):
         break
-    if status.indexing_status in ("errored", "failed"):
-        raise RuntimeError(getattr(status, "error_message", "Indexing failed"))
+    if status.get("indexing_status") in ("errored", "failed"):
+        raise RuntimeError(status.get("error_message", "Indexing failed"))
     time.sleep(2)
 
 # 5. Search memories.
@@ -308,7 +308,7 @@ result = client.query(
     mode="thinking",
 )
 
-print(result.chunks)
+print(result.data.chunks)
 ```
 
 ### TypeScript
@@ -322,18 +322,18 @@ const client = new HydraDBClient({
 
 const tenantId = "my_first_tenant";
 
-await client.tenants.create({ tenant_id: tenantId });
+await client.tenants.create({ tenantId: tenantId });
 
 while (true) {
-  const status = await client.tenants.status({ tenant_id: tenantId });
-  if (status.infra.ready_for_ingestion) break;
+  const status = await client.tenants.status({ tenantId: tenantId });
+  if (status.data.infra.readyForIngestion) break;
   await new Promise((resolve) => setTimeout(resolve, 5_000));
 }
 
 const ingest = await client.source.ingest({
   type: "memory",
-  tenant_id: tenantId,
-  sub_tenant_id: "user_alex",
+  tenantId: tenantId,
+  subTenantId: "user_alex",
   memories: JSON.stringify([
     {
       source_id: "user_alex_pref_001",
@@ -344,33 +344,33 @@ const ingest = await client.source.ingest({
   ]),
 });
 
-const sourceId = ingest.results[0].source_id;
+const sourceId = ingest.data.results[0].sourceId;
 
 while (true) {
   const status = (await client.source.status({
-    tenant_id: tenantId,
-    sub_tenant_id: "user_alex",
-    source_ids: [sourceId],
-  })).statuses[0];
+    tenantId: tenantId,
+    subTenantId: "user_alex",
+    sourceIds: [sourceId],
+  })).data.statuses[0];
 
-  if (["graph_creation", "completed"].includes(status.indexing_status)) break;
-  if (["errored", "failed"].includes(status.indexing_status)) {
-    throw new Error(status.error_message ?? "Indexing failed");
+  if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
+  if (["errored", "failed"].includes(status.indexing_status as string)) {
+    throw new Error((status.error_message as string) ?? "Indexing failed");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 2_000));
 }
 
 const result = await client.query({
-  tenant_id: tenantId,
-  sub_tenant_id: "user_alex",
+  tenantId: tenantId,
+  subTenantId: "user_alex",
   query: "What does the user prefer?",
   type: "memory",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
 });
 
-console.log(result.chunks);
+console.log(result.data.chunks);
 ```
 
 ---
@@ -486,8 +486,8 @@ Use `app_knowledge` when your connector already extracted text from Slack, Gmail
 ```ts
 await client.source.ingest({
   type: "knowledge",
-  tenant_id: "acme_corp",
-  app_knowledge: JSON.stringify([
+  tenantId: "acme_corp",
+  appKnowledge: JSON.stringify([
     {
       id: "slack_C123_1715012345_000100",
       tenant_id: "acme_corp",
@@ -612,13 +612,13 @@ Pattern:
 ```ts
 while (true) {
   const status = (await client.source.status({
-    tenant_id: "acme_corp",
-    source_ids: ["policy_v2"],
-  })).statuses[0];
+    tenantId: "acme_corp",
+    sourceIds: ["policy_v2"],
+  })).data.statuses[0];
 
-  if (["graph_creation", "completed"].includes(status.indexing_status)) break;
-  if (["errored", "failed"].includes(status.indexing_status)) {
-    throw new Error(status.error_message ?? status.message ?? "Indexing failed");
+  if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
+  if (["errored", "failed"].includes(status.indexing_status as string)) {
+    throw new Error((status.error_message as string) ?? (status.message as string) ?? "Indexing failed");
   }
   await new Promise((r) => setTimeout(r, 2_000));
 }
@@ -716,13 +716,13 @@ Knowledge RAG:
 
 ```ts
 const result = await client.query({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   query: "What is our refund policy?",
   type: "knowledge",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
-  max_results: 10,
-  graph_context: true,
+  maxResults: 10,
+  graphContext: true,
 });
 ```
 
@@ -730,11 +730,11 @@ Personalized answer using knowledge and memories:
 
 ```ts
 const result = await client.query({
-  tenant_id: "acme_corp",
-  sub_tenant_id: "user_alex",
+  tenantId: "acme_corp",
+  subTenantId: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
   type: "all",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
   alpha: "auto",
 });
@@ -831,14 +831,15 @@ Practical guidance from `essentials/v2/api-results.mdx`:
 
 Use the SDK helper from `essentials/v2/api-results.mdx`:
 
-- Python: `build_string(result)` from `hydra_db`
+- Python: `build_string(result)` from `hydra_db.helpers`
 - TypeScript: `buildString(result)` from `@hydradb/sdk`
 
 Python:
 
 ```python
 import os
-from hydra_db import HydraDB, build_string
+from hydra_db import HydraDB
+from hydra_db.helpers import build_string
 from openai import OpenAI
 
 hydra = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
@@ -881,12 +882,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  tenant_id: "your-tenant",
-  sub_tenant_id: "your-sub-tenant",
+  tenantId: "your-tenant",
+  subTenantId: "your-sub-tenant",
   query: question,
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 5,
+  queryBy: "hybrid",
+  maxResults: 5,
 });
 
 const context = buildString(result);
@@ -976,14 +977,14 @@ Rules:
 
 ```ts
 const sources = await client.source.list({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   type: "knowledge",
   page: 1,
-  page_size: 50,
+  pageSize: 50,
   filters: {
-    tenant_metadata: { department: "support" },
-    additional_metadata: { author: "alice" },
-    source_fields: { type: "slack" },
+    tenantMetadata: { department: "support" },
+    additionalMetadata: { author: "alice" },
+    sourceFields: { type: "slack" },
   },
 });
 ```
@@ -1027,8 +1028,8 @@ Modes:
 
 ```ts
 const relations = await client.source.relations({
-  tenant_id: "acme_corp",
-  source_id: "policy_v2",
+  tenantId: "acme_corp",
+  sourceId: "policy_v2",
   type: "knowledge",
   limit: 5000,
 });
@@ -1044,7 +1045,7 @@ Use it for graph debugging and provenance inspection. It supports pagination via
 await client.source.delete({
   type: "knowledge",
   request: {
-    tenant_id: "acme_corp",
+    tenantId: "acme_corp",
     ids: ["policy_v2"],
   },
 });
@@ -1090,7 +1091,11 @@ Retry only `429`, `500`, `503`; use bounded exponential backoff with jitter.
 SDK errors:
 
 ```python
-from hydra_db import HydraDBError
+from hydra_db.errors import (
+    InternalServerError,
+    ServiceUnavailableError,
+    TooManyRequestsError,
+)
 
 try:
     result = client.query(
@@ -1098,12 +1103,9 @@ try:
         query="pricing tiers",
         type="knowledge",
     )
-except HydraDBError as exc:
-    if exc.status_code in (429, 500, 503):
-        # retry with backoff
-        pass
-    else:
-        raise
+except (TooManyRequestsError, InternalServerError, ServiceUnavailableError) as exc:
+    # retryable (429 / 500 / 503) — back off and retry; exc.status_code has the code
+    pass
 ```
 
 ```ts

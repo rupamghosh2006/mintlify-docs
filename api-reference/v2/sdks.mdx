@@ -54,19 +54,21 @@ You can verify which version your client is using by inspecting the response hea
 
 ## Naming conventions
 
-The REST API uses **snake_case** for all request and response fields. The SDKs adapt this to native idioms:
+The REST API uses **snake_case** for all request and response fields on the wire. The SDKs adapt this to native idioms:
 
 | | Method naming | Parameter field naming | Example |
 |---|---|---|---|
 | **Raw HTTP / cURL** |  -  | snake_case | `tenant_id`, `sub_tenant_id` |
 | **Python SDK** | snake_case | snake_case | method: `query()`, params: `tenant_id`, `query_by` |
-| **TypeScript SDK** | camelCase | snake_case | method: `query()`, params: `tenant_id`, `query_by` |
+| **TypeScript SDK** | camelCase | camelCase | method: `query()`, params: `tenantId`, `queryBy` |
 
 <Info>
-**TypeScript SDK uses snake_case for all parameter field names.** Only method names are camelCase (e.g., `client.source.list({tenant_id: "...", page_size: 50})`). This applies to every request object passed to an SDK method.
+**The TypeScript SDK uses camelCase for both method names and parameter field names** (e.g., `client.source.list({ tenantId: "...", pageSize: 50 })`). The SDK serializes these to snake_case on the wire automatically  -  you write camelCase in your code, and the API receives snake_case.
+
+The Python SDK uses snake_case throughout (e.g., `client.source.list(tenant_id="...", page_size=50)`).
 </Info>
 
-The TypeScript SDK transparently maps any camelCase parameters you write to snake_case on the wire. Your IDE's autocomplete and type checking work directly off the API contract  -  if a field is optional in the API, it's optional in the SDK.
+Your IDE's autocomplete and type checking work directly off the API contract  -  if a field is optional in the API, it's optional in the SDK.
 
 ## SDK method structure
 
@@ -114,7 +116,7 @@ A single method covers all retrieval. Pick `type` (`"knowledge"`, `"memory"`, `"
 | `client.tenants.sub_tenants()` | `GET /tenants/sub-tenants` |
 | `client.tenants.stats()` | `GET /tenants/stats` |
 
-In Python, all method names use snake_case: `client.tenants.sub_tenants()`. In TypeScript, snake_case method names use camelCase: `client.tenants.subTenants()`.
+The method-reference tables above use the Python (snake_case) method names. In TypeScript, multi-word method names are camelCase: for example, `client.tenants.sub_tenants()` in Python is `client.tenants.subTenants()` in TypeScript.
 
 ## Migrating from v1
 
@@ -153,7 +155,7 @@ A tenant is an isolated workspace. Most organizations create one tenant total, w
 response = client.tenants.create(
     tenant_id="my_first_tenant",
     tenant_metadata_schema=[
-        {"name": "department", "data_type": "string", "enable_match": True},
+        {"name": "department", "data_type": "VARCHAR", "enable_match": True},
     ],
 )
 ```
@@ -162,9 +164,9 @@ response = await async_client.tenants.create(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const response = await client.tenants.create({
-  tenant_id: "my_first_tenant",
-  tenant_metadata_schema: [
-    { name: "department", data_type: "string", enable_match: true },
+  tenantId: "my_first_tenant",
+  tenantMetadataSchema: [
+    { name: "department", dataType: "VARCHAR", enableMatch: true },
   ],
 });
 ```
@@ -178,11 +180,12 @@ import time
 
 while True:
     status = client.tenants.status(tenant_id="my_first_tenant")
+    infra = status.data.infra
     if (
-        status.infra.scheduler_status
-        and status.infra.graph_status
-        and status.infra.vectorstore_status.knowledge
-        and status.infra.vectorstore_status.memory
+        infra.scheduler_status
+        and infra.graph_status
+        and infra.vectorstore_status.knowledge
+        and infra.vectorstore_status.memories
     ):
         break
     time.sleep(2)
@@ -190,14 +193,14 @@ while True:
 ```typescript TypeScript SDK
 while (true) {
   const status = await client.tenants.status({
-    tenant_id: "my_first_tenant",
+    tenantId: "my_first_tenant",
   });
-  const { scheduler_status, graph_status, vectorstore_status } = status.infra;
+  const { schedulerStatus, graphStatus, vectorstoreStatus } = status.data.infra;
   if (
-    scheduler_status &&
-    graph_status &&
-    vectorstore_status.knowledge &&
-    vectorstore_status.memory
+    schedulerStatus &&
+    graphStatus &&
+    vectorstoreStatus.knowledge &&
+    vectorstoreStatus.memories
   ) break;
   await new Promise((r) => setTimeout(r, 2000));
 }
@@ -237,12 +240,12 @@ with open("contract.pdf", "rb") as f1, open("policy.pdf", "rb") as f2:
 ```typescript TypeScript SDK
 const result = await client.source.ingest({
   type: "knowledge",
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   files: [
     { path: "contract.pdf", filename: "contract.pdf", contentType: "application/pdf" },
     { path: "policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
   ],
-  file_metadata: JSON.stringify([
+  fileMetadata: JSON.stringify([
     {
       source_id: "contract_q4",
       tenant_metadata: { department: "legal" },
@@ -286,8 +289,8 @@ result = client.source.ingest(
 ```typescript TypeScript SDK
 const result = await client.source.ingest({
   type: "memory",
-  tenant_id: "my_first_tenant",
-  sub_tenant_id: "user_alex",
+  tenantId: "my_first_tenant",
+  subTenantId: "user_alex",
   memories: JSON.stringify([
     {
       text: "User prefers detailed technical explanations and dark mode",
@@ -318,8 +321,8 @@ status = client.source.status(
 ```
 ```typescript TypeScript SDK
 const status = await client.source.status({
-  tenant_id: "my_first_tenant",
-  source_ids: ["contract_q4", "policy_2025"],
+  tenantId: "my_first_tenant",
+  sourceIds: ["contract_q4", "policy_2025"],
 });
 ```
 </CodeGroup>
@@ -364,30 +367,30 @@ exact = client.query(
 ```typescript TypeScript SDK
 // Knowledge over documents
 const knowledge = await client.query({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   query: "What are the pricing tiers?",
   type: "knowledge",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
-  graph_context: true,
+  graphContext: true,
 });
 
 // Personalized — searches knowledge AND user memories together
 const personalized = await client.query({
-  tenant_id: "my_first_tenant",
-  sub_tenant_id: "user_alex",
+  tenantId: "my_first_tenant",
+  subTenantId: "user_alex",
   query: "What are the pricing tiers, and how should I explain them to this user?",
   type: "all",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
 });
 
 // Exact-phrase BM25 search
 const exact = await client.query({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   query: "ERROR_429 rate limit",
   type: "knowledge",
-  query_by: "text",
+  queryBy: "text",
   operator: "phrase",
 });
 ```
@@ -432,22 +435,22 @@ client.source.delete(
 ```typescript TypeScript SDK
 // List knowledge sources with pagination
 const sources = await client.source.list({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   type: "knowledge",
   page: 1,
-  page_size: 50,
+  pageSize: 50,
 });
 
 // Inspect graph relationships for a specific source
 const relations = await client.source.relations({
-  tenant_id: "my_first_tenant",
-  source_id: "doc_12345",
+  tenantId: "my_first_tenant",
+  sourceId: "doc_12345",
 });
 
 // Fetch original file content or get a presigned URL
 const file = await client.source.fetch({
-  tenant_id: "my_first_tenant",
-  source_id: "doc_12345",
+  tenantId: "my_first_tenant",
+  sourceId: "doc_12345",
   mode: "url",
 });
 
@@ -455,7 +458,7 @@ const file = await client.source.fetch({
 await client.source.delete({
   type: "knowledge",
   request: {
-    tenant_id: "my_first_tenant",
+    tenantId: "my_first_tenant",
     ids: ["doc_12345"],
   },
 });
@@ -480,7 +483,7 @@ All responses are wrapped in a consistent envelope:
 }
 ```
 
-The SDKs unwrap the envelope automatically and return the inner `data` object. Errors raise a typed exception with the envelope's `error.code` and `error.message` accessible on the exception.
+The SDKs return the full envelope. Read the payload from the `data` field (e.g. `response.data`); on failure the SDK raises a typed exception instead of returning an envelope with `error` populated.
 
 ## Type safety
 
@@ -507,7 +510,7 @@ Both SDKs throw exceptions for non-2xx responses. Error objects expose the envel
 
 <CodeGroup>
 ```python Python SDK
-from hydra_db import HydraDBError
+from hydra_db.errors import NotFoundError, TooManyRequestsError
 
 try:
     result = client.query(
@@ -515,25 +518,23 @@ try:
         query="...",
         type="knowledge",
     )
-except HydraDBError as e:
-    code = e.error_code
-    status = e.status_code
-
-    if code == "TENANT_NOT_FOUND":
-        # Handle missing tenant
-        pass
-    elif status == 429:
-        # Rate limit — retry with backoff
-        pass
-    else:
-        raise
+except NotFoundError:
+    # Handle missing tenant / resource (HTTP 404)
+    pass
+except TooManyRequestsError:
+    # Rate limit (HTTP 429) — retry with backoff
+    pass
 ```
+
+<Info>
+The Python SDK raises one of the typed exceptions exported from `hydra_db.errors`  -  `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `TooManyRequestsError` (429), `InternalServerError` (500), and `ServiceUnavailableError` (503). Each carries `status_code` and the parsed response `body` (from which you can read `body["error"]["code"]`).
+</Info>
 ```typescript TypeScript SDK
 import { HydraDBError } from "@hydradb/sdk";
 
 try {
   const result = await client.query({
-    tenant_id: "my_first_tenant",
+    tenantId: "my_first_tenant",
     query: "...",
     type: "knowledge",
   });

@@ -28,10 +28,10 @@ HydraDB fixes this with two capabilities:
 
 ```mermaid
 graph LR
-    A["Decision logs<br/>Org charts<br/>Meeting notes<br/>Product specs"] -->|"upload.knowledge()"| B["HydraDB<br/>tenant: onboarding<br/>sub_tenant: company-context"]
+    A["Decision logs<br/>Org charts<br/>Meeting notes<br/>Product specs"] -->|"source.ingest()"| B["HydraDB<br/>tenant: onboarding<br/>sub_tenant: company-context"]
     C["New hire question"] -->|"query()"| B
     B -->|"retrieved context"| D["Onboarding agent"]
-    D -->|"upload.add_memory()"| E["HydraDB<br/>sub_tenant: hire-{id}"]
+    D -->|"source.ingest(type=memory)"| E["HydraDB<br/>sub_tenant: hire-{id}"]
     E -->|"query() with source: memories"| F["Manager dashboard"]
 ```
 
@@ -284,7 +284,7 @@ If no chunks are returned, the document is still indexing. Wait 30 seconds and r
 
 Four types of institutional knowledge feed the onboarding agent. All go into the shared `company-context` sub-tenant. Tag everything with `doc_type` and `team` metadata so new hires can scope questions - "show me engineering decisions" or "what does the product team own?"
 
-> **Batch limit**: Max 20 files per `upload.knowledge()` call. For large document sets, upload in batches with a 1-second sleep between them.
+> **Batch limit**: Max 20 files per `source.ingest()` call. For large document sets, upload in batches with a 1-second sleep between them.
 
 ---
 
@@ -805,7 +805,7 @@ if __name__ == "__main__":
 | `answer` is empty string | Documents still indexing | Wait 15–30 seconds after upload before querying. |
 | `UserWarning: Core Pydantic V1 functionality isn't compatible` | Python 3.14 incompatibility | Use Python 3.11 or 3.12. |
 | `422 Unprocessable Entity` on upload | Sending JSON text instead of files | Use `client.source.ingest(files=[...])` - not raw JSON body. |
-| `422 field required: memories` on add_memory | Wrong field structure | Pass `memories=[{"text": "...", "infer": True}]` as a list of dicts. |
+| `422 field required: memories` on `source.ingest(type="memory")` | Wrong field structure | Pass `memories=[{"text": "...", "infer": True}]` as a list of dicts. |
 | `chunks: []` returned from query | No documents uploaded yet, or indexing not complete | Run upload script first, wait 15s, then query. |
 
 ---
@@ -814,7 +814,7 @@ if __name__ == "__main__":
 
 | Topic | Note |
 |---|---|
-| Batch size | Max 20 files per `upload.knowledge()` call. Sleep 1s between batches for large document sets. |
+| Batch size | Max 20 files per `source.ingest()` call. Sleep 1s between batches for large document sets. |
 | Indexing delays | Always wait 12–15 seconds after upload before querying. Never rely on upload success alone. |
 | Python version | Use Python 3.11 or 3.12. Python 3.14 shows Pydantic compatibility warnings with the SDK. |
 | File formats | Upload `.txt` or `.md` files. Convert PDFs and Notion exports to plain text before ingesting. |

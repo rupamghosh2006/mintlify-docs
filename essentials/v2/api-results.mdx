@@ -11,7 +11,7 @@ The same pattern works regardless of whether you set `type: "knowledge"`, `type:
 
 ## 1. What the response looks like
 
-The SDKs return the inner `data` payload from `POST /query`. Raw HTTP responses wrap the same payload under `data` inside the standard response envelope.
+The SDKs return the full response envelope from `POST /query`; the retrieval payload is on its `data` field (e.g. `result.data`). Raw HTTP responses use the same envelope, with the payload under `data`. The `build_string` / `buildString` helper accepts either the full envelope or just the `data` payload, so you can pass the SDK return value to it directly.
 
 The retrieval payload has the same core shape regardless of `type` or `query_by`:
 
@@ -90,7 +90,8 @@ Use `build_string` / `buildString` from the SDK. It takes any `POST /query` resu
 
 <CodeGroup>
 ```python Python SDK
-from hydra_db import HydraDB, build_string
+from hydra_db import HydraDB
+from hydra_db.helpers import build_string
 
 client = HydraDB(token="YOUR_API_KEY")
 
@@ -113,20 +114,21 @@ import { HydraDBClient, buildString } from "@hydradb/sdk";
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
 const result = await client.query({
-  tenant_id: "your-tenant",
-  sub_tenant_id: "your-sub-tenant",
+  tenantId: "your-tenant",
+  subTenantId: "your-sub-tenant",
   query: "How does authentication work?",
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 5,
+  queryBy: "hybrid",
+  maxResults: 5,
   mode: "fast",
-  graph_context: true,
+  graphContext: true,
 });
 
 const context = buildString(result);
 ```
 ```python Python SDK (Async)
-from hydra_db import AsyncHydraDB, build_string
+from hydra_db import AsyncHydraDB
+from hydra_db.helpers import build_string
 
 client = AsyncHydraDB(token="YOUR_API_KEY")
 
@@ -151,7 +153,8 @@ context = build_string(result)
 
 <CodeGroup>
 ```python Python SDK
-from hydra_db import HydraDB, build_string
+from hydra_db import HydraDB
+from hydra_db.helpers import build_string
 from openai import OpenAI
 
 hydra = HydraDB(token="YOUR_HYDRA_DB_API_KEY")
@@ -196,12 +199,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  tenant_id: "your-tenant",
+  tenantId: "your-tenant",
   query: question,
   type: "knowledge",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "fast",
-  graph_context: true,
+  graphContext: true,
 });
 
 const context = buildString(result);
@@ -223,7 +226,8 @@ const completion = await openai.chat.completions.create({
 console.log(completion.choices[0].message.content);
 ```
 ```python Python SDK (Async)
-from hydra_db import AsyncHydraDB, build_string
+from hydra_db import AsyncHydraDB
+from hydra_db.helpers import build_string
 from openai import AsyncOpenAI
 
 hydra = AsyncHydraDB(token="YOUR_HYDRA_DB_API_KEY")
@@ -268,7 +272,8 @@ The simplest path is one `POST /query` with `type: "all"` - HydraDB searches bot
 
 <CodeGroup>
 ```python Python SDK
-from hydra_db import HydraDB, build_string
+from hydra_db import HydraDB
+from hydra_db.helpers import build_string
 from openai import OpenAI
 
 hydra = HydraDB(token="YOUR_HYDRA_DB_API_KEY")
@@ -307,11 +312,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "What is our refund policy?";
 
 const result = await hydra.query({
-  tenant_id: "acme_corp",
-  sub_tenant_id: "user_123",
+  tenantId: "acme_corp",
+  subTenantId: "user_123",
   query: question,
   type: "all",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
 });
 
@@ -328,7 +333,8 @@ const completion = await openai.chat.completions.create({
 console.log(completion.choices[0].message.content);
 ```
 ```python Python SDK (Async)
-from hydra_db import AsyncHydraDB, build_string
+from hydra_db import AsyncHydraDB
+from hydra_db.helpers import build_string
 from openai import AsyncOpenAI
 
 hydra = AsyncHydraDB(token="YOUR_HYDRA_DB_API_KEY")
@@ -364,7 +370,8 @@ If you need to format knowledge and memories in separate labeled sections, call 
 <CodeGroup>
 ```python Python SDK
 import asyncio
-from hydra_db import AsyncHydraDB, build_string
+from hydra_db import AsyncHydraDB
+from hydra_db.helpers import build_string
 
 hydra = AsyncHydraDB(token="YOUR_HYDRA_DB_API_KEY")
 
@@ -398,18 +405,18 @@ const hydra = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
 const [knowledgeResult, memoryResult] = await Promise.all([
   hydra.query({
-    tenant_id: "acme_corp",
+    tenantId: "acme_corp",
     query: "refund policy",
     type: "knowledge",
-    query_by: "hybrid",
+    queryBy: "hybrid",
     mode: "thinking",
   }),
   hydra.query({
-    tenant_id: "acme_corp",
-    sub_tenant_id: "user_123",
+    tenantId: "acme_corp",
+    subTenantId: "user_123",
     query: "answer style preferences",
     type: "memory",
-    query_by: "hybrid",
+    queryBy: "hybrid",
   }),
 ]);
 

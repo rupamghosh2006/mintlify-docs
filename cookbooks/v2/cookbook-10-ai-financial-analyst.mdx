@@ -1600,7 +1600,7 @@ Tested across 3 company corpora (4 quarters of earnings transcripts + internal m
 | Wrong `timestamp` on upload | Q1 and Q4 both surface for "most recent" queries | Use `period_end_date`, not upload date |
 | Too high `recency_bias` for trend queries | Only Q4 results returned for "how did X trend?" | Use `recency_bias: 0.3` for trend questions |
 | Missing `fiscal_quarter` in metadata | "Q2" filter returns all quarters | Add `fiscal_quarter: 2` to `meta` on upload |
-| `file=f` instead of `files=[f]` in SDK | `TypeError` on `upload.knowledge()` | SDK expects a **list**: `files=[f]` not `file=f` |
+| `file=f` instead of `files=[f]` in SDK | `TypeError` on `source.ingest()` | SDK expects a **list**: `files=[f]` not `file=f` |
 | Raw `requests` for PDF upload | 422 error on `/source/ingest` | Use the SDK: `pip install hydradb-sdk` |
 | No `/source/status` polling | Queries return empty results silently | Always poll status before querying |
 | `infer: false` on analyst profiles | No personalization applied | Leave `infer: true` (the default) for profiles |

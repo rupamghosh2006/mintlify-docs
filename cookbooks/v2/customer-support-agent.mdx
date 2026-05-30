@@ -1162,4 +1162,4 @@ slack-bolt          # only if using Slack interface
 3. Seed a few customer memories from your CRM at account creation time.
 4. Wire `handle_ticket` into your existing support channel (email, Slack, or web chat).
 
-The agent improves automatically - every conversation stored via `add_memory` makes the next response for that customer more personalized. There is no retraining step. HydraDB re-ranks memories continuously as new interactions come in.
+The agent improves automatically - every conversation stored via `source.ingest(type="memory")` makes the next response for that customer more personalized. There is no retraining step. HydraDB re-ranks memories continuously as new interactions come in.

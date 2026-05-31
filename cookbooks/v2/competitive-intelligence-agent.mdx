@@ -424,7 +424,7 @@ def ask_about_competitor(
 
 def print_results(result) -> None:
     """Pretty-print chunks and graph entities from a /query response."""
-    chunks = result.chunks or []
+    chunks = result.data.chunks or []
     print(f"\n{len(chunks)} chunks retrieved:\n")
     for chunk in chunks:
         fname = (chunk.additional_metadata or {}).get("filename", "unknown")
@@ -589,7 +589,7 @@ def recall_for_question(question: str, competitor: str, recency_bias: float) -> 
         recency_bias=recency_bias,
         graph_context=True,
     )
-    chunks = results.chunks or []
+    chunks = results.data.chunks or []
     if not chunks:
         return "No signals found for this question."
     return "\n".join((c.chunk_content or "")[:300] for c in chunks[:3])

@@ -53,7 +53,7 @@ client.tenants.create(tenant_id=tenant_id)
 
 # 2. Wait until the tenant can accept data.
 while True:
-    infra = client.tenants.status(tenant_id=tenant_id).infra
+    infra = client.tenants.status(tenant_id=tenant_id).data.infra
     if infra.ready_for_ingestion:
         break
     time.sleep(5)
@@ -67,14 +67,14 @@ ingest = client.context.ingest(
     ]),
 )
 
-id = ingest.results[0].id
+id = ingest.data.results[0].id
 
 # 4. Wait until the memory is indexed.
 while True:
     status = client.context.status(
         tenant_id=tenant_id,
         ids=[id],
-    ).statuses[0]
+    ).data.statuses[0]
 
     if status.indexing_status == "completed":
         break
@@ -90,42 +90,42 @@ results = client.query(
     query="What does the user prefer?",
 )
 
-print(results.chunks)
+print(results.data.chunks)
 ```
 ```typescript TypeScript SDK
 const tenantId = "my_first_tenant";
 
 // 1. Create a tenant.
-await client.tenants.create({ tenant_id: tenantId });
+await client.tenants.create({ tenantId: tenantId });
 
 // 2. Wait until the tenant can accept data.
 while (true) {
-  const { infra } = await client.tenants.status({ tenant_id: tenantId });
-  if (infra.ready_for_ingestion) break;
+  const { data } = await client.tenants.status({ tenantId: tenantId });
+  if (data?.infra.readyForIngestion) break;
   await new Promise((resolve) => setTimeout(resolve, 5_000));
 }
 
 // 3. Ingest one memory into the default sub-tenant.
 const ingest = await client.context.ingest({
   type: "memory",
-  tenant_id: tenantId,
+  tenantId: tenantId,
   memories: JSON.stringify([
     { text: "User prefers detailed technical explanations and dark mode" },
   ]),
 });
 
-const id = ingest.results[0].id;
+const id = ingest.data.results[0].id;
 
 // 4. Wait until the memory is indexed.
 while (true) {
   const status = (await client.context.status({
-    tenant_id: tenantId,
+    tenantId: tenantId,
     ids: [id],
-  })).statuses[0];
+  })).data.statuses[0];
 
-  if (status.indexing_status === "completed") break;
-  if (status.indexing_status === "errored") {
-    throw new Error(status.error_message);
+  if (status.indexingStatus === "completed") break;
+  if (status.indexingStatus === "errored") {
+    throw new Error(status.errorMessage);
   }
 
   await new Promise((resolve) => setTimeout(resolve, 2_000));
@@ -133,12 +133,12 @@ while (true) {
 
 // 5. Search memories.
 const results = await client.query({
-  tenant_id: tenantId,
+  tenantId: tenantId,
   type: "memory",
   query: "What does the user prefer?",
 });
 
-console.log(results.chunks);
+console.log(results.data.chunks);
 ```
 ```bash cURL
 export HYDRA_DB_API_KEY="your_api_key"

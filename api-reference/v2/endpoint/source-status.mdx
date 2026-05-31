@@ -8,7 +8,7 @@ import { Field } from "/snippets/field.jsx";
 
 Since ingestion is asynchronous, use this endpoint to determine when context is ready to be retrieved.
 
-Pass one or more `source_id` values in `ids` to retrieve status. Works for documents, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
+Pass one or more IDs in `ids` to retrieve status. Works for documents, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
 
 <Info>
   **Prefer webhooks over polling?** Register a webhook for `indexing.status_changed` events and HydraDB will `POST` to your endpoint when content reaches a terminal state (`completed` or `errored`). See [Webhooks](/essentials/v2/webhooks) for setup and receiver examples.
@@ -48,7 +48,7 @@ curl -G 'https://api.hydradb.com/source/status' \
 
 | Name | Description |
 | --- | --- |
-| <Field name="ids" type="string[]" required /> | One or more `source_id` values returned at ingestion. Accepts IDs of any source  -  documents, app sources, memories. |
+| <Field name="ids" type="string[]" required /> | One or more `id` values returned at ingestion. Accepts IDs of any source  -  documents, app sources, memories. |
 | <Field name="tenant_id" type="string" required /> | Tenant the items belong to. Provide at least ID. |
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
 
@@ -60,14 +60,14 @@ curl -G 'https://api.hydradb.com/source/status' \
   "data": {
     "statuses": [
       {
-        "source_id": "policy_main",
+        "id": "policy_main",
         "indexing_status": "completed",
         "error_code": "",
         "success": true,
         "message": "Processing status retrieved successfully"
       },
       {
-        "source_id": "runbook_deploy",
+        "id": "runbook_deploy",
         "indexing_status": "graph_creation",
         "error_code": "",
         "success": true,

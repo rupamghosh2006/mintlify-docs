@@ -389,10 +389,10 @@ class AIRecruitingSearch {
   }
 
   enhanceCandidateResults(results, originalQuery) {
-    if (!results.chunks) return results;
+    if (!results.data?.chunks) return results;
 
     // Add hiring-specific analysis to each candidate
-    const enhancedSources = results.chunks.map(candidate => ({
+    const enhancedSources = results.data.chunks.map(candidate => ({
       ...candidate,
       fit_score: this.calculateFitScore(candidate, originalQuery),
       strengths: this.extractStrengths(candidate),
@@ -574,10 +574,10 @@ class PersonalizedRecruitingSearch extends AIRecruitingSearch {
     const personalizedResults = {
       ...results,
       personalized_insights: {
-        recommended_candidates: this.getRecommendedCandidates(results.chunks, recruiterProfile),
-        similar_to_past_hires: this.findSimilarToPastHires(results.chunks, recruiterProfile),
-        interview_suggestions: this.generatePersonalizedInterviewQuestions(results.chunks, recruiterProfile),
-        salary_insights: this.generateSalaryInsights(results.chunks, recruiterProfile)
+        recommended_candidates: this.getRecommendedCandidates(results.data?.chunks, recruiterProfile),
+        similar_to_past_hires: this.findSimilarToPastHires(results.data?.chunks, recruiterProfile),
+        interview_suggestions: this.generatePersonalizedInterviewQuestions(results.data?.chunks, recruiterProfile),
+        salary_insights: this.generateSalaryInsights(results.data?.chunks, recruiterProfile)
       }
     };
 

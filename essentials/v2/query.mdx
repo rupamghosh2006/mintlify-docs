@@ -2,7 +2,7 @@
 title: "Query"
 description: "How HydraDB retrieves the right context for each query — Knowledge, Memories, and the context graph, all behind a single /query endpoint."
 ---
-Query turns stored context into the *right* context for a specific query. One endpoint  -  `POST /query`  -  queries [Knowledge](/essentials/v2/knowledge) (documents, files, app sources), [Memories](/essentials/v2/memories) (user preferences, conversation history, inferred content), or both. Three signals drive this relevance up: dense-vector similarity, BM25 keyword matching, and [context-graph](/essentials/v2/context-graphs) traversal. The parameters below control all of it. This helps you tune the query results to get the best context for your query.
+Query turns stored context into the *right* context for a specific query. One endpoint  -  `POST /query`  -  queries [Knowledge](/essentials/v2/knowledge) (documents and app sources), [Memories](/essentials/v2/memories) (user preferences, conversation history, inferred content), or both. Three signals drive this relevance up: dense-vector similarity, BM25 keyword matching, and [context-graph](/essentials/v2/context-graphs) traversal. The parameters below control all of it. This helps you tune the query results to get the best context for your query.
 
 For the full request and response schema, see [Query - API Reference](/api-reference/v2/endpoint/query-overview).
 
@@ -31,7 +31,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | Parameter | Type / values | Purpose |
 | --- | --- | --- |
 | `graph_context` | boolean | When `true` (default), includes the entity/relation graph slice in the response. Pair with `mode: "thinking"` for richer multi-hop traversals. See [Context Graphs](/essentials/v2/context-graphs). Set to `false` to drop it when you only need ranked chunks. Default: `true`. |
-| `query_forceful_relations` | boolean | Whether to fetch author-declared related sources (see `relations`[ on ingest](/api-reference/v2/endpoint/ingest-content)) into `additional_context`. **Only takes effect in** `mode: "thinking"`**.** Default: `true`. |
+| `query_forceful_relations` | boolean | Whether to fetch author-declared related sources (see `relations`[ on ingest](/api-reference/v2/endpoint/ingest-context)) into `additional_context`. **Only takes effect in** `mode: "thinking"`**.** Default: `true`. |
 
 ### Shaping results
 
@@ -167,8 +167,8 @@ If you need to keep the two streams separate  -  for instance to format user pre
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Empty `query_paths` / `chunk_relations` | `graph_context` not set, or no relations exist for the result set | Set `graph_context: true`. Empty arrays are normal when there's nothing to return  -  see [Context Graphs](/essentials/v2/context-graphs). |
-| Recent uploads don't appear in results | Indexing not finished | Poll `GET /source/status/source_id (todo)`  -  chunks are invisible until processing reaches at least `graph_creation`. |
-| `metadata_filters` doesn't narrow results | Filter key is undeclared, not match-enabled, or in wrong shape | Declare filterable keys in `tenant_metadata_schema` with `enable_match: true` before ingestion. For free-form per-document fields, nest under `document_metadata`. |
+| Recent uploads don't appear in results | Indexing not finished | Poll `GET /context/status?ids=...&tenant_id=...`  -  chunks are invisible until processing reaches at least `graph_creation`. |
+| `metadata_filters` doesn't narrow results | Filter key is undeclared, not match-enabled, or in wrong shape | Declare filterable keys in `tenant_metadata_schema` with `enable_match: true` before ingestion. For free-form per-document fields, nest under `additional_metadata`. |
 | Memories missing from a `type: "knowledge"` query | Wrong store selected | Use `type: "memory"` or `type: "all"`. |
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
 | `operator: "phrase"` ignored | `query_by` not set to `"text"` | `operator` only applies to BM25 text query  -  switch `query_by` to `"text"`. |

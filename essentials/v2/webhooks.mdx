@@ -13,7 +13,7 @@ Use them when you want to:
 - Track indexing failures without polling
 
 <Info>
-Webhooks are sent for terminal indexing states. For progress updates before completion, use [Source Status](/api-reference/v2/endpoint/source-status).
+Webhooks are sent for terminal indexing states. For progress updates before completion, use [Ingestion Status](/api-reference/v2/endpoint/source-status).
 </Info>
 
 ---
@@ -64,7 +64,7 @@ Your webhook URL must be reachable from the public internet. Localhost and priva
 </Warning>
 
 <Info>
-Webhook management endpoints return their response object directly, not inside the standard v2 `{ success, data, error, meta }` envelope used by `/tenants`, `/source/*`, and `/query`.
+Webhook management endpoints return their response object directly, not inside the standard v2 `{ success, data, error, meta }` envelope used by `/tenants`, `/context/*`, and `/query`.
 </Info>
 
 ### Register with cURL
@@ -190,7 +190,7 @@ HydraDB sends a `POST` request with a JSON body.
 {
   "event": "indexing.status_changed",
   "delivery_id": "<delivery_id>",
-  "id": "<source_id>",
+  "id": "<id>",
   "tenant_id": "<tenant_id>",
   "sub_tenant_id": "<sub_tenant_id>",
   "status": "completed",
@@ -204,7 +204,7 @@ For failed indexing, the payload can include `error_code` and `error_message`:
 {
   "event": "indexing.status_changed",
   "delivery_id": "<delivery_id>",
-  "id": "<source_id>",
+  "id": "<id>",
   "tenant_id": "<tenant_id>",
   "sub_tenant_id": "<sub_tenant_id>",
   "status": "errored",
@@ -218,7 +218,7 @@ For failed indexing, the payload can include `error_code` and `error_message`:
 |---|---|
 | `event` | Event type. Currently `indexing.status_changed`. |
 | `delivery_id` | Stable ID for this event. Store it to deduplicate retries. |
-| `id` | The document, memory, or app-source ID you supplied during ingestion. |
+| `id` | The document, memory, or app item ID you supplied during ingestion. |
 | `tenant_id` | Tenant scope for the indexed item. |
 | `sub_tenant_id` | Sub-tenant scope for the indexed item. |
 | `status` | Terminal indexing status. Usually `completed` or `errored`. |
@@ -381,7 +381,7 @@ curl 'https://api.hydradb.com/webhooks/indexing/deliveries?limit=20' \
   "deliveries": [
     {
       "delivery_id": "<delivery_id>",
-      "doc_id": "<source_id>",
+      "doc_id": "<id>",
       "status": "delivered",
       "indexing_status": "completed",
       "event_type": "indexing.status_changed",
@@ -478,4 +478,4 @@ curl -X POST 'https://api.hydradb.com/webhooks/indexing/deliveries/<delivery_id>
 | Signature check fails | Verify the HMAC is computed over the raw request body, not parsed JSON. |
 | Event arrives more than once | This is expected during retries. Deduplicate with `delivery_id`. |
 | Event never arrives | Check the dashboard delivery history for `failed` or `permanently_failed`. |
-| `id` is unexpected | It is the ID you supplied at ingestion, such as file ID, memory ID, or app-source ID. |
+| `id` is unexpected | It is the ID you supplied at ingestion, such as document ID, memory ID, or app item ID. |

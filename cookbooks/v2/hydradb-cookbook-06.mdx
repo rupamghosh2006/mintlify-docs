@@ -74,10 +74,10 @@ By the end of this cookbook, you'll be able to:
 Four HydraDB capabilities make a Chief of Staff possible:
 
 
-- **Functions as knowledge objects** - each callable function is uploaded to HydraDB via `POST /source/ingest` with `type: "function"`. The function's natural-language description becomes the retrieval surface. HydraDB matches tasks to functions semantically - not by keyword - so "tell the team about the delay" correctly surfaces `send_slack_announcement` even though neither word appears in the function name.
-- **Personalized function selection** - when a user frequently chooses Slack over email for urgent updates, HydraDB's AI Memories encode that preference. Future function suggestions for that user automatically favour `send_slack_message` over `send_email`. This happens without any manual configuration - the pattern emerges from usage stored via `POST /source/ingest`.
+- **Functions as knowledge objects** - each callable function is uploaded to HydraDB via `POST /context/ingest` with `type: "function"`. The function's natural-language description becomes the retrieval surface. HydraDB matches tasks to functions semantically - not by keyword - so "tell the team about the delay" correctly surfaces `send_slack_announcement` even though neither word appears in the function name.
+- **Personalized function selection** - when a user frequently chooses Slack over email for urgent updates, HydraDB's AI Memories encode that preference. Future function suggestions for that user automatically favour `send_slack_message` over `send_email`. This happens without any manual configuration - the pattern emerges from usage stored via `POST /context/ingest`.
 - **Multi-step plan generation** - `mode: "thinking"` on `POST /query` enables multi-query reasoning. Ask HydraDB to return a JSON array of functions with dependencies and it decomposes a complex request like "onboard the new hire" into a sequenced execution plan automatically.
-- **Self-improving function routing** - feeding execution results back to HydraDB via `POST /source/ingest` closes the learning loop. Slow functions, failed calls, and successful sequences all become training signal. The agent gets measurably smarter with every run, without any manual tuning.
+- **Self-improving function routing** - feeding execution results back to HydraDB via `POST /context/ingest` closes the learning loop. Slow functions, failed calls, and successful sequences all become training signal. The agent gets measurably smarter with every run, without any manual tuning.
 
 
 ## Architecture
@@ -242,7 +242,7 @@ Here is a more complex schema - a finance function with approval constraints and
 ### Upload to HydraDB
 
 
-Upload functions using the same `POST /source/ingest` endpoint used for documents. Set `type: "function"` and include the full JSON schema as the content body. Group functions into collections so HydraDB can scope retrieval per team without returning irrelevant options.
+Upload functions using the same `POST /context/ingest` endpoint used for documents. Set `type: "function"` and include the full JSON schema as the content body. Group functions into collections so HydraDB can scope retrieval per team without returning irrelevant options.
 
 
 ```python title="register/upload_functions.py"
@@ -314,12 +314,12 @@ def upload_functions(schema_paths: list, sub_tenant_id: str = "functions") -> li
 
 
 def _upload_batch(batch: list, sub_tenant_id: str) -> list:
-    data = client.source.ingest(
+    data = client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=sub_tenant_id,
         app_knowledge=json.dumps(batch),
     )
-    return [item.source_id for item in (data.results or []) if item.source_id]
+    return [item.id for item in (data.results or []) if item.id]
 
 
 # Upload all functions (all teams, scoped to "functions" sub-tenant)
@@ -358,7 +358,7 @@ def deprecate_function(fn_id: str, sub_tenant_id: str, reason: str):
     Never delete - old executions reference this ID for audit and provenance.
     Use 'deprecated: true' in metadata + upload new version as fn_id_v2.
     """
-    client.source.ingest(
+    client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=sub_tenant_id,
         app_knowledge=json.dumps([{
@@ -515,7 +515,7 @@ class ChiefOfStaffOrchestrator:
         """Log execution outcome back to HydraDB. Closes the learning loop."""
         success = result.get("success", True)
         outcome = "success" if success else "failure"
-        client.source.ingest(
+        client.context.ingest(
             type='memory',
             tenant_id=TENANT_ID,
             sub_tenant_id=f"user-{user_id}",
@@ -534,7 +534,7 @@ class ChiefOfStaffOrchestrator:
 
     def _log_blocked(self, user_id, task, function_id):
         """Log a blocked attempt for audit trail."""
-        client.source.ingest(
+        client.context.ingest(
             type='memory',
             tenant_id=TENANT_ID,
             upsert=True,
@@ -655,7 +655,7 @@ def log_function_feedback(
     if details:
         text += f"Details: {details}"
 
-    client.source.ingest(
+    client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"user-{user_id}",
@@ -713,7 +713,7 @@ def store_user_preferences(user_id: str, profile: str):
     Call during onboarding and whenever preferences change.
     Use the same user_id consistently across all memory writes for this user.
     """
-    client.source.ingest(
+    client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"user-{user_id}",
@@ -792,7 +792,7 @@ def log_execution_outcome(
     ts = datetime.now(timezone.utc).isoformat()
 
     # Write 1: exact record
-    client.source.ingest(
+    client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id="execution-log",
@@ -822,7 +822,7 @@ def log_execution_outcome(
         if outcome == "user_rejected":
             summary += f"User manually overrode this suggestion for user_id={user_id}."
 
-        client.source.ingest(
+        client.context.ingest(
             type='memory',
             tenant_id=TENANT_ID,
             sub_tenant_id=f"user-{user_id}",
@@ -898,7 +898,7 @@ def generate_execution_plan(
 
     # Search user preferences to personalise the plan
     user_prefs = client.query(
-        source='memories',
+        type="memory",
         tenant_id=TENANT_ID,
         sub_tenant_id=f"user-{user_id}",
         query="channel preferences urgency communication style",
@@ -1377,7 +1377,7 @@ def request_approval(
     approval_id = str(uuid.uuid4())[:8]
 
     # Store the pending action in HydraDB so it can be resumed after approval
-    client.source.ingest(
+    client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id="approvals",
@@ -1465,7 +1465,7 @@ def report_function_performance(
         f"Details: {json.dumps(details)}\n"
         f"Observed: {datetime.now(timezone.utc).isoformat()}"
     )
-    client.source.ingest(
+    client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id="function-performance",
@@ -1523,7 +1523,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Upload function schemas
 
 
-**`POST /source/ingest`** - Upload function schemas as app knowledge or files. Max 20/call, 1s between batches
+**`POST /context/ingest`** - Upload function schemas as app sources or documents. Max 20/call, 1s between batches
 
 
 ```json title="body - one function"
@@ -1602,7 +1602,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Store user preference memory
 
 
-**`POST /source/ingest`** - infer: true extracts channel + style signals
+**`POST /context/ingest`** - infer: true extracts channel + style signals
 
 
 ```json title="body"
@@ -1622,7 +1622,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Store execution outcome (audit log)
 
 
-**`POST /source/ingest`** - infer: false for verbatim audit records
+**`POST /context/ingest`** - infer: false for verbatim audit records
 
 
 ```json title="body"
@@ -1642,7 +1642,7 @@ Header: `Authorization: Bearer YOUR_API_KEY`
 ### Store performance signal (self-improvement)
 
 
-**`POST /source/ingest`** - infer: true so HydraDB links signal to future suggestions
+**`POST /context/ingest`** - infer: true so HydraDB links signal to future suggestions
 
 
 ```json title="body"

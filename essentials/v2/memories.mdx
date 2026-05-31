@@ -35,7 +35,7 @@ Good candidates for [Knowledge ingestion](/essentials/v2/knowledge) include prod
 
 ## What happens when you ingest a memory
 
-When you call [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) with `type=memory`, HydraDB turns your input into queryable user context.
+When you call [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context) with `type=memory`, HydraDB turns your input into queryable user context.
 
 The pipeline works like this:
 
@@ -46,7 +46,7 @@ The pipeline works like this:
 
 The most important choice is [`infer`](#choose-whether-hydradb-should-infer-the-memory). It decides whether HydraDB should extract the useful memory from raw signal, or store exactly what you send.
 
-Ingestion is asynchronous, so memories are not queryable immediately. Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) until the memory reaches at least `graph_creation`, or wait for `indexing_status` to become `completed` if you need full indexing. Alternatively, [register a webhook](/essentials/v2/webhooks) to be notified when indexing finishes instead of polling.
+Ingestion is asynchronous, so memories are not queryable immediately. Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) until the memory reaches at least `graph_creation`, or wait for `indexing_status` to become `completed` if you need full indexing. Alternatively, [register a webhook](/essentials/v2/webhooks) to be notified when indexing finishes instead of polling.
 
 ---
 
@@ -90,7 +90,7 @@ Use `user_assistant_pairs` when the useful signal comes from dialogue, especiall
 
 ## Memory fields
 
-The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content). For `type=memory`, send a JSON-stringified `memories` array; each item can use the fields below.
+The full schema lives on [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context). For `type=memory`, send a JSON-stringified `memories` array; each item can use the fields below.
 
 ### Request-level fields
 
@@ -99,15 +99,15 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 | <Field name="type" type="memory" required /> |  -  | Selects the Memories store. Use singular `memory`. |
 | <Field name="tenant_id" type="string" required /> |  -  | Target tenant. |
 | <Field name="sub_tenant_id" type="string" recommended /> | default sub-tenant | User, workspace, or session scope for the memory. |
-| <Field name="upsert" type="boolean" /> | `true` | Replace existing memories with the same `source_id`. |
+| <Field name="upsert" type="boolean" /> | `true` | Replace existing memories with the same `id`. |
 | <Field name="memories" type="string (JSON array)" required /> |  -  | JSON-stringified array of memory items. |
 
 ### `memories` item fields
 
 | Field | Description |
 |---|---|
-| <Field name="source_id" type="string" /> | Optional stable ID. Acts as the upsert key and relation target. |
-| <Field name="title" type="string" /> | Short label for display in `/source/list` and query results. |
+| <Field name="id" type="string" /> | Optional stable ID. Acts as the upsert key and relation target. |
+| <Field name="title" type="string" /> | Short label for display in `/context/list` and query results. |
 | <Field name="text" type="string" recommended /> | Raw text or Markdown content. Required unless `user_assistant_pairs` is provided. |
 | <Field name="user_assistant_pairs" type="array" recommended /> | Conversation pairs in the shape `{ "user": "...", "assistant": "..." }`. Required unless `text` is provided. |
 | <Field name="is_markdown" type="boolean" /> | Treat `text` as Markdown for chunking and indexing. |
@@ -115,25 +115,24 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 | <Field name="custom_instructions" type="string" /> | Guides extraction when `infer: true`. Ignored when `infer: false`. |
 | <Field name="user_name" type="string" /> | User name used during inference. |
 | <Field name="expiry_time" type="integer" /> | TTL in seconds. The memory stops surfacing after expiry. |
-| <Field name="tenant_metadata" type="string (JSON object)" /> | Tenant-schema fields for filtering and query. For memory ingestion, encode this nested object as a JSON string inside each `memories[]` item, for example `"tenant_metadata": "{\"department\":\"support\"}"`. |
+| <Field name="metadata" type="string (JSON object)" /> | Tenant-schema fields for filtering and query. For memory ingestion, encode this nested object as a JSON string inside each `memories[]` item, for example `"metadata": "{\"department\":\"support\"}"`. |
 | <Field name="additional_metadata" type="object" /> | Canonical free-form per-memory fields for display or bookkeeping. Send this as an object. |
-| <Field name="document_metadata" type="object" /> | Deprecated alias for `additional_metadata`. Send this as an object. |
-| <Field name="relations" type="object" /> | Forcefully connect this memory to other memories with `{ "source_ids": [...] }`. |
+| <Field name="relations" type="object" /> | Forcefully connect this memory to other memories with `{ "ids": [...] }`. |
 
 <Note>
   Provide either `text` or `user_assistant_pairs`. Use `infer: true` for raw signal that needs extraction, and `infer: false` for memories you have already structured.
 </Note>
 
 <Warning>
-  **Memory metadata encoding:** `memories` is itself a JSON-stringified multipart field. Within each memory item, `tenant_metadata` is currently validated as a JSON-encoded string, while `additional_metadata` / `document_metadata` is validated as an object. If you pass `tenant_metadata` as an object, the API returns `400 INVALID_INPUT`.
+  **Memory metadata encoding:** `memories` is itself a JSON-stringified multipart field. Within each memory item, `metadata` is currently validated as a JSON-encoded string, while `additional_metadata` / `additional_metadata` is validated as an object. If you pass `metadata` as an object, the API returns `400 INVALID_INPUT`.
 </Warning>
 
 ```json
 {
-  "source_id": "pref_dark_mode",
+  "id": "pref_dark_mode",
   "text": "User prefers dark mode and concise answers.",
   "infer": true,
-  "tenant_metadata": "{\"department\":\"support\",\"workspace\":\"docs\"}",
+  "metadata": "{\"department\":\"support\",\"workspace\":\"docs\"}",
   "additional_metadata": { "source": "onboarding" }
 }
 ```
@@ -166,50 +165,50 @@ Set forceful relations with the `relations` field on any item in the `memories` 
 ```json
 {
   "relations": {
-    "source_ids": ["memory-id-1", "memory-id-2"]
+    "ids": ["memory-id-1", "memory-id-2"]
   }
 }
 ```
 
 <Note>
-The legacy alias `cortex_source_ids` is still accepted for backward compatibility. Prefer `source_ids` for new integrations.
+Use `ids` for new integrations.
 </Note>
 
 <CodeGroup>
 ```python Python SDK
 import json
 
-client.source.ingest(
+client.context.ingest(
     type="memory",
     tenant_id="acme_corp",
     sub_tenant_id="user_alex",
     memories=json.dumps([
         {
             "text": "User prefers concise answers",
-            "source_id": "pref-concise",
+            "id": "pref-concise",
             "infer": True,
-            "relations": {"source_ids": ["pref-tone", "pref-format"]},
+            "relations": {"ids": ["pref-tone", "pref-format"]},
         }
     ]),
 )
 ```
 ```typescript TypeScript SDK
-await client.source.ingest({
+await client.context.ingest({
   type: "memory",
   tenant_id: "acme_corp",
   sub_tenant_id: "user_alex",
   memories: JSON.stringify([
     {
       text: "User prefers concise answers",
-      source_id: "pref-concise",
+      id: "pref-concise",
       infer: true,
-      relations: { source_ids: ["pref-tone", "pref-format"] },
+      relations: { ids: ["pref-tone", "pref-format"] },
     },
   ]),
 });
 ```
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=memory" \
@@ -218,9 +217,9 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
   -F 'memories=[
     {
       "text": "User prefers concise answers",
-      "source_id": "pref-concise",
+      "id": "pref-concise",
       "infer": true,
-      "relations": { "source_ids": ["pref-tone", "pref-format"] }
+      "relations": { "ids": ["pref-tone", "pref-format"] }
     }
   ]'
 ```
@@ -228,10 +227,10 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 At query time, linked memories return in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). Forceful relation expansion is enabled by default for thinking-mode queries. Set `query_forceful_relations=false` to disable it.
 
-To make relations work reliably, control the `source_id` for the memories you ingest. You need stable IDs in order to link memories together.
+To make relations work reliably, control the `id` for the memories you ingest. You need stable IDs in order to link memories together.
 
 <Warning>
-**Memory items only.** Forceful relations work within the same store. Pointing a Memory item at a Knowledge source ID, or a Knowledge item at a Memory source ID, silently returns nothing at query time.
+**Memory items only.** Forceful relations work within the same store. Pointing a Memory item at a Knowledge ID, or a Knowledge item at a Memory ID, silently returns nothing at query time.
 </Warning>
 
 <Warning>
@@ -253,7 +252,7 @@ from hydra_db import HydraDB
 
 client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
-result = client.source.ingest(
+result = client.context.ingest(
     type="memory",
     tenant_id="acme_corp",
     sub_tenant_id="user_john_123",
@@ -275,7 +274,7 @@ const client = new HydraDBClient({
   token: process.env.HYDRA_DB_API_KEY,
 });
 
-const result = await client.source.ingest({
+const result = await client.context.ingest({
   type: "memory",
   tenant_id: "acme_corp",
   sub_tenant_id: "user_john_123",
@@ -291,7 +290,7 @@ const result = await client.source.ingest({
 ```
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=memory" \
@@ -309,7 +308,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 </CodeGroup>
 
-The response returns a `source_id` for each memory and an initial `status` of `queued`. The payload is wrapped in the standard envelope, so the fields live under `data` (`response.data.results`):
+The response returns a `id` for each memory and an initial `status` of `queued`. The payload is wrapped in the standard envelope, so the fields live under `data` (`response.data.results`):
 
 ```json
 {
@@ -318,7 +317,7 @@ The response returns a `source_id` for each memory and an initial `status` of `q
     "success": true,
     "message": "Memories queued for ingestion successfully",
     "results": [
-      { "source_id": "mem_abc123", "status": "queued", "infer": true }
+      { "id": "mem_abc123", "status": "queued", "infer": true }
     ],
     "success_count": 1,
     "failed_count": 0
@@ -331,7 +330,7 @@ The response returns a `source_id` for each memory and an initial `status` of `q
 }
 ```
 
-Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) with the returned `source_id` until `indexing_status` is `completed`. You can also use webhooks when available. After indexing, the memory can surface in [`POST /query`](/api-reference/v2/endpoint/query-overview) when called with `type: "memory"` or `type: "all"`.
+Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) with the returned `id` until `indexing_status` is `completed`. You can also use webhooks when available. After indexing, the memory can surface in [`POST /query`](/api-reference/v2/endpoint/query-overview) when called with `type: "memory"` or `type: "all"`.
 
 ---
 
@@ -378,7 +377,7 @@ Here is a more realistic example. A user has been toggling dark mode in your app
 ```python Python SDK
 import json
 
-client.source.ingest(
+client.context.ingest(
     type="memory",
     tenant_id="acme_corp",
     sub_tenant_id="user_john_123",
@@ -400,7 +399,7 @@ client.source.ingest(
 ```
 
 ```typescript TypeScript SDK
-const result = await client.source.ingest({
+const result = await client.context.ingest({
   type: "memory",
   tenant_id: "acme_corp",
   sub_tenant_id: "user_john_123",
@@ -421,7 +420,7 @@ const result = await client.source.ingest({
 ```
 
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=memory" \
@@ -456,8 +455,8 @@ If you sent the same input with `infer: false`, HydraDB would index the event lo
 | Extracting preferences yourself before sending raw logs | You duplicate work HydraDB can do for you | Send the raw signal with `infer: true` |
 | Sending pre-extracted facts with `infer: true` | HydraDB may re-derive the memory and change the original phrasing | Use `infer: false` for already-structured facts |
 | Treating `user_name` as cosmetic | It can influence inference, so the wrong name can bias extraction | Pass the actual user's name |
-| Storing shared docs as memories | They will not surface when querying `type: "knowledge"` | Use [knowledge ingestion](/essentials/v2/knowledge) with `type=knowledge` on [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) |
-| Expecting immediate searchability | Ingestion is asynchronous | Poll [`GET /source/status`](/api-reference/v2/endpoint/sources-overview) until indexing is complete |
+| Storing shared docs as memories | They will not surface when querying `type: "knowledge"` | Use [knowledge ingestion](/essentials/v2/knowledge) with `type=knowledge` on [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context) |
+| Expecting immediate searchability | Ingestion is asynchronous | Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) until indexing is complete |
 | Forgetting `infer` for conversational input | Raw dialogue is stored without preference extraction | Set `infer: true` for conversations |
 
 ---

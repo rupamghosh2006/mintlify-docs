@@ -17,7 +17,7 @@ description: "Single reference to all HydraDB endpoints"
 | Group | Purpose | When to reach for it |
 |---|---|---|
 | [Tenants](/api-reference/v2/endpoint/tenants-overview) | Create, monitor, and manage isolated workspaces | First step in any integration  -  and any time you need usage stats, provisioning status, or to tear down a workspace |
-| [Sources](/api-reference/v2/endpoint/sources-overview) | Ingest, list, fetch, delete, and inspect knowledge or memories | Every time data flows into HydraDB  -  file uploads, app-uploads, user memories, and lifecycle ops |
+| [Context](/api-reference/v2/endpoint/sources-overview) | Ingest, list, fetch, delete, and inspect knowledge or memories | Every time data flows into HydraDB  -  document uploads, app sources, user memories, and lifecycle ops |
 | [Query](/api-reference/v2/endpoint/query-overview) | Retrieve context with hybrid or text query | At query time  -  the only endpoint you call to feed an LLM |
 
 ## Core concepts
@@ -29,8 +29,8 @@ description: "Single reference to all HydraDB endpoints"
 | [Knowledge](/essentials/v2/knowledge) | Shared source material such as PDFs, docs, app pages, tickets, Slack threads, or webpages. | Use `type=knowledge` when many users or agents should query the same content. |
 | [Memory](/essentials/v2/memories) | User-specific context such as preferences, conversation history, notes, and inferred traits. | Use `type=memory` when the content should personalize answers for a specific user or sub-tenant. |
 | `tenant_metadata_schema` | Tenant-level fields you define up front so metadata can be filtered or quired consistently. | Use it for stable fields like department, customer, region, plan, category, or compliance label. |
-| `file_metadata` | Per-file metadata sent during file ingestion. | Use it to attach source IDs, titles, filterable metadata, document metadata, or forceful relations to each uploaded file. |
-| `source_ids` | IDs returned by ingestion or visible from `/source/list`. | Use them when polling processing status, fetching content, listing a specific subset, deleting sources, or inspecting relations. |
+| `document_metadata` | Per-document metadata sent during document ingestion. | Use it to attach IDs, titles, filterable metadata, document metadata, or forceful relations to each uploaded document. |
+| `ids` | IDs returned by ingestion or visible from `/context/list`. | Use them when polling processing status, inspecting content, listing a specific subset, deleting sources, or inspecting relations. |
 
 ## End-to-end lifecycle
 
@@ -99,12 +99,12 @@ SDK methods mirror the API: `client.<group>.<method>()` maps to the correspondin
 | [`/tenants/status`](/api-reference/v2/endpoint/tenant-status) | `GET` | `tenants.status` | Check provisioning readiness | You just created a tenant and need to wait before ingesting data. |
 | [`/tenants/sub-tenants`](/api-reference/v2/endpoint/list-sub-tenants) | `GET` | `tenants.subTenants` / `tenants.sub_tenants` | List active sub-tenants | You partition data by user, team, customer, or account and need to inspect those partitions. |
 | [`/tenants/stats`](/api-reference/v2/endpoint/tenant-stats) | `GET` | `tenants.stats` | Get usage statistics | You want to monitor object counts and vector dimensions for a tenant. |
-| [`/source/ingest`](/api-reference/v2/endpoint/ingest-content) | `POST` | `source.ingest` | Ingest knowledge or memories | You are uploading files, app-generated sources, or user memories. |
-| [`/source/status`](/api-reference/v2/endpoint/source-status) | `GET` | `source.status` | Check processing status | You have source IDs from ingestion and need to know when they are queryable. |
-| [`/source/fetch`](/api-reference/v2/endpoint/fetch-content) | `GET` | `source.fetch` | Retrieve original source content or presigned URL | You need to display or inspect the original ingested content. |
-| [`/source/list`](/api-reference/v2/endpoint/list-documents) | `POST` | `source.list` | Browse knowledge or memories | You need pagination, filters, field projection, or a specific subset by `source_ids`. |
-| [`/source`](/api-reference/v2/endpoint/delete-source) | `DELETE` | `source.delete` | Delete sources or memories | You need to remove one or more knowledge sources or memories by ID. |
-| [`/source/relations`](/api-reference/v2/endpoint/source-relations) | `GET` | `source.relations` | Inspect entity relationships | You need graph relations for a source or sub-tenant. |
+| [`/context/ingest`](/api-reference/v2/endpoint/ingest-context) | `POST` | `context.ingest` | Ingest knowledge or memories | You are uploading documents, app sources, or user memories. |
+| [`/context/status`](/api-reference/v2/endpoint/source-status) | `GET` | `context.status` | Check processing status | You have IDs from ingestion and need to know when they are queryable. |
+| [`/context/inspect`](/api-reference/v2/endpoint/fetch-content) | `GET` | `context.inspect` | Inspect original source content or presigned URL | You need to display or inspect the original ingested content. |
+| [`/context/list`](/api-reference/v2/endpoint/list-documents) | `POST` | `context.list` | Browse knowledge or memories | You need pagination, filters, field projection, or a specific subset by `ids`. |
+| [`/context`](/api-reference/v2/endpoint/delete-source) | `DELETE` | `context.delete` | Delete sources or memories | You need to remove one or more knowledge sources or memories by ID. |
+| [`/context/relations`](/api-reference/v2/endpoint/source-relations) | `GET` | `context.relations` | Inspect entity relationships | You need graph relations for a source or sub-tenant. |
 | [`/query`](/api-reference/v2/endpoint/query) | `POST` | `query` | Unified query over knowledge, memories, or both | You need retrieval with `hybrid` or `text` query across `type: "knowledge"`, `type: "memory"`, or `type: "all"`. |
 
 ## Conventions
@@ -126,7 +126,7 @@ curl -X POST 'https://api.hydradb.com/query' \
   }'
 ```
 
-**Response envelope:** Core v2 endpoints (`/tenants`, `/source/*`, and `/query`) return a consistent envelope. Endpoint pages show the full envelope; the resource-specific payload lives under `data`. Webhook management endpoints (`/webhooks/indexing*`) are the exception: they return their documented response object directly.
+**Response envelope:** Core v2 endpoints (`/tenants`, `/context/*`, and `/query`) return a consistent envelope. Endpoint pages show the full envelope; the resource-specific payload lives under `data`. Webhook management endpoints (`/webhooks/indexing*`) are the exception: they return their documented response object directly.
 
 ```json
 {
@@ -148,7 +148,7 @@ Errors use the same envelope with `success: false`, `data: null`, and an `error`
 
 - **Async operations.** Tenant creation, deletion, and content ingestion are asynchronous. They return immediately after queuing. Use the relevant status endpoint to confirm completion before downstream operations.
 
-- **Pagination.** Listing endpoints (`/source/list`) return pagination fields for browsing large result sets.
+- **Pagination.** Listing endpoints (`/context/list`) return pagination fields for browsing large result sets.
 
 - **Parameter casing.** The REST API uses snake_case (`tenant_id`). The TypeScript SDK accepts the same snake_case keys; method names are camelCase when generated for TypeScript. The Python SDK uses snake_case throughout.
 

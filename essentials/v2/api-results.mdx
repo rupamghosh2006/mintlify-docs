@@ -80,7 +80,7 @@ Four things matter for prompt construction:
 - **`graph_context.chunk_relations`** + **`chunk_id_to_group_ids`** - per-chunk graph relations grouped by `group_id`, so you can attach the right triplets to each chunk.
 - **`additional_context`** - a map keyed by `chunk_uuid`. When a chunk includes `extra_context_ids`, use those IDs to look up related chunks here.
 
-The raw object has too much noise for an LLM — IDs, timestamps, metadata. Section 2 shows how to convert it into a clean string.
+The raw object has too much noise for an LLM - IDs, timestamps, metadata. Section 2 shows how to convert it into a clean string.
 
 ---
 
@@ -114,14 +114,14 @@ import { HydraDBClient, buildString } from "@hydradb/sdk";
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
 const result = await client.query({
-  tenantId: "your-tenant",
-  subTenantId: "your-sub-tenant",
+  tenant_id: "your-tenant",
+  sub_tenant_id: "your-sub-tenant",
   query: "How does authentication work?",
   type: "knowledge",
-  queryBy: "hybrid",
-  maxResults: 5,
+  query_by: "hybrid",
+  max_results: 5,
   mode: "fast",
-  graphContext: true,
+  graph_context: true,
 });
 
 const context = buildString(result);
@@ -199,12 +199,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  tenantId: "your-tenant",
+  tenant_id: "your-tenant",
   query: question,
   type: "knowledge",
-  queryBy: "hybrid",
+  query_by: "hybrid",
   mode: "fast",
-  graphContext: true,
+  graph_context: true,
 });
 
 const context = buildString(result);
@@ -312,11 +312,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "What is our refund policy?";
 
 const result = await hydra.query({
-  tenantId: "acme_corp",
-  subTenantId: "user_123",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_123",
   query: question,
   type: "all",
-  queryBy: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
 });
 
@@ -405,18 +405,18 @@ const hydra = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
 const [knowledgeResult, memoryResult] = await Promise.all([
   hydra.query({
-    tenantId: "acme_corp",
+    tenant_id: "acme_corp",
     query: "refund policy",
     type: "knowledge",
-    queryBy: "hybrid",
+    query_by: "hybrid",
     mode: "thinking",
   }),
   hydra.query({
-    tenantId: "acme_corp",
-    subTenantId: "user_123",
+    tenant_id: "acme_corp",
+    sub_tenant_id: "user_123",
     query: "answer style preferences",
     type: "memory",
-    queryBy: "hybrid",
+    query_by: "hybrid",
   }),
 ]);
 

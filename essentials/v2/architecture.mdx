@@ -14,8 +14,8 @@ HydraDB organizes its work into three logical planes. You interact only with the
 | Plane | What it handles | Endpoints |
 |---|---|---|
 | **Control** | API authentication, tenant lifecycle, provisioning, and status | [`/tenants`](/api-reference/v2/endpoint/tenants-overview) family |
-| **Ingestion** | File and app-source uploads, memory writes, parsing, chunking, embedding, and graph construction | [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content), [`GET /source/status`](/api-reference/v2/endpoint/source-status) |
-| **Retrieval** | Hybrid query, metadata filtering, graph context, keyword bm25 search, and response shaping | [`POST /query`](/api-reference/v2/endpoint/query), [`GET /source/relations`](/api-reference/v2/endpoint/source-relations) |
+| **Ingestion** | File and app-source uploads, memory writes, parsing, chunking, embedding, and graph construction | [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context), [`GET /context/status`](/api-reference/v2/endpoint/source-status) |
+| **Retrieval** | Hybrid query, metadata filtering, graph context, keyword bm25 search, and response shaping | [`POST /query`](/api-reference/v2/endpoint/query), [`GET /context/relations`](/api-reference/v2/endpoint/source-relations) |
 
 ```mermaid
 flowchart LR
@@ -63,8 +63,8 @@ flowchart LR
   Client --|HTTPS + Bearer token| API
   API --> Tenants
   API --> Status
-  API --|POST /source/ingest (type=knowledge)|--> Queue
-  API --|POST /source/ingest (type=memory)|--> Queue
+  API --|POST /context/ingest (type=knowledge)|--> Queue
+  API --|POST /context/ingest (type=memory)|--> Queue
   Queue --> Parser
   Parser --> Sources
   Parser --> Embed
@@ -84,7 +84,7 @@ flowchart LR
 
 Two details to notice in the diagram:
 
-- **Two vector stores, one ingest endpoint.** [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) routes to the [Knowledge](/essentials/v2/knowledge) store when `type=knowledge` and to the [Memories](/essentials/v2/memories) store when `type=memory`. Same endpoint, different bucket.
+- **Two vector stores, one ingest endpoint.** [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context) routes to the [Knowledge](/essentials/v2/knowledge) store when `type=knowledge` and to the [Memories](/essentials/v2/memories) store when `type=memory`. Same endpoint, different bucket.
 - **One query endpoint, every retrieval method.** [`POST /query`](/api-reference/v2/endpoint/query) is the only retrieval entry point. The `type` and `query_by` parameters decide what gets queried and how  -  see [Query](/essentials/v2/query) for the full picture.
 
 ---
@@ -117,12 +117,12 @@ flowchart LR
   style Errored fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:#f8fafc,stroke-linecap:round
 ```
 
-Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) with the returned `source_id` to follow each item through the pipeline. Two practical notes:
+Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) with the returned `id` to follow each item through the pipeline. Two practical notes:
 
 - **`graph_creation` is already queryable.** Chunks become retrievable as soon as embedding finishes; you only need to wait for `completed` when you specifically need full graph context (`graph_context: true` on query).
 - **Failures surface with detail.** An `errored` status comes back with an `error_code` and `message` so you can distinguish parse failures from validation problems from infrastructure issues.
 
-The full status table and polling pattern lives at [Source Status](/api-reference/v2/endpoint/source-status).
+The full status table and polling pattern lives at [Ingestion Status](/api-reference/v2/endpoint/source-status).
 
 ---
 
@@ -132,8 +132,8 @@ Here's the canonical end-to-end flow. Each step links to the endpoint that owns 
 
 1. **Create a tenant** with [`POST /tenants`](/api-reference/v2/endpoint/create-tenant)  -  your isolated workspace, optionally with a [metadata schema](/essentials/v2/metadata) declared up front.
 2. **Wait for provisioning** by polling [`GET /tenants/status`](/api-reference/v2/endpoint/tenant-status) until `vectorstore_status.knowledge`, `vectorstore_status.memories`, and `graph_status` are all `true`.
-3. **Ingest content** with [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content)  -  pick `type=knowledge` for shared documents or `type=memory` for per-user context. See [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) for the content models.
-4. **Watch indexing finish** by polling [`GET /source/status`](/api-reference/v2/endpoint/source-status) until each `source_id` reaches `completed` (or `graph_creation` if you don't need graph traversal).
+3. **Ingest content** with [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context)  -  pick `type=knowledge` for shared documents or `type=memory` for per-user context. See [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) for the content models.
+4. **Watch indexing finish** by polling [`GET /context/status`](/api-reference/v2/endpoint/source-status) until each `id` reaches `completed` (or `graph_creation` if you don't need graph traversal).
 5. **Query** with [`POST /query`](/api-reference/v2/endpoint/query). Pick `type: "knowledge"` for Knowledge, `type: "memory"` for Memories, or `type: "all"` for both. Pair with `query_by: "hybrid"` (default) or `"text"` (BM25, with `operator`). The mechanics live in [Query](/essentials/v2/query).
 
 That's the whole loop. Most of what changes between integrations is *what* you put in the metadata, *what* you query with, and *which* `type` and `query_by` combination fits the task.
@@ -179,9 +179,9 @@ A short cheat sheet for the parameters you'll touch most often, and where each o
 |---|---|---|
 | `tenant_id` | Every call | Selects the isolated workspace. Required on every request. |
 | `sub_tenant_id` | Ingest + query | Narrows data to a user, team, or workspace inside the tenant. |
-| `tenant_metadata` | [Ingest](/api-reference/v2/endpoint/ingest-content) | Schema-aligned metadata indexed at ingest. Must match the [tenant metadata schema](/essentials/v2/metadata) declared at tenant creation. |
-| `document_metadata` | [Ingest](/api-reference/v2/endpoint/ingest-content) | Free-form per-document metadata. Stored alongside the source; filterable at query via `metadata_filters.document_metadata`. |
-| `metadata_filters` | [Query](/api-reference/v2/endpoint/query) | Deterministic narrowing before ranking. Top-level keys match `tenant_metadata`; nested `document_metadata` filters free-form fields. |
+| `metadata` | [Ingest](/api-reference/v2/endpoint/ingest-context) | Schema-aligned metadata indexed at ingest. Must match the [tenant metadata schema](/essentials/v2/metadata) declared at tenant creation. |
+| `additional_metadata` | [Ingest](/api-reference/v2/endpoint/ingest-context) | Free-form per-document metadata. Stored alongside the source; filterable at query via `metadata_filters.additional_metadata`. |
+| `metadata_filters` | [Query](/api-reference/v2/endpoint/query) | Deterministic narrowing before ranking. Top-level keys match `metadata`; nested `additional_metadata` filters free-form fields. |
 | `alpha` | [Query](/api-reference/v2/endpoint/query) | Blends semantic vs. keyword bm25 scores in `query_by: "hybrid"`. |
 | `graph_context` | [Query](/api-reference/v2/endpoint/query) | When `true`, attaches the relevant slice of the [context graph](/essentials/v2/context-graphs) to the response. |
 | `mode` | [Query](/api-reference/v2/endpoint/query) | `"fast"` for low-latency single-pass retrieval; `"thinking"` for multi-query expansion and reranking. |
@@ -192,7 +192,7 @@ A short cheat sheet for the parameters you'll touch most often, and where each o
 
 HydraDB separates **write-time** work from **query-time** work. Uploads return quickly and run in the background; query stays synchronous and reads only indexed content. When results look incomplete, walk the chain in order:
 
-1. **Status first.** Did every `source_id` reach `completed` (or at least `graph_creation`)? Check [Source Status](/api-reference/v2/endpoint/source-status).
+1. **Status first.** Did every `id` reach `completed` (or at least `graph_creation`)? Check [Ingestion Status](/api-reference/v2/endpoint/source-status).
 2. **Scope second.** Is the `tenant_id` correct? Did you write under one `sub_tenant_id` and read under another? See [Multi-Tenant](/essentials/v2/multi-tenant).
 3. **Filters third.** Are your `metadata_filters` keys actually declared in `tenant_metadata_schema` with `enable_match: true`? Undeclared keys are silently ignored. See [Metadata](/essentials/v2/metadata).
 

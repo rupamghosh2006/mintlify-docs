@@ -1,61 +1,56 @@
 ---
-title: "Source Status"
-description: "Check the processing status of ingested sources by their IDs."
-openapi: "api-reference/v2/openapi.json GET /source/status"
+title: "Ingestion Status"
+description: "Check the processing status of ingested documents. "
+openapi: "api-reference/v2/openapi.json GET /context/status"
 ---
 
 import { Field } from "/snippets/field.jsx";
 
+Since ingestion is asynchronous, use this endpoint to determine when context is ready to be retrieved.
 
-Since ingestion is asynchronous, use this endpoint to determine when content is ready to be queried.
+Pass one or more IDs in `ids` to retrieve status. Works for documents, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
 
-<Tip>
-Prefer not to poll this endpoint? Hydra DB can notify you automatically when a source finishes processing. See [Webhooks](/essentials/v2/webhooks) to get started.
-</Tip>
-
-Pass one or more `source_id` values in `source_ids` to retrieve status. Works for files, app sources, and memories. For more information, see the [Knowledge](/essentials/v2/knowledge) and [Memories](/essentials/v2/memories) guides.
+<Info>
+  **Prefer webhooks over polling?** Register a webhook for `indexing.status_changed` events and HydraDB will `POST` to your endpoint when content reaches a terminal state (`completed` or `errored`). See [Webhooks](/essentials/v2/webhooks) for setup and receiver examples.
+</Info> 
 
 <RequestExample>
+
 ```python Python SDK
-status = client.source.status(
+status = client.context.status(
     tenant_id="acme_corp",
     sub_tenant_id="team_docs",
-    source_ids=["policy_main", "runbook_deploy"],
+    ids=["policy_main", "runbook_deploy"],
 )
 ```
+
 ```typescript TypeScript SDK
-const status = await client.source.status({
+const status = await client.context.status({
   tenant_id: "acme_corp",
   sub_tenant_id: "team_docs",
-  source_ids: ["policy_main", "runbook_deploy"],
+  ids: ["policy_main", "runbook_deploy"],
 });
 ```
+
 ```bash cURL
-curl -G 'https://api.hydradb.com/source/status' \
+curl -G 'https://api.hydradb.com/context/status' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "API-Version: 2" \
   --data-urlencode "tenant_id=acme_corp" \
   --data-urlencode "sub_tenant_id=team_docs" \
-  --data-urlencode "source_ids=policy_main" \
-  --data-urlencode "source_ids=runbook_deploy"
+  --data-urlencode "ids=policy_main" \
+  --data-urlencode "ids=runbook_deploy"
 ```
+
 </RequestExample>
 
 ## Query parameters
 
- Provide `tenant_id` and at least one source ID using `source_ids`.
-
-<Info>
-For multiple IDs over raw HTTP, repeat the query parameter: `/source/status?tenant_id=acme_corp&source_ids=policy_main&source_ids=runbook_deploy`
-</Info>
-
 | Name | Description |
 | --- | --- |
-| <Field name="source_ids" type="string[]" required /> | One or more `source_id` values returned at ingestion. Accepts IDs of any source  -  files, app sources, memories. |
+| <Field name="ids" type="string[]" required /> | One or more `id` values returned at ingestion. Accepts IDs for documents, app sources, or memories. |
 | <Field name="tenant_id" type="string" required /> | Tenant the items belong to. |
 | <Field name="sub_tenant_id" type="string or null" /> | Sub-tenant scope. If omitted, the default sub-tenant is used. (default=`null`) |
-
-`200` response body matches OpenAPI schema **`BatchProcessingStatus`** with one `ProcessingStatus` per requested ID.
 
 <ResponseExample>
 
@@ -65,14 +60,14 @@ For multiple IDs over raw HTTP, repeat the query parameter: `/source/status?tena
   "data": {
     "statuses": [
       {
-        "source_id": "policy_main",
+        "id": "policy_main",
         "indexing_status": "completed",
         "error_code": "",
         "success": true,
         "message": "Processing status retrieved successfully"
       },
       {
-        "source_id": "runbook_deploy",
+        "id": "runbook_deploy",
         "indexing_status": "graph_creation",
         "error_code": "",
         "success": true,
@@ -134,11 +129,11 @@ flowchart LR
     linkStyle default stroke:#64748b,stroke-width:2px;
 ```
 
-| Status | queryable? | Meaning |
-|---|---|---|
+| Status | Searchable? | Meaning |
+| --- | --- | --- |
 | `queued` | No | Accepted by the server, not yet picked up by a worker. |
 | `processing` | No | Content is being parsed, chunked, and embedded. |
-| `graph_creation` | **Yes** | Indexed and retrievable; the knowledge graph is still being built. Already queryable via `/query`, but graph context may still be incomplete. |
+| `graph_creation` | **Yes** | Indexed and retrievable; the knowledge graph is still being built. Already searchable via `/query`, but graph context may still be incomplete. |
 | `completed` | Yes | Fully indexed and graphed. Ready for all retrieval modes. |
 | `errored` | No | Processing failed. Inspect `error_code` and `message`. |
 
@@ -146,60 +141,63 @@ The normal progression is `queued` → `processing` → `graph_creation` → `co
 
 ## Polling patterns
 
-### Stop when content is queryable
+### Stop when content is searchable
 
-Use this for normal RAG/query flows. `graph_creation` means chunks are indexed and can be retrieved.
+Use this for normal RAG/search flows. `graph_creation` means chunks are indexed and can be retrieved.
 
 <CodeGroup>
+
 ```python Python
 import time
 
-source_ids = ["policy_main", "runbook_deploy"]
+ids = ["policy_main", "runbook_deploy"]
 
 while True:
-    response = client.source.status(
+    response = client.context.status(
         tenant_id="acme_corp",
         sub_tenant_id="team_docs",
-        source_ids=source_ids,
+        ids=ids,
     )
     statuses = [s.indexing_status for s in response.statuses]
 
     if all(s in ("graph_creation", "completed") for s in statuses):
         break
     if any(s == "errored" for s in statuses):
-        raise RuntimeError("Source processing failed")
+        raise RuntimeError("Context processing failed")
 
     time.sleep(5)
 ```
+
 ```typescript TypeScript
-const sourceIds = ["policy_main", "runbook_deploy"];
+const ids = ["policy_main", "runbook_deploy"];
 
 while (true) {
-  const response = await client.source.status({
+  const response = await client.context.status({
     tenant_id: "acme_corp",
     sub_tenant_id: "team_docs",
-    source_ids: sourceIds,
+    ids: ids,
   });
 
   const statuses = response.statuses.map((s) => s.indexing_status);
   if (statuses.every((s) => s === "graph_creation" || s === "completed")) break;
-  if (statuses.some((s) => s === "errored")) throw new Error("Source processing failed");
+  if (statuses.some((s) => s === "errored")) throw new Error("Context processing failed");
 
   await new Promise((r) => setTimeout(r, 5000));
 }
 ```
+
 </CodeGroup>
 
 ### Stop when graph processing is complete
 
-Use this before graph-heavy operations such as `/source/relations` or when you require complete `graph_context`.
+Use this before graph-heavy operations such as `/context/relations` or when you require complete `graph_context`.
 
 ```python
 while True:
-    response = client.source.status(
+    response = client.context.status(
         tenant_id="acme_corp",
         sub_tenant_id="team_docs",
-        source_ids=["policy_main", "runbook_deploy"],
+        ids=["policy_main", "runbook_deploy"],
     )
     statuses = [s.indexing_status for s in response.statuses]
 
@@ -215,12 +213,12 @@ Typical processing time:
 
 - **Memories** (text, markdown, conversation pairs): seconds
 - **Small documents** (under 50 pages): 1–5 minutes
-- **Large documents** (50+ pages): 5–15 minutes
+- **Large documents** (50\+ pages): 5–15 minutes
 
 ## Behavior notes
 
 <Info>
-**`graph_creation` is queryable.** Items in this state are already retrievable via `/query`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
+  **`graph_creation` is searchable.** Items in this state are already retrievable via `/query`. Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
 </Info>
 
 - **Unknown IDs return as `errored`:** If you pass an ID that does not exist (e.g., a typo), HydraDB returns an entry with `indexing_status: "errored"` rather than silently dropping it.
@@ -232,12 +230,12 @@ Common codes: `400 INVALID_PARAMETERS`, `404 TENANT_NOT_FOUND`, `422 VALIDATION_
 <div className="api-before-related-resources" />
 
 <Tip>
-**Related Resources**
+  **Related Resources**
 
-- **Before this:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - to get the IDs
-- **After completion:** [Query](/api-reference/v2/endpoint/query)
-- **After completion:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
-- **After completion:** [Source Relations](/api-reference/v2/endpoint/source-relations)
-- **Read more:** [Usage → Knowledge](/essentials/v2/knowledge)
-- **Read more:** [Usage → Memories](/essentials/v2/memories)
+  - **Before this:** [Ingest Context](/api-reference/v2/endpoint/ingest-context) - to get the IDs
+  - **After completion:** [Query](/api-reference/v2/endpoint/query)
+  - **After completion:** [Fetch Content](/api-reference/v2/endpoint/fetch-content)
+  - **After completion:** [Context Relations](/api-reference/v2/endpoint/source-relations)
+  - **Read more:** [Usage → Knowledge](/essentials/v2/knowledge)
+  - **Read more:** [Usage → Memories](/essentials/v2/memories)
 </Tip>

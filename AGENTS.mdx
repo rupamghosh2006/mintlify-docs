@@ -11,12 +11,12 @@ This document is a self-contained reference designed for AI coding agents. It co
 
 1. **`POST /tenants`** (`client.tenants.create()`): Provision an isolated tenant workspace.
 2. **`GET /tenants/status`** (`client.tenants.status()`): Poll until `infra.ready_for_ingestion` is true.
-3. **`POST /source/ingest`** (`client.source.ingest()`): Ingest documents, app records, or memories under `type="knowledge"` or `type="memory"`.
-4. **`GET /source/status`** (`client.source.status()`): Poll status using `source_ids` until `indexing_status` is `completed` or `graph_creation`.
+3. **`POST /context/ingest`** (`client.context.ingest()`): Ingest documents, app records, or memories under `type="knowledge"` or `type="memory"`.
+4. **`GET /context/status`** (`client.context.status()`): Poll status using `ids` until `indexing_status` is `completed` or `graph_creation`.
 5. **`POST /query`** (`client.query()`): Retrieve context via `type: "knowledge"`, `"memory"`, or `"all"`.
 
 
-> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/source/*`, and `/query`.
+> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/context/*`, and `/query`.
 
 ---
 
@@ -33,7 +33,7 @@ This document is a self-contained reference designed for AI coding agents. It co
 
 ### Response envelope
 
-Core raw HTTP responses (`/tenants`, `/source/*`, and `/search`) are wrapped:
+Core raw HTTP responses (`/tenants`, `/context/*`, and `/search`) are wrapped:
 
 ```json
 {
@@ -61,13 +61,13 @@ Core raw HTTP responses (`/tenants`, `/source/*`, and `/search`) are wrapped:
 | List tenants | `GET /tenants` · `client.tenants.list()` |
 | List sub-tenants | `GET /tenants/sub-tenants` · TS `client.tenants.subTenants()` / Python `client.tenants.sub_tenants()` |
 | Tenant stats | `GET /tenants/stats` · `client.tenants.stats()` |
-| Ingest files, app sources, memories | `POST /source/ingest` · `client.source.ingest()` |
-| Check indexing | `GET /source/status` · `client.source.status()` |
+| Ingest documents, app sources, memories | `POST /context/ingest` · `client.context.ingest()` |
+| Check indexing | `GET /context/status` · `client.context.status()` |
 | Search knowledge/memories/both | `POST /query` · `client.query()` |
-| List sources/memories | `POST /source/list` · `client.source.list()` |
-| Fetch source content | `GET /source/fetch` · `client.source.fetch()` |
-| Delete sources/memories | `DELETE /source` · `client.source.delete()` |
-| Inspect graph relations | `GET /source/relations` · `client.source.relations()` |
+| List sources/memories | `POST /context/list` · `client.context.list()` |
+| Inspect source content | `GET /context/inspect` · `client.context.inspect()` |
+| Delete sources/memories | `DELETE /context` · `client.context.delete()` |
+| Inspect graph relations | `GET /context/relations` · `client.context.relations()` |
 | Indexing webhooks | `/webhooks/indexing*` |
 
 ### Async lifecycle
@@ -75,7 +75,7 @@ Core raw HTTP responses (`/tenants`, `/source/*`, and `/search`) are wrapped:
 Two operations are asynchronous:
 
 1. **Tenant creation**: after `POST /tenants`, poll `GET /tenants/status` until infrastructure is ready.
-2. **Ingestion**: after `POST /source/ingest`, poll `GET /source/status` until the source is searchable or fully complete.
+2. **Ingestion**: after `POST /context/ingest`, poll `GET /context/status` until the content is searchable or fully complete.
 
 Searchable status:
 
@@ -94,12 +94,12 @@ The canonical request field for `POST /query` is `type`:
 - `type: "memory"`
 - `type: "all"`
 
-Use the same `type` enum across source lifecycle APIs and search. Search additionally accepts `"all"` to query knowledge and memories together.
+Use the same `type` enum across context lifecycle APIs and search. Search additionally accepts `"all"` to query knowledge and memories together.
 
 ### Metadata naming
 
 - `tenant_metadata`: schema-aligned, declared at tenant creation, fast filter path.
-- `additional_metadata`: canonical free-form per-source metadata.
+- `additional_metadata`: canonical free-form per-document metadata.
 - `document_metadata`: supported/deprecated alias for free-form metadata in many examples.
 - `metadata_filters` top-level keys match `tenant_metadata`.
 - `metadata_filters.additional_metadata` or `metadata_filters.document_metadata` scopes free-form metadata.
@@ -133,7 +133,7 @@ Recommended patterns:
 
 Knowledge is shared context: documents, PDFs, Markdown, CSVs, Slack threads, Notion pages, Gmail threads, tickets, webpages, etc.
 
-- Ingest with `POST /source/ingest`, `type=knowledge`.
+- Ingest with `POST /context/ingest`, `type=knowledge`.
 - Search with `POST /query`, `type: "knowledge"`.
 - Use for content that should be reusable across users.
 - Mutability is explicit: re-ingest with the same ID and `upsert: true`, or delete.
@@ -142,7 +142,7 @@ Knowledge is shared context: documents, PDFs, Markdown, CSVs, Slack threads, Not
 
 Memories are user/workspace/session-scoped context: preferences, conversation history, behavioral signals, decisions, inferred traits.
 
-- Ingest with `POST /source/ingest`, `type=memory`.
+- Ingest with `POST /context/ingest`, `type=memory`.
 - Search with `POST /query`, `type: "memory"` or `type: "all"`.
 - Always pass the same `sub_tenant_id` used at ingestion.
 - Use `infer: true` when the input is raw signal and HydraDB should extract the durable preference/fact.
@@ -182,18 +182,18 @@ At ingestion, sources can declare explicit relations:
 ```json
 {
   "relations": {
-    "source_ids": ["related-source-1", "related-source-2"],
+    "ids": ["related-item-1", "related-item-2"],
     "properties": { "reason": "same thread" }
   }
 }
 ```
 
-At search time, set or rely on default `search_forceful_relations: true` with `mode: "thinking"` to pull related chunks into `additional_context`.
+At search time, set or rely on default `query_forceful_relations: true` with `mode: "thinking"` to pull related chunks into `additional_context`.
 
 Rules:
 
 - Forceful relation expansion only takes effect in `mode: "thinking"`.
-- Prefer `source_ids`; legacy alias `cortex_source_ids` is accepted but should not be used in new code.
+- Use `ids` for new code.
 - Relations are store-local: memory-to-memory or knowledge-to-knowledge. Cross-store relation lookups may not surface anything.
 
 ---
@@ -268,13 +268,13 @@ while True:
     time.sleep(5)
 
 # 3. Ingest a user memory.
-ingest = client.source.ingest(
+ingest = client.context.ingest(
     type="memory",
     tenant_id=tenant_id,
     sub_tenant_id="user_alex",
     memories=json.dumps([
         {
-            "source_id": "user_alex_pref_001",
+            "id": "user_alex_pref_001",
             "text": "User prefers detailed technical explanations and dark mode.",
             "infer": True,
             "user_name": "Alex",
@@ -282,14 +282,14 @@ ingest = client.source.ingest(
     ]),
 )
 
-source_id = ingest.data.results[0].source_id
+ingest_id = ingest.data.results[0].id
 
 # 4. Wait until searchable.
 while True:
-    status = client.source.status(
+    status = client.context.status(
         tenant_id=tenant_id,
         sub_tenant_id="user_alex",
-        source_ids=[source_id],
+        ids=[ingest_id],
     ).data.statuses[0]
 
     if status.get("indexing_status") in ("graph_creation", "completed"):
@@ -320,23 +320,23 @@ const client = new HydraDBClient({
   token: process.env.HYDRA_DB_API_KEY,
 });
 
-const tenantId = "my_first_tenant";
+const tenant_id = "my_first_tenant";
 
-await client.tenants.create({ tenantId: tenantId });
+await client.tenants.create({ tenant_id: tenant_id });
 
 while (true) {
-  const status = await client.tenants.status({ tenantId: tenantId });
-  if (status.data.infra.readyForIngestion) break;
+  const status = await client.tenants.status({ tenant_id: tenant_id });
+  if (status.data.infra.ready_for_ingestion) break;
   await new Promise((resolve) => setTimeout(resolve, 5_000));
 }
 
-const ingest = await client.source.ingest({
+const ingest = await client.context.ingest({
   type: "memory",
-  tenantId: tenantId,
-  subTenantId: "user_alex",
+  tenant_id: tenant_id,
+  sub_tenant_id: "user_alex",
   memories: JSON.stringify([
     {
-      source_id: "user_alex_pref_001",
+      id: "user_alex_pref_001",
       text: "User prefers detailed technical explanations and dark mode.",
       infer: true,
       user_name: "Alex",
@@ -344,13 +344,13 @@ const ingest = await client.source.ingest({
   ]),
 });
 
-const sourceId = ingest.data.results[0].sourceId;
+const ingestId = ingest.data.results[0].id;
 
 while (true) {
-  const status = (await client.source.status({
-    tenantId: tenantId,
-    subTenantId: "user_alex",
-    sourceIds: [sourceId],
+  const status = (await client.context.status({
+    tenant_id: tenant_id,
+    sub_tenant_id: "user_alex",
+    ids: [ingestId],
   })).data.statuses[0];
 
   if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
@@ -362,11 +362,11 @@ while (true) {
 }
 
 const result = await client.query({
-  tenantId: tenantId,
-  subTenantId: "user_alex",
+  tenant_id: tenant_id,
+  sub_tenant_id: "user_alex",
   query: "What does the user prefer?",
   type: "memory",
-  queryBy: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
 });
 
@@ -413,7 +413,7 @@ Ready when infrastructure reports usable status. Current docs show `infra.ready_
 - `infra.scheduler_status`
 - `infra.graph_status`
 - `infra.vectorstore_status.knowledge`
-- `infra.vectorstore_status.memory` / `memories`
+- `infra.vectorstore_status.memories`
 
 Use SDK autocomplete/returned object shape for the exact field spelling.
 
@@ -430,7 +430,7 @@ Use SDK autocomplete/returned object shape for the exact field spelling.
 
 ## 6. Source ingestion
 
-`POST /source/ingest` is the unified write endpoint for knowledge and memories.
+`POST /context/ingest` is the unified write endpoint for knowledge and memories.
 
 ### Common form fields
 
@@ -440,8 +440,8 @@ Use SDK autocomplete/returned object shape for the exact field spelling.
 | `tenant_id` | target tenant |
 | `sub_tenant_id` | optional logical partition; default sub-tenant if omitted |
 | `upsert` | default `true`; replaces existing sources with same ID |
-| `files` | binary uploads for knowledge |
-| `file_metadata` | JSON-stringified array, one item per file |
+| `documents` | binary uploads for knowledge |
+| `document_metadata` | JSON-stringified array, one item per document |
 | `app_knowledge` | JSON-stringified object/array of pre-extracted app sources |
 | `memories` | JSON-stringified array of memory items |
 
@@ -453,13 +453,13 @@ Use for PDFs, DOCX, Markdown, CSV, TXT, and other files HydraDB should parse.
 import json
 
 with open("policy.pdf", "rb") as f:
-    result = client.source.ingest(
+    result = client.context.ingest(
         type="knowledge",
         tenant_id="acme_corp",
-        files=[("policy.pdf", f, "application/pdf")],
-        file_metadata=json.dumps([
+        documents=[("policy.pdf", f, "application/pdf")],
+        document_metadata=json.dumps([
             {
-                "source_id": "policy_v2",
+                "id": "policy_v2",
                 "tenant_metadata": {"department": "support", "status": "approved"},
                 "additional_metadata": {"author": "Alice", "version": 2},
                 "title": "Refund Policy v2",
@@ -469,25 +469,25 @@ with open("policy.pdf", "rb") as f:
     )
 ```
 
-`file_metadata` item fields:
+`document_metadata` item fields:
 
 | Field | Purpose |
 |---|---|
-| `source_id` | stable source ID / upsert key |
+| `id` | stable ID / upsert key |
 | `tenant_metadata` | schema-aligned filterable fields |
 | `additional_metadata` / `document_metadata` | free-form display/bookkeeping fields |
 | `title`, `type`, `url`, `timestamp` | source display and citation fields |
-| `relations` | explicit forceful relations, e.g. `{ "source_ids": [...] }` |
+| `relations` | explicit forceful relations, e.g. `{ "ids": [...] }` |
 
 ### Knowledge from app sources
 
 Use `app_knowledge` when your connector already extracted text from Slack, Gmail, Jira, Linear, Zendesk, Notion, Confluence, Salesforce, webpages, etc.
 
 ```ts
-await client.source.ingest({
+await client.context.ingest({
   type: "knowledge",
-  tenantId: "acme_corp",
-  appKnowledge: JSON.stringify([
+  tenant_id: "acme_corp",
+  app_knowledge: JSON.stringify([
     {
       id: "slack_C123_1715012345_000100",
       tenant_id: "acme_corp",
@@ -508,7 +508,7 @@ await client.source.ingest({
         slack_ts: "1715012345.000100"
       },
       relations: {
-        source_ids: ["slack_thread_root_001"]
+        ids: ["slack_thread_root_001"]
       }
     }
   ]),
@@ -519,7 +519,7 @@ Recommended app-source fields:
 
 | Field | Why send it |
 |---|---|
-| `id` | stable HydraDB source ID and upsert key |
+| `id` | stable HydraDB ID and upsert key |
 | `title` | readable result/citation title |
 | `type` | category such as `slack`, `gmail`, `jira`, `notion`, `webpage` |
 | `content.text` / `content.markdown` | primary searchable content |
@@ -527,7 +527,7 @@ Recommended app-source fields:
 | `additional_metadata` | provider IDs, author, status, assignee, timestamps |
 | `url` | citation / navigation link |
 | `timestamp` | freshness and chronology |
-| `relations.source_ids` | thread, parent/child, linked issue, related source expansion |
+| `relations.ids` | thread, parent/child, linked issue, related source expansion |
 
 App-source object kinds in OpenAPI include:
 
@@ -547,20 +547,20 @@ Use `type="memory"` and a JSON-stringified `memories` array.
 ```python
 import json
 
-client.source.ingest(
+client.context.ingest(
     type="memory",
     tenant_id="acme_corp",
     sub_tenant_id="user_alex",
     memories=json.dumps([
         {
-            "source_id": "pref_dark_mode",
+            "id": "pref_dark_mode",
             "title": "Dark mode preference",
             "text": "User prefers dark mode and concise answers.",
             "infer": True,
             "user_name": "Alex",
             "tenant_metadata": json.dumps({"team": "engineering"}),
             "additional_metadata": {"source": "onboarding"},
-            "relations": {"source_ids": ["pref_concise"]}
+            "relations": {"ids": ["pref_concise"]}
         }
     ]),
 )
@@ -570,7 +570,7 @@ Memory item fields:
 
 | Field | Description |
 |---|---|
-| `source_id` | optional stable upsert key |
+| `id` | optional stable upsert key |
 | `title` | label for listing/search display |
 | `text` | raw text or Markdown; required unless `user_assistant_pairs` provided |
 | `user_assistant_pairs` | dialogue pairs `{ user, assistant }`; useful for implied preferences |
@@ -585,16 +585,16 @@ Memory item fields:
 
 ---
 
-## 7. Source status and lifecycle
+## 7. Context status and lifecycle
 
 ### Poll indexing
 
-`GET /source/status` · `client.source.status()`
+`GET /context/status` · `client.context.status()`
 
 Parameters:
 
 - `tenant_id` required
-- `source_ids` required array
+- `ids` required array
 - `sub_tenant_id` optional, but should match ingestion scope
 
 Status meanings from docs:
@@ -611,9 +611,9 @@ Pattern:
 
 ```ts
 while (true) {
-  const status = (await client.source.status({
-    tenantId: "acme_corp",
-    sourceIds: ["policy_v2"],
+  const status = (await client.context.status({
+    tenant_id: "acme_corp",
+    ids: ["policy_v2"],
   })).data.statuses[0];
 
   if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
@@ -650,7 +650,7 @@ Payload shape:
 {
   "event": "indexing.status_changed",
   "delivery_id": "<delivery_id>",
-  "id": "<source_id>",
+  "id": "<id>",
   "tenant_id": "<tenant_id>",
   "sub_tenant_id": "<sub_tenant_id>",
   "status": "completed",
@@ -685,7 +685,7 @@ Rules:
 | `tenant_id` | string | required |
 | `sub_tenant_id` | string/null | required for per-user memory searches |
 | `query` | string | required |
-| `type` | `knowledge`, `memory`, `all` | docs/SDK store selector; OpenAPI may expose alias `source` |
+| `type` | `knowledge`, `memory`, `all` | store selector for knowledge, memories, or both |
 | `query_by` | `hybrid`, `text` | default hybrid |
 | `operator` | `or`, `and`, `phrase` | only for `query_by: "text"` |
 | `mode` | `fast`, `thinking` | applies to hybrid; thinking improves quality but adds latency |
@@ -693,10 +693,10 @@ Rules:
 | `alpha` | `0.0`–`1.0` or `auto` | hybrid weight; `1.0` semantic, `0.0` BM25 |
 | `recency_bias` | `0.0`–`1.0` | boost newer content |
 | `graph_context` | boolean | default true; include graph slice |
-| `search_forceful_relations` | boolean | only effective in `thinking` mode |
+| `query_forceful_relations` | boolean | only effective in `thinking` mode |
 | `additional_context` | string | short factual hint; not a hard filter |
 | `metadata_filters` | object | deterministic filters before/around ranking |
-| `search_apps` | boolean | app-aware retrieval lane for app sources; still searches the full selected knowledge scope |
+| `query_apps` | boolean | app-aware retrieval lane for app sources; still searches the full selected knowledge scope |
 
 ### Recommended configurations
 
@@ -708,7 +708,7 @@ Rules:
 | User preferences only | `type: "memory"`, include `sub_tenant_id`, `query_by: "hybrid"` |
 | Exact keyword / phrase | `type: "knowledge"`, `query_by: "text"`, `operator: "phrase"` |
 | Recent operational updates | `query_by: "hybrid"`, `recency_bias: 0.2-0.4`, metadata filter to doc type/status |
-| App search | `type: "knowledge"`, `query_by: "hybrid"`, `mode: "thinking"`, `search_apps: true`; still searches non-app knowledge too |
+| App search | `type: "knowledge"`, `query_by: "hybrid"`, `mode: "thinking"`, `query_apps: true`; still searches non-app knowledge too |
 
 ### Search examples
 
@@ -716,13 +716,13 @@ Knowledge RAG:
 
 ```ts
 const result = await client.query({
-  tenantId: "acme_corp",
+  tenant_id: "acme_corp",
   query: "What is our refund policy?",
   type: "knowledge",
-  queryBy: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
-  maxResults: 10,
-  graphContext: true,
+  max_results: 10,
+  graph_context: true,
 });
 ```
 
@@ -730,11 +730,11 @@ Personalized answer using knowledge and memories:
 
 ```ts
 const result = await client.query({
-  tenantId: "acme_corp",
-  subTenantId: "user_alex",
+  tenant_id: "acme_corp",
+  sub_tenant_id: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
   type: "all",
-  queryBy: "hybrid",
+  query_by: "hybrid",
   mode: "thinking",
   alpha: "auto",
 });
@@ -778,7 +778,7 @@ The successful `data` object / SDK return is a `RetrievalResult`:
   "chunks": [
     {
       "chunk_uuid": "...",
-      "source_id": "...",
+      "id": "...",
       "chunk_content": "...",
       "source_title": "...",
       "source_type": "...",
@@ -882,12 +882,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  tenantId: "your-tenant",
-  subTenantId: "your-sub-tenant",
+  tenant_id: "your-tenant",
+  sub_tenant_id: "your-sub-tenant",
   query: question,
   type: "knowledge",
-  queryBy: "hybrid",
-  maxResults: 5,
+  query_by: "hybrid",
+  max_results: 5,
 });
 
 const context = buildString(result);
@@ -913,7 +913,7 @@ Common mistakes:
 | Including too many chunks | Start with `max_results: 10`; reduce for tight windows |
 | Re-sorting chunks client-side | Preserve HydraDB ranking |
 | Setting `graph_context: false` then expecting graph fields | Leave default true or set true explicitly |
-| Using `search_forceful_relations` in `fast` mode | Use `mode: "thinking"` |
+| Using `query_forceful_relations` in `fast` mode | Use `mode: "thinking"` |
 
 ---
 
@@ -964,7 +964,7 @@ Rules:
 
 - Plan hot filter fields before first ingest; undeclared scope keys can be ignored.
 - Use exact equality filters; range/contains/fuzzy matching should be in the query or downstream reranker.
-- To change metadata on an indexed source, re-ingest with same source ID and `upsert: true`.
+- To change metadata on an indexed context item, re-ingest with the same `id` and `upsert: true`.
 - Do not rename metadata keys without re-ingesting affected sources.
 
 ---
@@ -973,18 +973,18 @@ Rules:
 
 ### List documents or memories
 
-`POST /source/list` · `client.source.list()`
+`POST /context/list` · `client.context.list()`
 
 ```ts
-const sources = await client.source.list({
-  tenantId: "acme_corp",
+const sources = await client.context.list({
+  tenant_id: "acme_corp",
   type: "knowledge",
   page: 1,
-  pageSize: 50,
+  page_size: 50,
   filters: {
-    tenantMetadata: { department: "support" },
-    additionalMetadata: { author: "alice" },
-    sourceFields: { type: "slack" },
+    tenant_metadata: { department: "support" },
+    additional_metadata: { author: "alice" },
+    source_fields: { type: "slack" },
   },
 });
 ```
@@ -994,7 +994,7 @@ Parameters:
 - `tenant_id`
 - `sub_tenant_id`
 - `type: "knowledge" | "memory"`
-- `source_ids`
+- `ids`
 - `page`, `page_size` (1–100)
 - `filters.tenant_metadata`
 - `filters.additional_metadata` / `filters.document_metadata`
@@ -1003,12 +1003,12 @@ Parameters:
 
 ### Fetch original content
 
-`GET /source/fetch` · `client.source.fetch()`
+`GET /context/inspect` · `client.context.inspect()`
 
 ```python
-file = client.source.fetch(
+file = client.context.inspect(
     tenant_id="acme_corp",
-    source_id="policy_v2",
+    id="policy_v2",
     mode="both",
     expiry_seconds=3600,
 )
@@ -1024,12 +1024,12 @@ Modes:
 
 ### Inspect graph relations
 
-`GET /source/relations` · `client.source.relations()`
+`GET /context/relations` · `client.context.relations()`
 
 ```ts
-const relations = await client.source.relations({
-  tenantId: "acme_corp",
-  sourceId: "policy_v2",
+const relations = await client.context.relations({
+  tenant_id: "acme_corp",
+  id: "policy_v2",
   type: "knowledge",
   limit: 5000,
 });
@@ -1039,13 +1039,13 @@ Use it for graph debugging and provenance inspection. It supports pagination via
 
 ### Delete sources or memories
 
-`DELETE /source` · `client.source.delete()`
+`DELETE /context` · `client.context.delete()`
 
 ```ts
-await client.source.delete({
+await client.context.delete({
   type: "knowledge",
   request: {
-    tenantId: "acme_corp",
+    tenant_id: "acme_corp",
     ids: ["policy_v2"],
   },
 });
@@ -1064,8 +1064,8 @@ Use `type: "memory"` to delete memory IDs.
 | `400` | invalid parameters / malformed request | No |
 | `401` | missing/invalid API key | No |
 | `403` | authenticated but not permitted | No |
-| `404` | tenant/source/memory not found | No |
-| `409` | conflict, e.g. existing tenant/source ID | Usually no |
+| `404` | tenant/context item/memory not found | No |
+| `409` | conflict, e.g. existing tenant or context item ID | Usually no |
 | `422` | semantic validation failure | No |
 | `429` | rate limited | Yes with backoff |
 | `500` | internal error | Yes with backoff |
@@ -1080,7 +1080,7 @@ Use `type: "memory"` to delete memory IDs.
 | `FORBIDDEN` | key lacks access |
 | `TENANT_ALREADY_EXISTS` | duplicate tenant ID |
 | `TENANT_NOT_FOUND` | tenant missing/not visible |
-| `SOURCE_NOT_FOUND` | source/memory missing in selected scope |
+| `SOURCE_NOT_FOUND` | context item or memory missing in selected scope |
 | `VALIDATION_ERROR` | request shape valid but failed validation |
 | `RATE_LIMITED` | rate limit exceeded |
 | `INTERNAL_ERROR` | unexpected server error |
@@ -1133,17 +1133,17 @@ try {
 
 | v1 concept/method | v2 replacement |
 |---|---|
-| `client.upload.knowledge(...)` | `client.source.ingest(type="knowledge", ...)` |
-| `client.upload.addMemory(...)` | `client.source.ingest(type="memory", ...)` |
-| `client.upload.verifyProcessing(...)` | `client.source.status(...)` |
+| `client.upload.knowledge(...)` | `client.context.ingest(type="knowledge", ...)` |
+| `client.upload.addMemory(...)` | `client.context.ingest(type="memory", ...)` |
+| `client.upload.verifyProcessing(...)` | `client.context.status(...)` |
 | `client.search.fullRecall(...)` | `client.query(type="knowledge", ...)` |
 | `client.search.recallPreferences(...)` | `client.query(type="memory", ...)` |
 | `client.search.booleanRecall(...)` | `client.query(query_by="text", ...)` |
-| `client.fetch.listData(...)` | `client.source.list(...)` |
-| `client.fetch.graphRelationsBySourceId(...)` | `client.source.relations(...)` |
-| `client.fetch.content(...)` | `client.source.fetch(...)` |
-| `client.data.delete(...)` | `client.source.delete(type="knowledge", ...)` |
-| `client.upload.deleteMemory(...)` | `client.source.delete(type="memory", ...)` |
+| `client.fetch.listData(...)` | `client.context.list(...)` |
+| `client.fetch.graphRelationsBySourceId(...)` | `client.context.relations(...)` |
+| `client.fetch.content(...)` | `client.context.inspect(...)` |
+| `client.data.delete(...)` | `client.context.delete(type="knowledge", ...)` |
+| `client.upload.deleteMemory(...)` | `client.context.delete(type="memory", ...)` |
 | `client.tenant.create(...)` | `client.tenants.create(...)` |
 | `client.tenant.getTenantIds(...)` | `client.tenants.list(...)` |
 | `client.tenant.deleteTenant(...)` | `client.tenants.delete(...)` |
@@ -1185,12 +1185,12 @@ Common architecture across cookbooks:
 
 ## 15. Common mistakes checklist
 
-- [ ] Using v1 endpoints for new code instead of `/tenants`, `/source/*`, `/query`.
+- [ ] Using v1 endpoints for new code instead of `/tenants`, `/context/*`, `/query`.
 - [ ] Forgetting `API-Version: 2` in raw HTTP calls.
 - [ ] Parsing raw HTTP response from the top level instead of `data`.
 - [ ] Assuming SDK responses include the raw envelope; SDKs unwrap `data`.
 - [ ] Searching immediately after tenant creation without polling readiness.
-- [ ] Searching immediately after ingestion without polling `source.status` or using webhooks.
+- [ ] Searching immediately after ingestion without polling `context.status` or using webhooks.
 - [ ] Treating `processing`/`queued` content as searchable.
 - [ ] Not handling both `errored` and `failed` as failure statuses.
 - [ ] Omitting `sub_tenant_id` for user memories.
@@ -1198,7 +1198,7 @@ Common architecture across cookbooks:
 - [ ] Using metadata filters for user partitioning instead of `sub_tenant_id`.
 - [ ] Using undeclared `tenant_metadata` keys in `metadata_filters`.
 - [ ] Putting hot filters in free-form metadata instead of tenant schema.
-- [ ] Expecting `search_forceful_relations` to work in `mode: "fast"`.
+- [ ] Expecting `query_forceful_relations` to work in `mode: "fast"`.
 - [ ] Setting `graph_context: false` and expecting graph fields.
 - [ ] Re-sorting chunks before prompting without a deliberate reranker.
 - [ ] Passing too many chunks to the LLM.
@@ -1213,12 +1213,12 @@ Common architecture across cookbooks:
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `client.source.ingest()` | `POST /source/ingest` | Ingest files, app sources, or memories |
-| `client.source.status()` | `GET /source/status` | Check processing status of ingested items |
-| `client.source.fetch()` | `GET /source/fetch` | Retrieve original source content or get a presigned URL |
-| `client.source.list()` | `POST /source/list` | Browse knowledge or memories |
-| `client.source.delete()` | `DELETE /source` | Delete sources or memories |
-| `client.source.relations()` | `GET /source/relations` | Inspect graph relationships |
+| `client.context.ingest()` | `POST /context/ingest` | Ingest documents, app sources, or memories |
+| `client.context.status()` | `GET /context/status` | Check processing status of ingested items |
+| `client.context.inspect()` | `GET /context/inspect` | Inspect original source content or get a presigned URL |
+| `client.context.list()` | `POST /context/list` | Browse knowledge or memories |
+| `client.context.delete()` | `DELETE /context` | Delete sources or memories |
+| `client.context.relations()` | `GET /context/relations` | Inspect graph relationships |
 | `client.query()` | `POST /query` | Unified search over knowledge, memories, or both |
 | `client.tenants.create()` | `POST /tenants` | Create a new isolated workspace |
 | `client.tenants.list()` | `GET /tenants` | List all tenants registered for the organization |
@@ -1231,12 +1231,12 @@ Common architecture across cookbooks:
 
 | Group | Method | Endpoint | Description |
 |---|---|---|---|
-| Source | `client.source.ingest()` | `POST /source/ingest` | Ingest files, app sources, or memories |
-| Source | `client.source.status()` | `GET /source/status` | Check processing status of ingested items |
-| Source | `client.source.fetch()` | `GET /source/fetch` | Retrieve original source content or get a presigned URL |
-| Source | `client.source.list()` | `POST /source/list` | Browse knowledge or memories |
-| Source | `client.source.delete()` | `DELETE /source` | Delete sources or memories |
-| Source | `client.source.relations()` | `GET /source/relations` | Inspect graph relationships |
+| Context | `client.context.ingest()` | `POST /context/ingest` | Ingest documents, app sources, or memories |
+| Context | `client.context.status()` | `GET /context/status` | Check processing status of ingested items |
+| Context | `client.context.inspect()` | `GET /context/inspect` | Inspect original source content or get a presigned URL |
+| Context | `client.context.list()` | `POST /context/list` | Browse knowledge or memories |
+| Context | `client.context.delete()` | `DELETE /context` | Delete sources or memories |
+| Context | `client.context.relations()` | `GET /context/relations` | Inspect graph relationships |
 | Search | `client.query()` | `POST /query` | Unified search over knowledge, memories, or both |
 | Tenants | `client.tenants.create()` | `POST /tenants` | Create a new isolated workspace |
 | Tenants | `client.tenants.list()` | `GET /tenants` | List all tenants registered for the organization |
@@ -1247,7 +1247,7 @@ Common architecture across cookbooks:
 
 ### 16.3 Minimal cURL example
 
-Use `source` on raw `/query` requests because that is the OpenAPI field. The raw API response is wrapped; read payloads from `.data`.
+Use `type` on raw `/query` requests to select `knowledge`, `memory`, or `all`. The raw API response is wrapped; read payloads from `.data`.
 
 ```bash
 export HYDRA_DB_API_KEY="your_api_key"
@@ -1267,22 +1267,22 @@ curl -s "https://api.hydradb.com/tenants/status?tenant_id=${TENANT_ID}" \
   -H "API-Version: 2" | jq '.data.infra'
 
 # 3. Ingest a memory.
-SOURCE_ID=$(curl -s -X POST 'https://api.hydradb.com/source/ingest' \
+INGEST_ID=$(curl -s -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=memory" \
   -F "tenant_id=${TENANT_ID}" \
   -F "sub_tenant_id=${SUB_TENANT_ID}" \
-  -F 'memories=[{"source_id":"alex_pref_001","text":"Alex prefers concise technical answers.","infer":true,"user_name":"Alex"}]' \
-  | jq -r '.data.results[0].source_id')
+  -F 'memories=[{"id":"alex_pref_001","text":"Alex prefers concise technical answers.","infer":true,"user_name":"Alex"}]' \
+  | jq -r '.data.results[0].id')
 
 # 4. Poll indexing.
-curl -s -G 'https://api.hydradb.com/source/status' \
+curl -s -G 'https://api.hydradb.com/context/status' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   --data-urlencode "tenant_id=${TENANT_ID}" \
   --data-urlencode "sub_tenant_id=${SUB_TENANT_ID}" \
-  --data-urlencode "source_ids=${SOURCE_ID}" \
+  --data-urlencode "ids=${INGEST_ID}" \
   | jq '.data.statuses[0]'
 
 # 5. Search memories.
@@ -1290,7 +1290,7 @@ curl -s -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
-  -d "{\"tenant_id\":\"${TENANT_ID}\",\"sub_tenant_id\":\"${SUB_TENANT_ID}\",\"query\":\"How should I answer Alex?\",\"source\":\"memory\",\"query_by\":\"hybrid\",\"mode\":\"thinking\"}" \
+  -d "{\"tenant_id\":\"${TENANT_ID}\",\"sub_tenant_id\":\"${SUB_TENANT_ID}\",\"query\":\"How should I answer Alex?\",\"type\":\"memory\",\"query_by\":\"hybrid\",\"mode\":\"thinking\"}" \
   | jq '.data.chunks'
 ```
 
@@ -1299,7 +1299,7 @@ curl -s -X POST 'https://api.hydradb.com/query' \
 Use this for connector output where your app already extracted the text. `app_knowledge` must be a JSON string in multipart form data.
 
 ```bash
-curl -s -X POST 'https://api.hydradb.com/source/ingest' \
+curl -s -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=knowledge" \
@@ -1325,7 +1325,7 @@ curl -s -X POST 'https://api.hydradb.com/source/ingest' \
         "slack_ts": "1715012345.000100"
       },
       "relations": {
-        "source_ids": ["slack_thread_root_001"],
+        "ids": ["slack_thread_root_001"],
         "properties": { "relation": "same_thread" }
       }
     }
@@ -1345,7 +1345,7 @@ curl -s -X POST 'https://api.hydradb.com/query' \
     "type": "knowledge",
     "query_by": "hybrid",
     "mode": "thinking",
-    "search_apps": true,
+    "query_apps": true,
     "graph_context": true
   }' | jq '.data.chunks'
 ```

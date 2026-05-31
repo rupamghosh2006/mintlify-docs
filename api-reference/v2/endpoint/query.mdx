@@ -42,10 +42,10 @@ result = client.query(
     # Only applies when mode="thinking".
     query_forceful_relations=True,
 
-    # Top-level keys match tenant_metadata; document_metadata is per-source.
+    # Top-level keys match metadata; additional_metadata is per-source.
     metadata_filters={
         "department": "support",
-        "document_metadata": {
+        "additional_metadata": {
             "source": "policy",
         },
     },
@@ -80,10 +80,10 @@ const result = await client.query({
   // Only applies when mode: "thinking".
   query_forceful_relations: true,
 
-  // Top-level keys match tenant_metadata; document_metadata is per-source.
+  // Top-level keys match metadata; additional_metadata is per-source.
   metadata_filters: {
     department: "support",
-    document_metadata: {
+    additional_metadata: {
       source: "policy",
     },
   },
@@ -112,7 +112,7 @@ curl -X POST 'https://api.hydradb.com/query' \
     "query_forceful_relations": true,
     "metadata_filters": {
       "department": "support",
-      "document_metadata": {
+      "additional_metadata": {
         "source": "policy"
       }
     },
@@ -361,9 +361,9 @@ result = client.query(
     ```json
     {
       "metadata_filters": {
-        "department": "engineering",
-        "region": "us-east",
-        "document_metadata": {
+          "department": "engineering",
+          "region": "us-east",
+          "additional_metadata": {
           "source": "account_plan",
           "author": "alex"
         }
@@ -373,8 +373,8 @@ result = client.query(
 
     | Where | What it matches |
     |---|---|
-    | **Top-level keys** (`department`, `region`) | The source's `tenant_metadata`. Keys must be declared in the tenant's `tenant_metadata_schema` with `enable_match: true`, otherwise they are silently ignored. |
-    | **Nested under `document_metadata`** | The source's free-form per-document fields. No schema declaration required. |
+    | **Top-level keys** (`department`, `region`) | The source's `metadata`. Keys must be declared in the tenant's `tenant_metadata_schema` with `enable_match: true`, otherwise they are silently ignored. |
+    | **Nested under `additional_metadata`** | The source's free-form per-document fields. No schema declaration required. |
   </Accordion>
 </AccordionGroup>
 
@@ -387,7 +387,7 @@ result = client.query(
     "chunks": [
       {
         "chunk_uuid": "policy_main_chunk_3",
-        "source_id": "policy_main",
+        "id": "policy_main",
         "chunk_content": "Refunds are issued within 30 days...",
         "source_type": "pdf",
         "source_title": "Compliance Policy",
@@ -500,7 +500,7 @@ result = client.query(
     "additional_context": {
       "pref-tone": {
         "chunk_uuid": "pref-tone",
-        "source_id": "mem_user_alex_tone",
+        "id": "mem_user_alex_tone",
         "chunk_content": "Prefers concise answers.",
         "source_type": "memory",
         "source_title": "User preferences",
@@ -571,8 +571,8 @@ For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results
 <Warning>
 **Important Considerations & Common Mistakes**
 - **`query_forceful_relations` requires `mode: "thinking"`.** In `fast` mode the flag is silently ignored. The server does not error or warn  -  your `additional_context` will simply be empty.
-- **`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under a `document_metadata` key.
-- **Common mistakes.** Check [Source Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before querying. If you omit `sub_tenant_id`, HydraDB queries the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
+- **`metadata_filters` top-level keys need a schema.** Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`. Undeclared keys are silently ignored. To filter free-form per-document fields, nest them under an `additional_metadata` key.
+- **Common mistakes.** Check [Ingestion Status](/api-reference/v2/endpoint/source-status) for recently ingested documents before querying. If you omit `sub_tenant_id`, HydraDB queries the default sub-tenant; use [List Sub-Tenants](/api-reference/v2/endpoint/list-sub-tenants) to discover available IDs.
 </Warning>
 
 ## Errors
@@ -584,9 +584,9 @@ Common codes: `400 INVALID_PARAMETERS` (empty `query`), `404 TENANT_NOT_FOUND`, 
 <Tip>
 **Related Resources**
 
-- **Setup first:** [Ingest Content](/api-reference/v2/endpoint/ingest-content) - content must be indexed
-- **Confirm indexing:** [Source Status](/api-reference/v2/endpoint/source-status) - wait for `completed` (or `graph_creation`)
-- **Graph follow-up:** [Source Relations](/api-reference/v2/endpoint/source-relations) - inspect relationships in detail
+- **Setup first:** [Ingest Context](/api-reference/v2/endpoint/ingest-context) - content must be indexed
+- **Confirm indexing:** [Ingestion Status](/api-reference/v2/endpoint/source-status) - wait for `completed` (or `graph_creation`)
+- **Graph follow-up:** [Context Relations](/api-reference/v2/endpoint/source-relations) - inspect relationships in detail
 - **Concepts:** [Usage → Query](/essentials/v2/query)
 - **Concepts:** [Concepts → Semantic Search](/essentials/v2/semantic-search)
 - **Concepts:** [Concepts → Context Graphs](/essentials/v2/context-graphs)

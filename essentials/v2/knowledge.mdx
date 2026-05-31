@@ -27,7 +27,7 @@ Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds
 
 ## 2. What it does
 
-When you call [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) with `type=knowledge`, HydraDB walks each source through a pipeline:
+When you call [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context) with `type=knowledge`, HydraDB walks each source through a pipeline:
 
 1. **Parses** the input  -  PDF, DOCX, Markdown, CSV, plain text, or app-source JSON.
 2. **Chunks** the content into semantically coherent segments.
@@ -35,7 +35,7 @@ When you call [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content)
 4. **Embeds** every chunk into the dense and sparse vector stores.
 5. **Indexes** the result so it becomes queryable via [`POST /query`](/api-reference/v2/endpoint/query).
 
-The pipeline runs **asynchronously**. The ingest call returns `202 Accepted` with `source_id`s; the content isn't queryable until `indexing_status` reaches at least `graph_creation`. Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) to track progress  -  see the full status table at [Source Status](/api-reference/v2/endpoint/source-status).
+The pipeline runs **asynchronously**. The ingest call returns `202 Accepted` with `id`s; the content isn't queryable until `indexing_status` reaches at least `graph_creation`. Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) to track progress  -  see the full status table at [Ingestion Status](/api-reference/v2/endpoint/source-status).
 
 ---
 
@@ -64,7 +64,7 @@ When in doubt, ask "would a different user benefit from seeing this?"  -  if yes
 
 ## 4. Two ingestion paths
 
-[`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content) with `type=knowledge` accepts two content formats in the same request  -  you can send either, or both at once. Pick the path that matches what you have on hand:
+[`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context) with `type=knowledge` accepts two content formats in the same request  -  you can send either, or both at once. Pick the path that matches what you have on hand:
 
 - **Path A** when you have **binary files** HydraDB should parse for you.
 - **Path B** when you have **pre-extracted text** from an app or connector and want to skip parsing.
@@ -78,44 +78,44 @@ Binary files HydraDB should parse and chunk: PDF, DOCX, Markdown, CSV, TXT.
 import json
 
 with open("/path/to/policy.pdf", "rb") as f1, open("/path/to/runbook.pdf", "rb") as f2:
-    result = client.source.ingest(
+    result = client.context.ingest(
         type="knowledge",
         tenant_id="acme_corp",
-        files=[
+        documents=[
             ("policy.pdf", f1, "application/pdf"),
             ("runbook.pdf", f2, "application/pdf"),
         ],
-        file_metadata=json.dumps([
-            {"source_id": "policy_v2", "tenant_metadata": {"document_type": "policy", "status": "approved"}},
-            {"source_id": "runbook_deploy", "tenant_metadata": {"document_type": "runbook"}},
+        document_metadata=json.dumps([
+            {"id": "policy_v2", "metadata": {"document_type": "policy", "status": "approved"}},
+            {"id": "runbook_deploy", "metadata": {"document_type": "runbook"}},
         ]),
     )
 ```
 ```typescript TypeScript SDK
-const result = await client.source.ingest({
+const result = await client.context.ingest({
   type: "knowledge",
   tenant_id: "acme_corp",
-  files: [
+  documents: [
     { path: "/path/to/policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
     { path: "/path/to/runbook.pdf", filename: "runbook.pdf", contentType: "application/pdf" },
   ],
-  file_metadata: JSON.stringify([
-    { source_id: "policy_v2", tenant_metadata: { document_type: "policy", status: "approved" } },
-    { source_id: "runbook_deploy", tenant_metadata: { document_type: "runbook" } },
+  document_metadata: JSON.stringify([
+    { id: "policy_v2", metadata: { document_type: "policy", status: "approved" } },
+    { id: "runbook_deploy", metadata: { document_type: "runbook" } },
   ]),
 });
 ```
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=knowledge" \
   -F "tenant_id=acme_corp" \
-  -F "files=@/path/to/policy.pdf" \
-  -F "files=@/path/to/runbook.pdf" \
-  -F 'file_metadata=[
-    { "source_id": "policy_v2", "tenant_metadata": { "document_type": "policy", "status": "approved" } },
-    { "source_id": "runbook_deploy", "tenant_metadata": { "document_type": "runbook" } }
+  -F "documents=@/path/to/policy.pdf" \
+  -F "documents=@/path/to/runbook.pdf" \
+  -F 'document_metadata=[
+    { "id": "policy_v2", "metadata": { "document_type": "policy", "status": "approved" } },
+    { "id": "runbook_deploy", "metadata": { "document_type": "runbook" } }
   ]'
 ```
 </CodeGroup>
@@ -128,7 +128,7 @@ Pre-parsed records from connected apps. You supply app-native fields (`kind`, `p
 ```python Python SDK
 import json
 
-result = client.source.ingest(
+result = client.context.ingest(
     type="knowledge",
     tenant_id="acme_corp",
     app_knowledge=json.dumps([
@@ -148,14 +148,14 @@ result = client.source.ingest(
                 "thread_id": "1716213600.000100",
                 "created_at": "2026-05-20T10:00:00Z",
             },
-            "tenant_metadata": {"channel": "product", "status": "finalized"},
+            "metadata": {"channel": "product", "status": "finalized"},
             "additional_metadata": {"slack_ts": "1716213600.000100"},
         }
     ]),
 )
 ```
 ```typescript TypeScript SDK
-const result = await client.source.ingest({
+const result = await client.context.ingest({
   type: "knowledge",
   tenant_id: "acme_corp",
   app_knowledge: JSON.stringify([
@@ -175,14 +175,14 @@ const result = await client.source.ingest({
         thread_id: "1716213600.000100",
         created_at: "2026-05-20T10:00:00Z",
       },
-      tenant_metadata: { channel: "product", status: "finalized" },
+      metadata: { channel: "product", status: "finalized" },
       additional_metadata: { slack_ts: "1716213600.000100" },
     },
   ]),
 });
 ```
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=knowledge" \
@@ -204,7 +204,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
         "thread_id": "1716213600.000100",
         "created_at": "2026-05-20T10:00:00Z"
       },
-      "tenant_metadata": { "channel": "product", "status": "finalized" },
+      "metadata": { "channel": "product", "status": "finalized" },
       "additional_metadata": { "slack_ts": "1716213600.000100" }
     }
   ]'
@@ -224,7 +224,7 @@ Both paths are available. Use Path A for original documents that need parsing. U
     "success": true,
     "message": "Knowledge uploaded successfully",
     "results": [
-      { "source_id": "policy_v2", "filename": "policy.pdf", "status": "queued", "error": null }
+      { "id": "policy_v2", "filename": "policy.pdf", "status": "queued", "error": null }
     ],
     "success_count": 1,
     "failed_count": 0
@@ -243,35 +243,35 @@ All endpoints return this envelope shape. Access the payload via `response.data`
 
 ## 5. Verifying processing
 
-Ingestion is async, so you need to confirm each source actually finished before it'll show up in [query](/essentials/v2/query). Poll [`GET /source/status`](/api-reference/v2/endpoint/source-status) with the `source_id`s you got back from ingestion. The snippets below loop until every item reaches a terminal state (`completed` or `errored`):
+Ingestion is async, so you need to confirm each source actually finished before it'll show up in [query](/essentials/v2/query). Poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) with the `id`s you got back from ingestion. The snippets below loop until every item reaches a terminal state (`completed` or `errored`):
 
 <CodeGroup>
 ```python Python SDK
 import time
 
-source_ids = ["policy_v2", "runbook_deploy"]
+ids = ["policy_v2", "runbook_deploy"]
 terminal = {"completed", "errored"}
 
 while True:
-    status = client.source.status(
+    status = client.context.status(
         tenant_id="acme_corp",
         sub_tenant_id="default",
-        source_ids=source_ids,
+        ids=ids,
     )
     if all(s.indexing_status in terminal for s in status.statuses):
         break
     time.sleep(5)
 ```
 ```typescript TypeScript SDK
-const sourceIds = ["policy_v2", "runbook_deploy"];
+const ids = ["policy_v2", "runbook_deploy"];
 const terminal = new Set(["completed", "errored"]);
 
 let status;
 while (true) {
-  status = await client.source.status({
+  status = await client.context.status({
     tenant_id: "acme_corp",
     sub_tenant_id: "default",
-    source_ids: sourceIds,
+    ids: ids,
   });
 
   const allDone = status.statuses.every((s) => terminal.has(s.indexing_status));
@@ -282,13 +282,13 @@ while (true) {
 ```
 ```bash cURL
 while true; do
-  response=$(curl -s -G 'https://api.hydradb.com/source/status' \
+  response=$(curl -s -G 'https://api.hydradb.com/context/status' \
     -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
     -H "API-Version: 2" \
     --data-urlencode "tenant_id=acme_corp" \
     --data-urlencode "sub_tenant_id=default" \
-    --data-urlencode "source_ids=policy_v2" \
-    --data-urlencode "source_ids=runbook_deploy")
+    --data-urlencode "ids=policy_v2" \
+    --data-urlencode "ids=runbook_deploy")
 
   statuses=$(echo "$response" | jq -r '.data.statuses[].indexing_status')
   if echo "$statuses" | grep -qv '^\(completed\|errored\)$'; then
@@ -305,7 +305,7 @@ done
 {
   "statuses": [
     {
-      "source_id": "policy_v2",
+      "id": "policy_v2",
       "indexing_status": "completed",
       "success": true
     }
@@ -313,7 +313,7 @@ done
 }
 ```
 
-Status values move forward through `queued` → `processing` → `graph_creation` → `completed` (or land in `errored` on failure). Poll every few seconds; most documents complete in 1–5 minutes. The full table  -  including the `success` alias that occasionally appears for `completed`  -  is on [Source Status](/api-reference/v2/endpoint/source-status).
+Status values move forward through `queued` → `processing` → `graph_creation` → `completed` (or land in `errored` on failure). Poll every few seconds; most documents complete in 1–5 minutes. The full table  -  including the `success` alias that occasionally appears for `completed`  -  is on [Ingestion Status](/api-reference/v2/endpoint/source-status).
 
 <Info>
 **`graph_creation` is already queryable.** Items in this state are retrievable via [`POST /query`](/api-reference/v2/endpoint/query). Wait for `completed` only when you specifically need full graph traversal (`graph_context: true`).
@@ -323,26 +323,26 @@ Status values move forward through `queued` → `processing` → `graph_creation
 
 ## 6. Key parameters
 
-The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/ingest-content). Below are the fields you'll touch most often, grouped by where they live in the request.
+The full schema lives on [`POST /context/ingest`](/api-reference/v2/endpoint/ingest-context). Below are the fields you'll touch most often, grouped by where they live in the request.
 
-### File metadata (`file_metadata` array items)
+### File metadata (`document_metadata` array items)
 
 | Field | Description |
 |---|---|
-| <Field name="source_id" type="string" /> | Optional stable identifier. Used as upsert key when `upsert: true`. |
-| <Field name="tenant_metadata" type="object" /> | Filterable fields. Keys must match the tenant metadata schema. Also accepted as `metadata`. |
-| <Field name="document_metadata" type="object" /> | Free-form fields for display and bookkeeping. Filterable only when nested under `document_metadata` in `metadata_filters`. Also accepted as `additional_metadata`. |
+| <Field name="id" type="string" /> | Optional stable identifier. Used as upsert key when `upsert: true`. |
+| <Field name="metadata" type="object" /> | Filterable fields. Keys must match the tenant metadata schema. |
+| <Field name="additional_metadata" type="object" /> | Free-form fields for display and bookkeeping. Filterable only when nested under `additional_metadata` in `metadata_filters`. |
 | <Field name="title" type="string" /> | Override the source title shown in query results. |
 | <Field name="type" type="string" /> | Override the source type shown in query results. |
 | <Field name="url" type="string" /> | Override the canonical URL. |
 | <Field name="timestamp" type="ISO-8601 datetime" /> | Override the source timestamp. |
-| <Field name="relations" type="object" /> | Forcefully connect this source to others with `{ "source_ids": [...] }`. |
+| <Field name="relations" type="object" /> | Forcefully connect this source to others with `{ "ids": [...] }`. |
 
 ### App source model (`app_knowledge` array items)
 
 | Field | Description |
 |---|---|
-| <Field name="id" type="string" recommended /> | Stable source ID. Used as the upsert/delete/status key. |
+| <Field name="id" type="string" recommended /> | Stable ID. Used as the upsert/delete/status key. |
 | <Field name="tenant_id" type="string" recommended /> | Tenant that owns the item. Must match form-level `tenant_id` when present. |
 | <Field name="sub_tenant_id" type="string" recommended /> | Logical partition. Must match form-level `sub_tenant_id` when present. |
 | <Field name="title" type="string" recommended /> | Short title, subject, ticket title, or page name. |
@@ -353,8 +353,8 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 | <Field name="fields" type="object" required /> | App-native content and structure. Put primary text here (`body`, `description`, `title`, or `data` depending on `kind`). |
 | <Field name="url" type="string" /> | Canonical URL or reference link. |
 | <Field name="timestamp" type="ISO-8601 datetime" /> | Creation, sent, or last-updated time. |
-| <Field name="tenant_metadata" type="object" /> | Filterable fields matching the tenant schema. Also accepted as `metadata`. |
-| <Field name="additional_metadata" type="object" /> | Free-form fields. Filterable only when nested under `additional_metadata` in `metadata_filters`. Also accepted as `document_metadata`. |
+| <Field name="metadata" type="object" /> | Filterable fields matching the tenant schema. |
+| <Field name="additional_metadata" type="object" /> | Free-form fields. Filterable only when nested under `additional_metadata` in `metadata_filters`. |
 | <Field name="attachments" type="array" /> | Optional related attachments. Include extracted text in `attachments[].content.text` or `.markdown`. |
 | <Field name="comments" type="array" /> | Optional embedded snapshot comments. For live incremental comments, prefer a first-class `kind: "comment"` source. |
 | <Field name="relations" type="array" /> | App-native relation array: `[{ "predicate": "linked_to", "target": { "external_id": "AUTH-123", "provider": "jira" } }]`. |
@@ -365,7 +365,7 @@ The full schema lives on [`POST /source/ingest`](/api-reference/v2/endpoint/inge
 |---|---|---|
 | <Field name="tenant_id" type="string" required /> |  -  | Target tenant. |
 | <Field name="sub_tenant_id" type="string" /> | none | Scope this knowledge to a sub-tenant. If omitted, knowledge is available to all sub-tenants. |
-| <Field name="upsert" type="boolean" /> | `true` | Replace existing items with the same `source_id`. |
+| <Field name="upsert" type="boolean" /> | `true` | Replace existing items with the same `id`. |
 
 ---
 
@@ -375,7 +375,7 @@ Forceful relations let you **declare** links between Knowledge sources at ingest
 
 This is separate from the entity and relationship [context graph](/essentials/v2/context-graphs) HydraDB builds automatically. Graph extraction is *derived* from content; forceful relations are *declared* by you  -  useful when you know two documents belong together (a contract and its addendum, a runbook and its troubleshooting guide) but the text doesn't make the connection explicit.
 
-For file uploads, set `relations.source_ids` on the matching `file_metadata` item. For app sources, prefer the app-native `relations[]` shape so each link can carry a predicate and provider-aware target:
+For file uploads, set `relations.ids` on the matching `document_metadata` item. For app sources, prefer the app-native `relations[]` shape so each link can carry a predicate and provider-aware target:
 
 ```json
 {
@@ -383,7 +383,7 @@ For file uploads, set `relations.source_ids` on the matching `file_metadata` ite
     {
       "predicate": "linked_to",
       "target": {
-        "source_id": "auth-troubleshooting"
+        "id": "auth-troubleshooting"
       }
     },
     {
@@ -399,7 +399,7 @@ For file uploads, set `relations.source_ids` on the matching `file_metadata` ite
 
 <CodeGroup>
 ```python Python SDK
-client.source.ingest(
+client.context.ingest(
     type="knowledge",
     tenant_id="acme_corp",
     app_knowledge=json.dumps([
@@ -414,7 +414,7 @@ client.source.ingest(
             "external_id": "AUTH-GUIDE",
             "fields": {"kind": "knowledge_base", "title": "Authentication Guide", "body": "..."},
             "relations": [
-                {"predicate": "linked_to", "target": {"source_id": "auth-troubleshooting"}},
+                {"predicate": "linked_to", "target": {"id": "auth-troubleshooting"}},
                 {"predicate": "related_to", "target": {"external_id": "AUTH-FAQ", "provider": "notion"}},
             ],
         }
@@ -422,7 +422,7 @@ client.source.ingest(
 )
 ```
 ```typescript TypeScript SDK
-await client.source.ingest({
+await client.context.ingest({
   type: "knowledge",
   tenant_id: "acme_corp",
   app_knowledge: JSON.stringify([
@@ -435,7 +435,7 @@ await client.source.ingest({
       external_id: "AUTH-GUIDE",
       fields: { kind: "knowledge_base", title: "Authentication Guide", body: "..." },
       relations: [
-        { predicate: "linked_to", target: { source_id: "auth-troubleshooting" } },
+        { predicate: "linked_to", target: { id: "auth-troubleshooting" } },
         { predicate: "related_to", target: { external_id: "AUTH-FAQ", provider: "notion" } },
       ],
     },
@@ -443,7 +443,7 @@ await client.source.ingest({
 });
 ```
 ```bash cURL
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=knowledge" \
@@ -458,7 +458,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
       "external_id": "AUTH-GUIDE",
       "fields": { "kind": "knowledge_base", "title": "Authentication Guide", "body": "..." },
       "relations": [
-        { "predicate": "linked_to", "target": { "source_id": "auth-troubleshooting" } },
+        { "predicate": "linked_to", "target": { "id": "auth-troubleshooting" } },
         { "predicate": "related_to", "target": { "external_id": "AUTH-FAQ", "provider": "notion" } }
       ]
     }
@@ -469,7 +469,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 At query time, linked sources are returned in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). `query_forceful_relations` defaults to `true`  -  you only need to set it explicitly if you want to disable forceful-relation expansion.
 
 <Warning>
-**Knowledge sources only.** Forceful relations work within the same store. Pointing a Knowledge source at a Memory source ID (or vice versa) will silently return nothing at query time.
+**Knowledge items only.** Forceful relations work within the same store. Pointing a Knowledge item at a Memory ID (or vice versa) will silently return nothing at query time.
 </Warning>
 
 <Warning>
@@ -478,11 +478,11 @@ At query time, linked sources are returned in the `additional_context` field of 
 
 ## 8. Metadata on knowledge
 
-[Metadata](/essentials/v2/metadata) is how you bridge structured filters and semantic search. Attach `tenant_metadata` at ingestion to enable deterministic narrowing at query time:
+[Metadata](/essentials/v2/metadata) is how you bridge structured filters and semantic search. Attach `metadata` at ingestion to enable deterministic narrowing at query time:
 
 ```json
 {
-  "tenant_metadata": { "document_type": "runbook", "environment": "production" }
+  "metadata": { "document_type": "runbook", "environment": "production" }
 }
 ```
 
@@ -495,9 +495,9 @@ Then at query time:
 }
 ```
 
-`tenant_metadata` keys must be defined in the tenant metadata schema with `enable_match: true` to be filterable  -  undeclared keys are silently ignored at query time. `document_metadata` is stored alongside the source for display and bookkeeping; to filter on it, nest the keys under `document_metadata` in `metadata_filters` (e.g. `{"metadata_filters": {"document_metadata": {"author": "Alice"}}}`).
+`metadata` keys must be defined in the tenant metadata schema with `enable_match: true` to be filterable  -  undeclared keys are silently ignored at query time. `additional_metadata` is stored alongside the source for display and bookkeeping; to filter on it, nest the keys under `additional_metadata` in `metadata_filters` (e.g. `{"metadata_filters": {"additional_metadata": {"author": "Alice"}}}`).
 
-See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and the `tenant_metadata` vs `document_metadata` decision rule. See [Create Tenant](/api-reference/v2/endpoint/create-tenant) for the schema field configuration (`enable_match`, `enable_dense_embedding`, `enable_sparse_embedding`).
+See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and the `metadata` vs `additional_metadata` decision rule. See [Create Tenant](/api-reference/v2/endpoint/create-tenant) for the schema field configuration (`enable_match`, `enable_dense_embedding`, `enable_sparse_embedding`).
 
 ---
 
@@ -506,9 +506,9 @@ See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and 
 | Mistake | What goes wrong | Fix |
 |---|---|---|
 | Querying Knowledge with `type: "memory"` | Nothing returned  -  wrong store | Use `type: "knowledge"` (or `"all"`) on [`POST /query`](/api-reference/v2/endpoint/query). |
-| Using `document_metadata` for filterable fields | Filters are silently ignored unless nested correctly | Put filterable keys in `tenant_metadata` and declare them in the [tenant schema](/api-reference/v2/endpoint/create-tenant), or filter under `metadata_filters: {"document_metadata": {...}}`  -  see [Metadata](/essentials/v2/metadata). |
-| Not polling [`/source/status`](/api-reference/v2/endpoint/source-status) before querying | Chunks aren't indexed yet  -  empty query results | Wait for `indexing_status: completed` (or `graph_creation` for partial availability). |
-| Sending `file_metadata` as a JSON object instead of a JSON string | `multipart/form-data` validation fails | Stringify `file_metadata` before sending in the `-F` field. |
+| Using `additional_metadata` for filterable fields | Filters are silently ignored unless nested correctly | Put filterable keys in `metadata` and declare them in the [tenant schema](/api-reference/v2/endpoint/create-tenant), or filter under `metadata_filters: {"additional_metadata": {...}}`  -  see [Metadata](/essentials/v2/metadata). |
+| Not polling [`/context/status`](/api-reference/v2/endpoint/source-status) before querying | Chunks aren't indexed yet  -  empty query results | Wait for `indexing_status: completed` (or `graph_creation` for partial availability). |
+| Sending `document_metadata` as a JSON object instead of a JSON string | `multipart/form-data` validation fails | Stringify `document_metadata` before sending in the `-F` field. |
 | Omitting `tenant_id` | `422` validation error | Required on every call. |
 | Pointing forceful relations at memory IDs from a knowledge source | Silently returns nothing at query | Forceful relations work **within the same store**  -  knowledge→knowledge, memory→memory. |
 
@@ -520,5 +520,5 @@ See [Metadata](/essentials/v2/metadata) for schema design, filter examples, and 
 - [Query](/essentials/v2/query)  -  how [`POST /query`](/api-reference/v2/endpoint/query) retrieves Knowledge
 - [Metadata](/essentials/v2/metadata)  -  designing filterable schemas
 - [Context Graphs](/essentials/v2/context-graphs)  -  how the graph layer enriches retrieval
-- [Ingest Content  -  API Reference](/api-reference/v2/endpoint/ingest-content)
-- [Source Status  -  API Reference](/api-reference/v2/endpoint/source-status)
+- [Ingest Content  -  API Reference](/api-reference/v2/endpoint/ingest-context)
+- [Ingestion Status  -  API Reference](/api-reference/v2/endpoint/source-status)

@@ -1,25 +1,26 @@
 ---
-title: "Delete Source"
-description: "Delete knowledge sources or memories by their IDs."
-openapi: "api-reference/v2/openapi.json DELETE /source"
+title: "Delete Context"
+description: "Delete knowledge or memories by their IDs."
+openapi: "api-reference/v2/openapi.json DELETE /context"
 ---
 
 import { Field } from "/snippets/field.jsx";
 
 Specify the resource category with the `type` parameter:
 
-- `type=knowledge` *(default)*  -  delete knowledge sources.
+- `type=knowledge` _(default)_  -  delete knowledge sources.
 - `type=memory`  -  delete memories.
 
 Pass one or more IDs in `request.ids`. The body wraps two fields together: `request` (the actual delete payload) and `type` (the bucket).
 
-<Warning>
-`type` belongs in the JSON body, not in the query string. A flat body such as `{ "tenant_id": "...", "ids": [...] }` is invalid and returns `422 VALIDATION_ERROR` because `request` is required.
-</Warning>
+### Knowledge deletion 
+
+Use `type: "knowledge"` and pass knowledge `ids` in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the knowledge; omitting it targets the default sub-tenant.
 
 <RequestExample>
+
 ```python Python SDK
-client.source.delete(
+client.context.delete(
     type="knowledge",
     request={
         "tenant_id": "acme_corp",
@@ -28,8 +29,9 @@ client.source.delete(
     },
 )
 ```
+
 ```typescript TypeScript SDK
-await client.source.delete({
+await client.context.delete({
   type: "knowledge",
   request: {
     tenant_id: "acme_corp",
@@ -38,8 +40,9 @@ await client.source.delete({
   },
 });
 ```
+
 ```bash cURL
-curl -X DELETE 'https://api.hydradb.com/source' \
+curl -X DELETE 'https://api.hydradb.com/context' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
@@ -52,33 +55,8 @@ curl -X DELETE 'https://api.hydradb.com/source' \
     "type": "knowledge"
   }'
 ```
+
 </RequestExample>
-
-### Memory delete example
-
-Use `type: "memory"` and pass memory `source_id`s in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the memories; omitting it targets the default sub-tenant.
-
-```json
-{
-  "request": {
-    "tenant_id": "acme_corp",
-    "sub_tenant_id": "user_alex",
-    "ids": ["mem_user_alex_tone"]
-  },
-  "type": "memory"
-}
-```
-
-## Request body
-
-The body wraps two fields together. 
-
-| Name | Description |
-| --- | --- |
-| <Field name="request.tenant_id" type="string" required /> | Owning tenant. |
-| <Field name="request.sub_tenant_id" type="string or null" /> | Sub-tenant scope. Use the same value used at ingestion. If omitted, the default sub-tenant is used. (default=`null`) |
-| <Field name="request.ids" type="string[]" required /> | One or more source IDs to delete. At least one is required. |
-| <Field name="type" type='"knowledge" or "memory"' /> | Bucket selector. (default=`"knowledge"`) |
 
 <ResponseExample>
 
@@ -103,6 +81,51 @@ The body wraps two fields together.
 ```
 
 </ResponseExample>
+
+### Memory deletion 
+
+Use `type: "memory"` and pass memory `ids` in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the memories; omitting it targets the default sub-tenant.
+
+<RequestExample>
+
+```python Python SDK
+client.context.delete(
+    type="memory",
+    request={
+        "tenant_id": "acme_corp",
+        "sub_tenant_id": "user_alex",
+        "ids": ["mem_user_alex_tone"],
+    },
+)
+```
+
+```typescript TypeScript SDK
+await client.context.delete({
+  type: "memory",
+  request: {
+    tenant_id: "acme_corp",
+    sub_tenant_id: "user_alex",
+    ids: ["mem_user_alex_tone"],
+  },
+});
+```
+
+```bash cURL
+curl -X DELETE 'https://api.hydradb.com/context' \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "API-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request": {
+      "tenant_id": "acme_corp",
+      "sub_tenant_id": "user_alex",
+      "ids": ["mem_user_alex_tone"]
+    },
+    "type": "memory"
+  }'
+```
+
+</RequestExample>
 
 <ResponseExample>
 
@@ -138,28 +161,19 @@ The body wraps two fields together.
 
 </ResponseExample>
 
-## Behavior notes
+## Some additional notes
 
-<Warning>
-**Irreversible action.** Chunks, embeddings, and graph nodes are permanently removed. There is no soft-delete or undo. Keep a copy of your data if you may need to re-ingest it later.
-</Warning>
-
-- **Partial-success semantics:** For `type=knowledge`, each ID is reported independently in `results[]`. A failure on one ID does not stop the rest. For `type=memory`, the response reports an aggregate `user_memory_deleted` reflecting *all* listed IDs.
-- **Query drops the source immediately:** Even before background cleanup finishes, deleted IDs disappear from `/query` and `/source/list` responses.
-- **Mixed deletes need two calls:** To delete both knowledge and memory items, send two requests  -  one with `type=knowledge`, one with `type=memory`. A single call cannot mix the two buckets.
-
-## Errors
-
-Common codes: `400 INVALID_PARAMETERS`, `404 SOURCE_NOT_FOUND`, `422 VALIDATION_ERROR`. See [Error Responses](/api-reference/v2/error-responses) for the full list.
+- **Partial-success semantics:** For `type=knowledge`, each ID is reported independently in `results[]`. A failure on one ID does not stop the rest. For `type=memory`, the response reports an aggregate `user_memory_deleted` reflecting _all_ listed IDs.
+- **Retrieval drops the source immediately:** Even before background cleanup finishes, deleted IDs disappear from `/query` and `/context/list` responses.
+- **Mixed deletes need two calls:** To delete both knowledge and memory items, send two requests  -  one with `type=knowledge`, one with `type=memory`.
 
 <div className="api-before-related-resources" />
-
 <Tip>
-**Related Resources**
+  **Related Resources**
 
-- **Find IDs:** [List Documents](/api-reference/v2/endpoint/list-documents)
-- **Query content:** [Query](/api-reference/v2/endpoint/query)
-- **Re-add content:** [Ingest Content](/api-reference/v2/endpoint/ingest-content)
-- **Bigger hammer:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant) - removes the entire workspace
-- **Read more:** [Sources - Overview](/api-reference/v2/endpoint/sources-overview)
+  - **Find IDs:** [List Documents](/api-reference/v2/endpoint/list-documents)
+  - **Perform a query:** [Query](/api-reference/v2/endpoint/query)
+  - **Re-add content:** [Ingest Context](/api-reference/v2/endpoint/ingest-context)
+  - **Bigger hammer:** [Delete Tenant](/api-reference/v2/endpoint/delete-tenant) - removes the entire workspace
+  - **Read more:** [Context Management - Overview](/api-reference/v2/endpoint/sources-overview)
 </Tip>

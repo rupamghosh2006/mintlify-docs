@@ -40,7 +40,7 @@ linkStyle default stroke:#64748b,stroke-width:2px;
 | <Field name="mode" /> | `"fast"`, `"thinking"` | Choose latency vs quality. Use `"fast"` for low-latency paths and `"thinking"` for multi-query retrieval, reranking, and forceful-relation context. |
 | <Field name="max_results" /> | integer | Control prompt size. Start with `10`, reduce for tight context windows, increase only when you rerank or summarize downstream. |
 | <Field name="alpha" /> | `0.0`-`1.0` or `"auto"` | Tune hybrid query. Lower values favor BM25 keywords; higher values favor semantic similarity. |
-| <Field name="metadata_filters" /> | object | Narrow candidates before ranking. Top-level keys match `tenant_metadata`; nested `document_metadata` filters free-form per-source fields. |
+| <Field name="metadata_filters" /> | object | Narrow candidates before ranking. Top-level keys match `metadata`; nested `additional_metadata` filters free-form per-source fields. |
 | <Field name="graph_context" /> | boolean | Include entity/relation context with the chunks. On by default; set `false` for chunk-only responses. |
 | <Field name="query_apps" /> | boolean | Adds app-aware retrieval while still querying the full selected knowledge scope. Use it for better app-source matching; it does not restrict retrieval to app sources only. |
 
@@ -99,7 +99,7 @@ Use this when the answer should combine shared knowledge with user-specific cont
 
   <Accordion title="Filtered query for a specific slice">
 
-Use `metadata_filters` when you already know the slice you want. Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`; free-form per-source fields go under `document_metadata`.
+Use `metadata_filters` when you already know the slice you want. Top-level keys must be declared in `tenant_metadata_schema` with `enable_match: true`; free-form per-source fields go under `additional_metadata`.
 
 ```json
 {
@@ -109,7 +109,7 @@ Use `metadata_filters` when you already know the slice you want. Top-level keys 
   "query_by": "hybrid",
   "metadata_filters": {
     "department": "product",
-    "document_metadata": {
+    "additional_metadata": {
       "source": "launch_plan"
     }
   }

@@ -100,7 +100,7 @@ const uploadHotelData = async (hotels, tenantId, subTenantId) => {
     }
   }));
 
-  await client.source.ingest({
+  await client.context.ingest({
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
     app_knowledge: JSON.stringify(hotelSources),
@@ -142,7 +142,7 @@ const uploadFlightData = async (flights, tenantId, subTenantId) => {
     }
   }));
 
-  await client.source.ingest({
+  await client.context.ingest({
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
     app_knowledge: JSON.stringify(flightSources),
@@ -184,7 +184,7 @@ const uploadRestaurantData = async (restaurants, tenantId, subTenantId) => {
     }
   }));
 
-  await client.source.ingest({
+  await client.context.ingest({
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
     app_knowledge: JSON.stringify(restaurantSources),
@@ -226,7 +226,7 @@ const uploadActivityData = async (activities, tenantId, subTenantId) => {
     }
   }));
 
-  await client.source.ingest({
+  await client.context.ingest({
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
     app_knowledge: JSON.stringify(activitySources),
@@ -288,13 +288,13 @@ class PersonalizationEngine {
 
   async generateUserMemory(userInteraction) {
     // Generate memories based on user's travel preferences and booking patterns
-    await client.source.ingest({
+    await client.context.ingest({
       type: 'memory',
       tenant_id: userInteraction.tenantId,
       sub_tenant_id: userInteraction.userId,
       upsert: true,
       memories: [{
-        source_id: `user_${userInteraction.userId}`,
+        id: `user_${userInteraction.userId}`,
         text: `User searched for: ${userInteraction.query}.
                    They showed interest in: ${userInteraction.clickedItems.join(', ')}.
                    They booked: ${userInteraction.bookedItems.join(', ')}.`,
@@ -307,7 +307,7 @@ class PersonalizationEngine {
   async getPersonalizedRecommendations(tenantId, subTenantId, destination) {
     // Retrieve user memories to provide personalized recommendations
     const memories = await this.client.query({
-      source: 'memories',
+      type: "memory",
       tenant_id: tenantId,
       sub_tenant_id: subTenantId,
       query: `travel preferences for ${destination}`,
@@ -499,13 +499,13 @@ const analyzeBookingPatterns = async (tenantId, subTenantId, bookingData) => {
   const analysisText = `User has booked: ${bookingData.map(b => b.description).join(', ')}. What patterns can we identify about their travel preferences?`;
 
   // Generate memory for future personalization
-  await client.source.ingest({
+  await client.context.ingest({
     type: 'memory',
     tenant_id: tenantId,
     sub_tenant_id: subTenantId,
     upsert: true,
     memories: [{
-      source_id: `booking_${tenantId}`,
+      id: `booking_${tenantId}`,
       text: analysisText,
       infer: true,
       user_name: bookingData[0].userName
@@ -565,13 +565,13 @@ const monitorPriceChanges = async (travelPlan) => {
   const priceText = `Monitor price changes for: ${travelPlan.description}. Alert if prices drop by 10% or more.`;
 
   // Set up monitoring using HydraDB memories
-  await client.source.ingest({
+  await client.context.ingest({
     type: 'memory',
     tenant_id: travelPlan.tenantId,
     sub_tenant_id: travelPlan.userId,
     upsert: true,
     memories: [{
-      source_id: `price_${travelPlan.userId}`,
+      id: `price_${travelPlan.userId}`,
       text: priceText,
       infer: true
     }]

@@ -109,7 +109,7 @@ result = client.query(
 
 </CodeGroup>
 
-`metadata_filters` run before ranking. Use them whenever the query has a scope that should not be violated. Top-level keys match `tenant_metadata`; nest under a `document_metadata` key to filter free-form per-document fields.
+`metadata_filters` run before ranking. Use them whenever the query has a scope that should not be violated. Top-level keys match `metadata`; nest under a `additional_metadata` key to filter free-form per-document fields.
 
 ---
 

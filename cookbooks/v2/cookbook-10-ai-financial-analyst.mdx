@@ -163,7 +163,7 @@ def ingest_earnings_pdf(
             documents=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    id = result.results[0].id if result.results else str(result)
+    id = result.data.results[0].id if result.data.results else str(result)
     print(f"Uploaded {ticker} {period_label} {doc_type} → id: {id}")
     return id
 
@@ -296,7 +296,7 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
                 }
             }],
         )
-        memory_ids.append(result.results[0].id if result.results else "ok")
+        memory_ids.append(result.data.results[0].id if result.data.results else "ok")
         print(f"Stored metrics: {item['period_label']} ({item['ticker']})")
 
     return memory_ids
@@ -431,7 +431,7 @@ def ingest_board_memo(
             documents=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    id = result.results[0].id if result.results else str(result)
+    id = result.data.results[0].id if result.data.results else str(result)
     print(f"Uploaded memo: {ticker} {period_label} → {id}")
     return id
 ```
@@ -464,7 +464,7 @@ def verify_all_indexed(ids: list[str], poll_interval: int = 3, max_polls: int = 
                 tenant_id=TENANT_ID,
                 ids=[fid],
             )
-            items = status.statuses or []
+            items = status.data.statuses or []
             s = items[0].indexing_status if items else "unknown"
 
             if s == "completed":

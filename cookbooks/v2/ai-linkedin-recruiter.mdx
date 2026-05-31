@@ -73,8 +73,8 @@ The key to powerful AI search is structuring candidate data correctly. Here's ho
 const candidateProfile = {
   // Required fields for HydraDB
   id: 'candidate_123456',
-  tenant_id: 'recruiting_tenant',
-  sub_tenant_id: 'ml_engineering',
+  tenantId: 'recruiting_tenant',
+  subTenantId: 'ml_engineering',
   title: 'Senior Machine Learning Engineer - John Smith',
   type: 'candidate_profile', // Type app identifier
   timestamp: '2024-01-15T10:30:00Z', // Profile last updated
@@ -350,16 +350,16 @@ class AIRecruitingSearch {
     const enrichedQuery = hiringContext ? `${hiringContext}\n\n${query}` : query;
 
     const results = await this.client.query({
-      tenant_id: this.tenantId,
+      tenantId: this.tenantId,
       query: enrichedQuery,
 
       // Hiring-specific configurations
-      max_results: 20, // More candidates for review
+      maxResults: 20, // More candidates for review
       mode: 'thinking', // Multi-query with reranking for better results
 
       // Search tuning for candidate discovery
       alpha: 0.6, // Favor semantic understanding
-      recency_bias: 0.2 // Don't heavily favor recent profiles
+      recencyBias: 0.2 // Don't heavily favor recent profiles
     });
 
     return this.enhanceCandidateResults(results, query);
@@ -695,7 +695,7 @@ const complexQueries = [
       experience_requirement: "5+ years",
       domain_requirement: "machine learning", 
       company_requirement: "Apple",
-      additional_context: "Looking for proven ML expertise with big tech experience"
+      additionalContext: "Looking for proven ML expertise with big tech experience"
     }
   },
   
@@ -1104,8 +1104,8 @@ class AIInterviewPrep {
 const recommendedCandidateFields = {
   // Core identification (Required by HydraDB)
   id: "unique_candidate_identifier",
-  tenant_id: "recruiting_tenant",
-  sub_tenant_id: "ml_engineering",
+  tenantId: "recruiting_tenant",
+  subTenantId: "ml_engineering",
   title: "Descriptive candidate title with name and role",
   type: "candidate_profile", // Type app identifier
   timestamp: "2024-01-01T00:00:00Z", // Profile last updated

@@ -31,7 +31,7 @@ Pick the row that matches your goal and use the parameters as a starting point:
 | Parameter | Type / values | Purpose |
 | --- | --- | --- |
 | `graph_context` | boolean | When `true` (default), includes the entity/relation graph slice in the response. Pair with `mode: "thinking"` for richer multi-hop traversals. See [Context Graphs](/essentials/v2/context-graphs). Set to `false` to drop it when you only need ranked chunks. Default: `true`. |
-| `search_forceful_relations` | boolean | Whether to fetch author-declared related sources (see `relations`[ on ingest](/api-reference/v2/endpoint/ingest-content)) into `additional_context`. **Only takes effect in** `mode: "thinking"`**.** Default: `true`. |
+| `query_forceful_relations` | boolean | Whether to fetch author-declared related sources (see `relations`[ on ingest](/api-reference/v2/endpoint/ingest-content)) into `additional_context`. **Only takes effect in** `mode: "thinking"`**.** Default: `true`. |
 
 ### Shaping results
 
@@ -172,7 +172,7 @@ If you need to keep the two streams separate  -  for instance to format user pre
 | Memories missing from a `type: "knowledge"` query | Wrong store selected | Use `type: "memory"` or `type: "all"`. |
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
 | `operator: "phrase"` ignored | `query_by` not set to `"text"` | `operator` only applies to BM25 text query  -  switch `query_by` to `"text"`. |
-| `search_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |
+| `query_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |
 
 ---
 

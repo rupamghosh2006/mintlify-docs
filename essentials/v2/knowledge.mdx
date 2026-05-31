@@ -466,14 +466,14 @@ curl -X POST 'https://api.hydradb.com/context/ingest' \
 ```
 </CodeGroup>
 
-At query time, linked sources are returned in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). `search_forceful_relations` defaults to `true`  -  you only need to set it explicitly if you want to disable forceful-relation expansion.
+At query time, linked sources are returned in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). `query_forceful_relations` defaults to `true`  -  you only need to set it explicitly if you want to disable forceful-relation expansion.
 
 <Warning>
 **Knowledge sources only.** Forceful relations work within the same store. Pointing a Knowledge source at a Memory source ID (or vice versa) will silently return nothing at query time.
 </Warning>
 
 <Warning>
-**`thinking` mode only.** Forceful-relation context is fetched only when `mode: "thinking"` is set on the query request. In `fast` mode, `search_forceful_relations` is ignored even if set to `true`.
+**`thinking` mode only.** Forceful-relation context is fetched only when `mode: "thinking"` is set on the query request. In `fast` mode, `query_forceful_relations` is ignored even if set to `true`.
 </Warning>
 
 ## 8. Metadata on knowledge

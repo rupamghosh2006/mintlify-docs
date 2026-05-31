@@ -225,7 +225,7 @@ curl -X POST 'https://api.hydradb.com/context/ingest' \
 ```
 </CodeGroup>
 
-At query time, linked memories return in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). Forceful relation expansion is enabled by default for thinking-mode queries. Set `search_forceful_relations=false` to disable it.
+At query time, linked memories return in the `additional_context` field of the [query response](/api-reference/v2/endpoint/query). Forceful relation expansion is enabled by default for thinking-mode queries. Set `query_forceful_relations=false` to disable it.
 
 To make relations work reliably, control the `id` for the memories you ingest. You need stable IDs in order to link memories together.
 
@@ -234,7 +234,7 @@ To make relations work reliably, control the `id` for the memories you ingest. Y
 </Warning>
 
 <Warning>
-**`thinking` mode only.** Forceful-relation context is only fetched when `mode: "thinking"` is set on the quer request. Passing `search_forceful_relations: true` with `mode: "fast"` is rejected with HTTP `422` - set `mode: "thinking"` or remove the flag.
+**`thinking` mode only.** Forceful-relation context is only fetched when `mode: "thinking"` is set on the quer request. Passing `query_forceful_relations: true` with `mode: "fast"` is rejected with HTTP `422` - set `mode: "thinking"` or remove the flag.
 </Warning>
 
 ---

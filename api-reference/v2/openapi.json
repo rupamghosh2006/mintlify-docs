@@ -3611,17 +3611,17 @@
         }
       }
     },
-    "/source/ingest": {
+    "/context/ingest": {
       "post": {
         "tags": ["Source"],
         "summary": "Ingest content",
-        "description": "Unified ingestion endpoint for both knowledge and memory.\n\n    Use `type` to specify what you're ingesting:\n    - \"knowledge\" (default): Upload files or app-generated sources for indexing\n    - \"memory\": Add memories (text, conversations) for indexing and retrieval\n\n    **For knowledge (type=\"knowledge\"):**\n    Provide `files` (multipart uploads) and/or `app_knowledge` (JSON sources).\n\n    **For memory (type=\"memory\"):**\n    Provide `memories` as a JSON array of memory items in the `memories` field.",
-        "operationId": "ingest_source_ingest_post",
+        "description": "Unified ingestion endpoint for both knowledge and memory.\n\n    Use `type` to specify what you're ingesting:\n    - \"knowledge\" (default): Upload files or app-generated sources for indexing\n    - \"memory\": Add memories (text, conversations) for indexing and retrieval\n\n    **For knowledge (type=\"knowledge\"):**\n    Provide `documents` (multipart uploads) and/or `app_knowledge` (JSON sources).\n\n    **For memory (type=\"memory\"):**\n    Provide `memories` as a JSON array of memory items in the `memories` field.",
+        "operationId": "ingest_context_ingest_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_ingest_source_ingest_post"
+                "$ref": "#/components/schemas/Body_ingest_context_ingest_post"
               }
             }
           },
@@ -3714,17 +3714,17 @@
             "HTTPBearer": []
           }
         ],
-        "x-fern-sdk-group-name": "source",
+        "x-fern-sdk-group-name": "context",
         "x-fern-sdk-method-name": "ingest",
         "x-fern-audiences": ["v2"]
       }
     },
-    "/source/status": {
+    "/context/status": {
       "get": {
         "tags": ["Source"],
         "summary": "Check processing status",
         "description": "Check the processing status of ingested documents or memories by their IDs.",
-        "operationId": "get_status_source_status_get",
+        "operationId": "get_status_context_status_get",
         "security": [
           {
             "HTTPBearer": []
@@ -3732,7 +3732,7 @@
         ],
         "parameters": [
           {
-            "name": "source_id",
+            "name": "id",
             "in": "query",
             "required": false,
             "schema": {
@@ -3745,12 +3745,12 @@
                 }
               ],
               "description": "Single source ID.",
-              "title": "Source Id"
+              "title": "Id"
             },
             "description": "Single source ID."
           },
           {
-            "name": "source_ids",
+            "name": "ids",
             "in": "query",
             "required": false,
             "schema": {
@@ -3760,7 +3760,7 @@
               },
               "description": "One or more source IDs to check.",
               "default": [],
-              "title": "Source Ids"
+              "title": "Ids"
             },
             "description": "One or more source IDs to check."
           },
@@ -3877,17 +3877,17 @@
             }
           }
         },
-        "x-fern-sdk-group-name": "source",
+        "x-fern-sdk-group-name": "context",
         "x-fern-sdk-method-name": "status",
         "x-fern-audiences": ["v2"]
       }
     },
-    "/source/fetch": {
+    "/context/inspect": {
       "get": {
         "tags": ["Source"],
         "summary": "Fetch document content",
         "description": "Retrieve the content of a previously ingested document or memory.",
-        "operationId": "fetch_source_fetch_get",
+        "operationId": "fetch_context_inspect_get",
         "security": [
           {
             "HTTPBearer": []
@@ -3895,13 +3895,13 @@
         ],
         "parameters": [
           {
-            "name": "source_id",
+            "name": "id",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
               "description": "Source ID of the document to fetch",
-              "title": "Source Id"
+              "title": "Id"
             },
             "description": "Source ID of the document to fetch"
           },
@@ -4043,22 +4043,22 @@
             }
           }
         },
-        "x-fern-sdk-group-name": "source",
-        "x-fern-sdk-method-name": "fetch",
+        "x-fern-sdk-group-name": "context",
+        "x-fern-sdk-method-name": "inspect",
         "x-fern-audiences": ["v2"]
       }
     },
-    "/source/list": {
+    "/context/list": {
       "post": {
         "tags": ["Source"],
         "summary": "List documents",
         "description": "List knowledge sources or memories with pagination and optional filters.",
-        "operationId": "list_documents_source_list_post",
+        "operationId": "list_documents_context_list_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ListContentRequest"
+                "$ref": "#/components/schemas/V2ListContentRequest"
               }
             }
           },
@@ -4151,22 +4151,22 @@
             "HTTPBearer": []
           }
         ],
-        "x-fern-sdk-group-name": "source",
+        "x-fern-sdk-group-name": "context",
         "x-fern-sdk-method-name": "list",
         "x-fern-audiences": ["v2"]
       }
     },
-    "/source": {
+    "/context": {
       "delete": {
         "tags": ["Source"],
         "summary": "Delete documents or memories",
         "description": "Unified deletion endpoint for both knowledge documents and memories.\n\n    Use `type` to specify what to delete:\n    - \"knowledge\" (default): Delete knowledge documents by their IDs\n    - \"memory\": Delete memories by their IDs\n\n    Provide one or more IDs in the `ids` field.",
-        "operationId": "delete_documents_source_delete",
+        "operationId": "delete_documents_context_delete",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_delete_documents_source_delete"
+                "$ref": "#/components/schemas/Body_delete_documents_context_delete"
               }
             }
           },
@@ -4259,17 +4259,17 @@
             "HTTPBearer": []
           }
         ],
-        "x-fern-sdk-group-name": "source",
+        "x-fern-sdk-group-name": "context",
         "x-fern-sdk-method-name": "delete",
         "x-fern-audiences": ["v2"]
       }
     },
-    "/source/relations": {
+    "/context/relations": {
       "get": {
         "tags": ["Source"],
         "summary": "Get graph relations",
-        "description": "Retrieve knowledge graph relations for a specific source or across an entire sub-tenant.\n\n    If `source_id` is provided, returns relations for that specific document.\n    If omitted, returns all relations in the sub-tenant scope.\n\n    Supports cursor-based pagination for large result sets.",
-        "operationId": "get_relations_source_relations_get",
+        "description": "Retrieve knowledge graph relations for a specific source or across an entire sub-tenant.\n\n    If `id` is provided, returns relations for that specific document.\n    If omitted, returns all relations in the sub-tenant scope.\n\n    Supports cursor-based pagination for large result sets.",
+        "operationId": "get_relations_context_relations_get",
         "security": [
           {
             "HTTPBearer": []
@@ -4288,7 +4288,7 @@
             "description": "Unique identifier for the tenant/organization"
           },
           {
-            "name": "source_id",
+            "name": "id",
             "in": "query",
             "required": false,
             "schema": {
@@ -4301,7 +4301,7 @@
                 }
               ],
               "description": "Source ID. If omitted, returns relations across the entire sub-tenant.",
-              "title": "Source Id"
+              "title": "Id"
             },
             "description": "Source ID. If omitted, returns relations across the entire sub-tenant."
           },
@@ -4449,7 +4449,7 @@
             }
           }
         },
-        "x-fern-sdk-group-name": "source",
+        "x-fern-sdk-group-name": "context",
         "x-fern-sdk-method-name": "relations",
         "x-fern-audiences": ["v2"]
       }
@@ -5622,7 +5622,7 @@
         "required": ["memories", "tenant_id"],
         "title": "Body_add_memory_memories_add_memory_post"
       },
-      "Body_delete_documents_source_delete": {
+      "Body_delete_documents_context_delete": {
         "properties": {
           "request": {
             "$ref": "#/components/schemas/SourceDeleteRequest"
@@ -5635,7 +5635,7 @@
         },
         "type": "object",
         "required": ["request"],
-        "title": "Body_delete_documents_source_delete"
+        "title": "Body_delete_documents_context_delete"
       },
       "Body_filter_raw_embeddings_endpoint_embeddings_filter_raw_embeddings_post": {
         "properties": {
@@ -5704,7 +5704,7 @@
         "required": ["tenant_id", "sub_tenant_id"],
         "title": "Body_filter_raw_embeddings_endpoint_embeddings_filter_raw_embeddings_post"
       },
-      "Body_ingest_source_ingest_post": {
+      "Body_ingest_context_ingest_post": {
         "properties": {
           "type": {
             "$ref": "#/components/schemas/IngestType",
@@ -5728,17 +5728,17 @@
             "description": "If true, update existing sources with the same id.",
             "default": true
           },
-          "files": {
+          "documents": {
             "items": {
               "type": "string",
               "format": "binary"
             },
             "type": "array",
-            "title": "Files",
-            "description": "Files to upload (knowledge only). Omit when ingesting memories.",
+            "title": "Documents",
+            "description": "Documents to upload (knowledge only). Omit when ingesting memories.",
             "default": []
           },
-          "file_metadata": {
+          "document_metadata": {
             "anyOf": [
               {
                 "type": "string"
@@ -5747,8 +5747,8 @@
                 "type": "null"
               }
             ],
-            "title": "File Metadata",
-            "description": "JSON array of per-file metadata objects (knowledge only). Each object may include: source_id (optional), metadata, additional_metadata, infer, and relations."
+            "title": "Document Metadata",
+            "description": "JSON array of per-file metadata objects (knowledge only). Each object may include: id (optional), metadata, additional_metadata, infer, and relations."
           },
           "app_knowledge": {
             "anyOf": [
@@ -5777,7 +5777,7 @@
         },
         "type": "object",
         "required": ["tenant_id"],
-        "title": "Body_ingest_source_ingest_post"
+        "title": "Body_ingest_context_ingest_post"
       },
       "Body_insert_raw_embeddings_endpoint_embeddings_insert_raw_embeddings_post": {
         "properties": {
@@ -7856,7 +7856,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RetrievalResult"
+                "$ref": "#/components/schemas/V2RetrievalResult"
               },
               {
                 "type": "null"
@@ -7959,9 +7959,9 @@
             "description": "Enable graph context for query results (on by default on v2; set to false to omit).",
             "default": true
           },
-          "search_forceful_relations": {
+          "query_forceful_relations": {
             "type": "boolean",
-            "title": "Search Forceful Relations",
+            "title": "Query Forceful Relations",
             "description": "Whether to search for forceful relations in thinking mode to augment context",
             "default": true
           },
@@ -8636,7 +8636,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SourceFetchResponse"
+                "$ref": "#/components/schemas/V2SourceFetchResponse"
               },
               {
                 "type": "null"
@@ -8952,10 +8952,10 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SourceUploadResponse"
+                "$ref": "#/components/schemas/V2SourceUploadResponse"
               },
               {
-                "$ref": "#/components/schemas/AddMemoryResponse"
+                "$ref": "#/components/schemas/V2AddMemoryResponse"
               },
               {
                 "type": "null"
@@ -8990,7 +8990,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SourceListResponse"
+                "$ref": "#/components/schemas/V2SourceListResponse"
               },
               {
                 "$ref": "#/components/schemas/ListUserMemoriesResponse"
@@ -9294,7 +9294,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BatchProcessingStatus"
+                "$ref": "#/components/schemas/V2BatchProcessingStatus"
               },
               {
                 "type": "null"
@@ -9827,9 +9827,9 @@
             "title": "Tenant Id",
             "description": "Tenant identifier"
           },
-          "normal_collection": {
+          "knowledge_collection": {
             "$ref": "#/components/schemas/CollectionStats",
-            "description": "Statistics for the normal (context) collection"
+            "description": "Statistics for the knowledge collection"
           },
           "memory_collection": {
             "$ref": "#/components/schemas/CollectionStats",
@@ -9843,7 +9843,7 @@
           }
         },
         "type": "object",
-        "required": ["tenant_id", "normal_collection", "memory_collection"],
+        "required": ["tenant_id", "knowledge_collection", "memory_collection"],
         "title": "TenantStatsResponse"
       },
       "TenantSubTenantsApiResponse": {
@@ -10036,6 +10036,586 @@
         "required": ["memory_id", "memory_content"],
         "title": "UserMemory",
         "description": "Represents a user memory stored in the system."
+      },
+      "V2AddMemoryResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Memories queued for ingestion successfully"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/V2MemoryResultItem"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "List of results for each ingested memory item."
+          },
+          "success_count": {
+            "type": "integer",
+            "title": "Success Count",
+            "description": "Number of items successfully queued for ingestion.",
+            "default": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count",
+            "description": "Number of items that failed to queue.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "V2AddMemoryResponse"
+      },
+      "V2BatchProcessingStatus": {
+        "properties": {
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/V2ProcessingStatus"
+            },
+            "type": "array",
+            "title": "Statuses",
+            "description": "List of processing statuses, one per requested ID."
+          }
+        },
+        "type": "object",
+        "required": ["statuses"],
+        "title": "V2BatchProcessingStatus"
+      },
+      "V2Chunk": {
+        "properties": {
+          "chunk_uuid": {
+            "type": "string",
+            "title": "Chunk Uuid",
+            "description": "Unique identifier for this content chunk"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the source document",
+            "examples": ["doc_12345"]
+          },
+          "chunk_content": {
+            "type": "string",
+            "title": "Chunk Content",
+            "description": "The actual text content of this chunk"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type",
+            "description": "Type of the source document (file, webpage, etc.)",
+            "default": ""
+          },
+          "source_upload_time": {
+            "type": "string",
+            "title": "Source Upload Time",
+            "description": "When the source document was originally uploaded",
+            "default": ""
+          },
+          "source_title": {
+            "type": "string",
+            "title": "Source Title",
+            "description": "Title or name of the source document",
+            "default": ""
+          },
+          "source_last_updated_time": {
+            "type": "string",
+            "title": "Source Last Updated Time",
+            "description": "When the source document was last modified",
+            "default": ""
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout",
+            "description": "Layout of the chunk in original document."
+          },
+          "relevancy_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevancy Score",
+            "description": "Score indicating how relevant this chunk is to your query."
+          },
+          "additional_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Metadata",
+            "description": "Document-level metadata set at ingestion time"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Tenant-level metadata set at ingestion time"
+          },
+          "extra_context_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Context Ids",
+            "description": "IDs of related chunks providing extra context."
+          }
+        },
+        "type": "object",
+        "required": ["chunk_uuid", "id", "chunk_content"],
+        "title": "V2Chunk",
+        "description": "A retrieved content chunk. Mirrors ``VectorStoreChunk`` with ``id``."
+      },
+      "V2ListContentRequest": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id",
+            "description": "Tenant ID"
+          },
+          "sub_tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Tenant Id",
+            "description": "Sub-tenant ID"
+          },
+          "type": {
+            "$ref": "#/components/schemas/IngestType",
+            "description": "Whether to list normal sources or user memories.",
+            "default": "knowledge"
+          },
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids",
+            "description": "Optional list of IDs to fetch (max 100). If omitted, returns all."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "Page number to retrieve (1-indexed).",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size",
+            "description": "Number of items per page.",
+            "default": 50
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentFilter"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional filters."
+          },
+          "include_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Fields",
+            "description": "Optional list of source fields to include in the response. Allowed values: attachments, content, description, document_metadata, note, relations, tenant_metadata, timestamp, title, type, url."
+          }
+        },
+        "type": "object",
+        "required": ["tenant_id"],
+        "title": "V2ListContentRequest",
+        "description": "Unified list request keyed by ``ids`` (mirrors ``ListContentRequest``)."
+      },
+      "V2MemoryResultItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the ingested source."
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Title of the memory if provided."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceStatus",
+            "description": "Initial processing status.",
+            "default": "queued"
+          },
+          "infer": {
+            "type": "boolean",
+            "title": "Infer",
+            "description": "Whether inference was requested for this memory.",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if ingestion failed."
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code",
+            "description": "Structured error code if ingestion failed."
+          }
+        },
+        "type": "object",
+        "required": ["id"],
+        "title": "V2MemoryResultItem"
+      },
+      "V2ProcessingStatus": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Identifier for the source whose status is being retrieved"
+          },
+          "indexing_status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "errored",
+              "graph_creation",
+              "success"
+            ],
+            "title": "Indexing Status",
+            "description": "Current status of the source."
+          },
+          "error_code": {
+            "type": "string",
+            "title": "Error Code",
+            "description": "Error code for the source.",
+            "default": ""
+          },
+          "error_message": {
+            "type": "string",
+            "title": "Error Message",
+            "description": "User-friendly explanation of what went wrong.",
+            "default": ""
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the source was processed successfully.",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Detailed status message about the processing operation",
+            "default": "Processing status retrieved successfully"
+          }
+        },
+        "type": "object",
+        "required": ["id", "indexing_status"],
+        "title": "V2ProcessingStatus",
+        "description": "Processing status for a single source. Mirrors ``ProcessingStatus`` with ``id``."
+      },
+      "V2RetrievalResult": {
+        "properties": {
+          "chunks": {
+            "items": {
+              "$ref": "#/components/schemas/V2Chunk"
+            },
+            "type": "array",
+            "title": "Chunks"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceInfo"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "Deduplicated source documents corresponding to the returned chunks"
+          },
+          "graph_context": {
+            "$ref": "#/components/schemas/GraphContext"
+          },
+          "additional_context": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/V2Chunk"
+            },
+            "type": "object",
+            "title": "Additional Context",
+            "description": "Map of chunk_uuid to chunk for extra context from forcefully related sources."
+          }
+        },
+        "type": "object",
+        "title": "V2RetrievalResult",
+        "description": "Result of a retrieval operation. Mirrors ``RetrievalResult`` with ``id`` chunks."
+      },
+      "V2SourceFetchResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the fetch was successful",
+            "default": true
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "ID of the fetched file"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "File content as string (if mode includes 'content')"
+          },
+          "content_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Base64",
+            "description": "File content as base64 (for binary files, if mode includes 'content')"
+          },
+          "presigned_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presigned Url",
+            "description": "Presigned URL to access the file (if mode includes 'url')"
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type",
+            "description": "Content type of the file"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes",
+            "description": "Size of the file in bytes"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Response message",
+            "default": "File fetched successfully"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if fetch failed"
+          }
+        },
+        "type": "object",
+        "required": ["id"],
+        "title": "V2SourceFetchResponse",
+        "description": "Response for a fetch request. Mirrors ``SourceFetchResponse`` with ``id``."
+      },
+      "V2SourceListResponse": {},
+      "V2SourceUploadResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Upload initiated successfully"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/V2SourceUploadResultItem"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "List of upload results for each source."
+          },
+          "success_count": {
+            "type": "integer",
+            "title": "Success Count",
+            "description": "Number of sources successfully queued.",
+            "default": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count",
+            "description": "Number of sources that failed to upload.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "V2SourceUploadResponse"
+      },
+      "V2SourceUploadResultItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the uploaded source."
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename",
+            "description": "Original filename if present."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceStatus",
+            "description": "Initial processing status.",
+            "default": "queued"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if upload failed."
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code",
+            "description": "Structured error code (E-code) if upload failed."
+          }
+        },
+        "type": "object",
+        "required": ["id"],
+        "title": "V2SourceUploadResultItem"
       },
       "ValidationError": {
         "properties": {

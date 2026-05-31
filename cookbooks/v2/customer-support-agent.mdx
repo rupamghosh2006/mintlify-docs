@@ -224,8 +224,8 @@ async function ingestHelpDocs(articles: any[]): Promise<string[]> {
     for (const article of articles) {
         batch.push({
             id:            article.id,
-            tenantId:     TENANT_ID,        // required inside each item
-            subTenantId: KB_SUB_TENANT,    // required inside each item
+            tenant_id:     TENANT_ID,        // required inside each item
+            sub_tenant_id: KB_SUB_TENANT,    // required inside each item
             title:         article.title,
             type:          "confluence",
             timestamp:     article.updated_at,
@@ -330,8 +330,8 @@ async function ingestResolvedTickets(tickets: any[]): Promise<string[]> {
 
         batch.push({
             id:            `ticket-${ticket.id}`,
-            tenantId:     TENANT_ID,        // required inside each item
-            subTenantId: KB_SUB_TENANT,    // required inside each item
+            tenant_id:     TENANT_ID,        // required inside each item
+            sub_tenant_id: KB_SUB_TENANT,    // required inside each item
             title:         ticket.subject,
             type:          "zendesk",
             timestamp:     ticket.resolved_at,

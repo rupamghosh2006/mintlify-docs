@@ -163,7 +163,7 @@ response = await async_client.tenants.create(tenant_id="my_first_tenant")
 ```
 ```typescript TypeScript SDK
 const response = await client.tenants.create({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   tenant_metadata_schema: [
     { name: "department", data_type: "VARCHAR", enable_match: true },
   ],
@@ -192,7 +192,7 @@ while True:
 ```typescript TypeScript SDK
 while (true) {
   const status = await client.tenants.status({
-    tenant_id: "my_first_tenant",
+    tenantId: "my_first_tenant",
   });
   const { scheduler_status, graph_status, vectorstore_status } = status.data.infra;
   if (
@@ -239,12 +239,12 @@ with open("contract.pdf", "rb") as f1, open("policy.pdf", "rb") as f2:
 ```typescript TypeScript SDK
 const result = await client.context.ingest({
   type: "knowledge",
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   documents: [
     { path: "contract.pdf", filename: "contract.pdf", contentType: "application/pdf" },
     { path: "policy.pdf", filename: "policy.pdf", contentType: "application/pdf" },
   ],
-  document_metadata: JSON.stringify([
+  documentMetadata: JSON.stringify([
     {
       id: "contract_q4",
       metadata: { department: "legal" },
@@ -288,8 +288,8 @@ result = client.context.ingest(
 ```typescript TypeScript SDK
 const result = await client.context.ingest({
   type: "memory",
-  tenant_id: "my_first_tenant",
-  sub_tenant_id: "user_alex",
+  tenantId: "my_first_tenant",
+  subTenantId: "user_alex",
   memories: JSON.stringify([
     {
       text: "User prefers detailed technical explanations and dark mode",
@@ -320,7 +320,7 @@ status = client.context.status(
 ```
 ```typescript TypeScript SDK
 const status = await client.context.status({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   ids: ["contract_q4", "policy_2025"],
 });
 ```
@@ -366,30 +366,30 @@ exact = client.query(
 ```typescript TypeScript SDK
 // Knowledge over documents
 const knowledge = await client.query({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   query: "What are the pricing tiers?",
   type: "knowledge",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
-  graph_context: true,
+  graphContext: true,
 });
 
 // Personalized — searches knowledge AND user memories together
 const personalized = await client.query({
-  tenant_id: "my_first_tenant",
-  sub_tenant_id: "user_alex",
+  tenantId: "my_first_tenant",
+  subTenantId: "user_alex",
   query: "What are the pricing tiers, and how should I explain them to this user?",
   type: "all",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
 });
 
 // Exact-phrase BM25 search
 const exact = await client.query({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   query: "ERROR_429 rate limit",
   type: "knowledge",
-  query_by: "text",
+  queryBy: "text",
   operator: "phrase",
 });
 ```
@@ -425,30 +425,28 @@ file = client.context.inspect(
 # Delete a knowledge source
 client.context.delete(
     type="knowledge",
-    request={
-        "tenant_id": "my_first_tenant",
-        "ids": ["doc_12345"],
-    },
+    tenant_id="my_first_tenant",
+    ids=["doc_12345"],
 )
 ```
 ```typescript TypeScript SDK
 // List knowledge sources with pagination
 const sources = await client.context.list({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   type: "knowledge",
   page: 1,
-  page_size: 50,
+  pageSize: 50,
 });
 
 // Inspect graph relationships for a specific source
 const relations = await client.context.relations({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   id: "doc_12345",
 });
 
 // Inspect original source content or get a presigned URL
 const file = await client.context.inspect({
-  tenant_id: "my_first_tenant",
+  tenantId: "my_first_tenant",
   id: "doc_12345",
   mode: "url",
 });
@@ -456,10 +454,8 @@ const file = await client.context.inspect({
 // Delete a knowledge source
 await client.context.delete({
   type: "knowledge",
-  request: {
-    tenant_id: "my_first_tenant",
-    ids: ["doc_12345"],
-  },
+  tenantId: "my_first_tenant",
+  ids: ["doc_12345"],
 });
 ```
 </CodeGroup>
@@ -533,7 +529,7 @@ import { HydraDBError } from "@hydradb/sdk";
 
 try {
   const result = await client.query({
-    tenant_id: "my_first_tenant",
+    tenantId: "my_first_tenant",
     query: "...",
     type: "knowledge",
   });

@@ -111,7 +111,7 @@ curl -X POST 'https://api.hydradb.com/tenants' \
 ```
 ```typescript TypeScript SDK
 await client.tenants.create({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   tenant_metadata_schema: [
     {
       name: "compliance_framework",
@@ -164,8 +164,8 @@ curl -X POST 'https://api.hydradb.com/context/ingest' \
 ```typescript TypeScript SDK
 await client.context.ingest({
   type: "knowledge",
-  tenant_id: "acme_corp",
-  app_knowledge: JSON.stringify([
+  tenantId: "acme_corp",
+  appKnowledge: JSON.stringify([
     {
       tenant_id: "acme_corp",
       sub_tenant_id: "default",
@@ -232,11 +232,11 @@ curl -X POST 'https://api.hydradb.com/query' \
 ```
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   query: "How does authentication control review work?",
   type: "knowledge",
-  query_by: "hybrid",
-  metadata_filters: {
+  queryBy: "hybrid",
+  metadataFilters: {
     compliance_framework: "SOC2",
     additional_metadata: { author: "alice" },
   },

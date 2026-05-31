@@ -192,8 +192,6 @@ Allowed values are `title`, `type`, `description`, `url`, `timestamp`, `metadata
 
 When `type=memory`, `data` is a `ListUserMemoriesResponse` instead  -  same idea but with a `data.user_memories[]` array of memory items.
 
-\[todo\]:  introduce this as a type check in the API itself 
-
 <Warning>
   **Undeclared filter keys are silent.** Keys in `filters.metadata` that are not declared in `tenant_metadata_schema` are silently ignored. If a filter doesn't narrow results as expected, verify the schema field exists and has `enable_match: true`
 </Warning>

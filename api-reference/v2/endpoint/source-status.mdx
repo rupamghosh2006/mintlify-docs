@@ -33,7 +33,7 @@ const status = await client.context.status({
 ```
 
 ```bash cURL
-curl -G 'https://api.hydradb.com/source/status' \
+curl -G 'https://api.hydradb.com/context/status' \
   -H "Authorization: Bearer <your_api_key>" \
   -H "API-Version: 2" \
   --data-urlencode "tenant_id=acme_corp" \
@@ -190,7 +190,7 @@ while (true) {
 
 ### Stop when graph processing is complete
 
-Use this before graph-heavy operations such as `/source/relations` or when you require complete `graph_context`.
+Use this before graph-heavy operations such as `/context/relations` or when you require complete `graph_context`.
 
 ```python
 while True:

@@ -6,23 +6,31 @@ openapi: "api-reference/v2/openapi.json GET /tenants/status"
 
 Tenant creation is asynchronous, check if your tenant is ready before executing ingestion or any queries.
 
-The tenant is fully ready when:
+The response includes `infra.ready_for_ingestion`, a convenience flag derived from the vectorstore fields below. For a single check, read that field. The underlying signals are:
 
-- `infra.scheduler_status === true`(the background indexing scheduler)
-- `infra.graph_status === true`(the graph layer)
+- `infra.ready_for_ingestion === true` (derived — true once both vectorstores are provisioned)
+- `infra.scheduler_status === true` (the background indexing scheduler)
+- `infra.graph_status === true` (the graph layer)
 - `infra.vectorstore_status.knowledge === true`
 - `infra.vectorstore_status.memories === true`
 
 <RequestExample>
 
 ```python Python SDK
-status = client.tenants.status(tenant_id="the tenant id")
+response = client.tenants.status(tenant_id="my_first_tenant")
+
+if response.data.infra.ready_for_ingestion:
+    print("Tenant is ready.")
 ```
 
 ```typescript TypeScript SDK
-const status = await client.tenants.status({
-  tenant_id: "my_first_tenant",
+const response = await client.tenants.status({
+  tenantId: "my_first_tenant",
 });
+
+if (response.data?.infra.readyForIngestion) {
+  console.log("Tenant is ready.");
+}
 ```
 
 ```bash cURL
@@ -47,7 +55,8 @@ curl -X GET 'https://api.hydradb.com/tenants/status?tenant_id=my_first_tenant' \
       "vectorstore_status": {
         "knowledge": true,
         "memories": true
-      }
+      },
+      "ready_for_ingestion": true
     },
     "message": "Deployed infrastructure status"
   },

@@ -22,19 +22,15 @@ Tenants are physically isolated spaces for storing context. In most integrations
 
 For a new tenant from scratch:
 
-\[todo\]: update the references of endpoints here
-
 1. Create the tenant: `POST /tenants`
 2. Wait for provisioning: `GET /tenants/status` until `scheduler_status`, `graph_status`, `vectorstore_status.knowledge`, and `vectorstore_status.memory` are all `true`
-3. Ingest content: `POST /source/ingest`
-4. Wait for indexing: `GET /source/status` until sources are searchable
+3. Ingest content: `POST /context/ingest`
+4. Wait for indexing: `GET /context/status` until sources are searchable
 5. Retrieve context: `POST /query`
 6. Inspect usage: `GET /tenants/stats`
 7. Delete: `DELETE /tenants`
 
 For routine operations on an existing tenant:
-
-\[todo\]: update reference to listing tenants
 
 ```text
 GET /tenants             -> list tenants in the org
@@ -45,5 +41,5 @@ GET /tenants/stats       -> check tenant health & growth
 ## Key concepts
 
 - **Tenant** - A top-level isolated space. For example - you can dedicate one tenant to one enterprise customer. 
-- **Sub-tenant** - Partitions within a tenant for per-user separation. The first sub tenant is created implicitly at ingestion. Sub tenants within tenants are helpful when you have to 
+- **Sub-tenant** - Partitions within a tenant for per-user separation. The first sub-tenant is created implicitly at ingestion. Sub-tenants are useful when you need to scope data per user, team, or customer within a single tenant.
 - **Tenant Metadata & Schema** - Structured fields defined at tenant creation to enable query-time filtering.

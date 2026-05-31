@@ -238,9 +238,10 @@ const client = new HydraDBClient({
 
 SDK naming:
 
-- Python methods: snake_case.
-- TypeScript methods: camelCase where the method itself needs it, e.g. `client.tenants.subTenants()`.
-- Request/response fields remain snake_case in both SDKs, e.g. `tenant_id`, `sub_tenant_id`, `page_size`, `query_by`.
+- Python methods and fields: snake_case, e.g. `client.tenants.sub_tenants()`, `tenant_id`, `sub_tenant_id`, `page_size`, `query_by`.
+- TypeScript methods and fields: camelCase, e.g. `client.tenants.subTenants()`, `tenantId`, `subTenantId`, `pageSize`, `queryBy`.
+- Both SDKs return a `{ success, data, error, meta }` envelope; the payload is under `.data` (e.g. `response.data.infra`, `response.data.statuses`, `response.data.results`).
+- Values that are passed as JSON strings (`memories`, `app_knowledge`, `document_metadata`) keep snake_case keys inside the stringified payload in both SDKs, since that is raw wire data.
 
 ---
 
@@ -292,10 +293,10 @@ while True:
         ids=[ingest_id],
     ).data.statuses[0]
 
-    if status.get("indexing_status") in ("graph_creation", "completed"):
+    if status.indexing_status in ("graph_creation", "completed"):
         break
-    if status.get("indexing_status") in ("errored", "failed"):
-        raise RuntimeError(status.get("error_message", "Indexing failed"))
+    if status.indexing_status in ("errored", "failed"):
+        raise RuntimeError(status.error_message or "Indexing failed")
     time.sleep(2)
 
 # 5. Search memories.
@@ -322,18 +323,18 @@ const client = new HydraDBClient({
 
 const tenant_id = "my_first_tenant";
 
-await client.tenants.create({ tenant_id: tenant_id });
+await client.tenants.create({ tenantId: tenant_id });
 
 while (true) {
-  const status = await client.tenants.status({ tenant_id: tenant_id });
-  if (status.data.infra.ready_for_ingestion) break;
+  const status = await client.tenants.status({ tenantId: tenant_id });
+  if (status.data.infra.readyForIngestion) break;
   await new Promise((resolve) => setTimeout(resolve, 5_000));
 }
 
 const ingest = await client.context.ingest({
   type: "memory",
-  tenant_id: tenant_id,
-  sub_tenant_id: "user_alex",
+  tenantId: tenant_id,
+  subTenantId: "user_alex",
   memories: JSON.stringify([
     {
       id: "user_alex_pref_001",
@@ -348,25 +349,25 @@ const ingestId = ingest.data.results[0].id;
 
 while (true) {
   const status = (await client.context.status({
-    tenant_id: tenant_id,
-    sub_tenant_id: "user_alex",
+    tenantId: tenant_id,
+    subTenantId: "user_alex",
     ids: [ingestId],
   })).data.statuses[0];
 
-  if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
-  if (["errored", "failed"].includes(status.indexing_status as string)) {
-    throw new Error((status.error_message as string) ?? "Indexing failed");
+  if (["graph_creation", "completed"].includes(status.indexingStatus as string)) break;
+  if (["errored", "failed"].includes(status.indexingStatus as string)) {
+    throw new Error((status.errorMessage as string) ?? "Indexing failed");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 2_000));
 }
 
 const result = await client.query({
-  tenant_id: tenant_id,
-  sub_tenant_id: "user_alex",
+  tenantId: tenant_id,
+  subTenantId: "user_alex",
   query: "What does the user prefer?",
   type: "memory",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
 });
 
@@ -486,8 +487,8 @@ Use `app_knowledge` when your connector already extracted text from Slack, Gmail
 ```ts
 await client.context.ingest({
   type: "knowledge",
-  tenant_id: "acme_corp",
-  app_knowledge: JSON.stringify([
+  tenantId: "acme_corp",
+  appKnowledge: JSON.stringify([
     {
       id: "slack_C123_1715012345_000100",
       tenant_id: "acme_corp",
@@ -612,13 +613,13 @@ Pattern:
 ```ts
 while (true) {
   const status = (await client.context.status({
-    tenant_id: "acme_corp",
+    tenantId: "acme_corp",
     ids: ["policy_v2"],
   })).data.statuses[0];
 
-  if (["graph_creation", "completed"].includes(status.indexing_status as string)) break;
-  if (["errored", "failed"].includes(status.indexing_status as string)) {
-    throw new Error((status.error_message as string) ?? (status.message as string) ?? "Indexing failed");
+  if (["graph_creation", "completed"].includes(status.indexingStatus as string)) break;
+  if (["errored", "failed"].includes(status.indexingStatus as string)) {
+    throw new Error((status.errorMessage as string) ?? (status.message as string) ?? "Indexing failed");
   }
   await new Promise((r) => setTimeout(r, 2_000));
 }
@@ -716,13 +717,13 @@ Knowledge RAG:
 
 ```ts
 const result = await client.query({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   query: "What is our refund policy?",
   type: "knowledge",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
-  max_results: 10,
-  graph_context: true,
+  maxResults: 10,
+  graphContext: true,
 });
 ```
 
@@ -730,11 +731,11 @@ Personalized answer using knowledge and memories:
 
 ```ts
 const result = await client.query({
-  tenant_id: "acme_corp",
-  sub_tenant_id: "user_alex",
+  tenantId: "acme_corp",
+  subTenantId: "user_alex",
   query: "What is our refund policy, and how should I explain it to this user?",
   type: "all",
-  query_by: "hybrid",
+  queryBy: "hybrid",
   mode: "thinking",
   alpha: "auto",
 });
@@ -882,12 +883,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  tenant_id: "your-tenant",
-  sub_tenant_id: "your-sub-tenant",
+  tenantId: "your-tenant",
+  subTenantId: "your-sub-tenant",
   query: question,
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 5,
+  queryBy: "hybrid",
+  maxResults: 5,
 });
 
 const context = buildString(result);
@@ -977,10 +978,10 @@ Rules:
 
 ```ts
 const sources = await client.context.list({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   type: "knowledge",
   page: 1,
-  page_size: 50,
+  pageSize: 50,
   filters: {
     tenant_metadata: { department: "support" },
     additional_metadata: { author: "alice" },
@@ -1028,7 +1029,7 @@ Modes:
 
 ```ts
 const relations = await client.context.relations({
-  tenant_id: "acme_corp",
+  tenantId: "acme_corp",
   id: "policy_v2",
   type: "knowledge",
   limit: 5000,
@@ -1044,10 +1045,8 @@ Use it for graph debugging and provenance inspection. It supports pagination via
 ```ts
 await client.context.delete({
   type: "knowledge",
-  request: {
-    tenant_id: "acme_corp",
-    ids: ["policy_v2"],
-  },
+  tenantId: "acme_corp",
+  ids: ["policy_v2"],
 });
 ```
 
@@ -1113,7 +1112,7 @@ import { HydraDBError } from "@hydradb/sdk";
 
 try {
   const result = await client.query({
-    tenant_id: "acme_corp",
+    tenantId: "acme_corp",
     query: "pricing tiers",
     type: "knowledge",
   });

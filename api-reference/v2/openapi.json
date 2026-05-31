@@ -777,7 +777,6 @@
       "get": {
         "tags": [
           "tenants",
-          "tenants",
           "Monitor & infra status"
         ],
         "summary": "Get Infra Status",

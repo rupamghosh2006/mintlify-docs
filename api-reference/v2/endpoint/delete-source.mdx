@@ -15,29 +15,25 @@ Pass one or more IDs in `request.ids`. The body wraps two fields together: `requ
 
 ### Knowledge deletion 
 
-Use `type: "knowledge"` and pass knowledge `ids` in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the knowledge; omitting it targets the default sub-tenant.
+Use `type: "knowledge"` and pass knowledge `ids` in the `ids` array. Include the same `sub_tenant_id` you used when ingesting the knowledge; omitting it targets the default sub-tenant.
 
 <RequestExample>
 
 ```python Python SDK
 client.context.delete(
     type="knowledge",
-    request={
-        "tenant_id": "acme_corp",
-        "sub_tenant_id": "team_docs",
-        "ids": ["policy_main", "runbook_deploy"],
-    },
+    tenant_id="acme_corp",
+    sub_tenant_id="team_docs",
+    ids=["policy_main", "runbook_deploy"],
 )
 ```
 
 ```typescript TypeScript SDK
 await client.context.delete({
   type: "knowledge",
-  request: {
-    tenant_id: "acme_corp",
-    sub_tenant_id: "team_docs",
-    ids: ["policy_main", "runbook_deploy"],
-  },
+  tenantId: "acme_corp",
+  subTenantId: "team_docs",
+  ids: ["policy_main", "runbook_deploy"],
 });
 ```
 
@@ -84,29 +80,25 @@ curl -X DELETE 'https://api.hydradb.com/context' \
 
 ### Memory deletion 
 
-Use `type: "memory"` and pass memory `ids` in the same `request.ids` array. Include the same `sub_tenant_id` you used when ingesting the memories; omitting it targets the default sub-tenant.
+Use `type: "memory"` and pass memory `ids` in the `ids` array. Include the same `sub_tenant_id` you used when ingesting the memories; omitting it targets the default sub-tenant.
 
 <RequestExample>
 
 ```python Python SDK
 client.context.delete(
     type="memory",
-    request={
-        "tenant_id": "acme_corp",
-        "sub_tenant_id": "user_alex",
-        "ids": ["mem_user_alex_tone"],
-    },
+    tenant_id="acme_corp",
+    sub_tenant_id="user_alex",
+    ids=["mem_user_alex_tone"],
 )
 ```
 
 ```typescript TypeScript SDK
 await client.context.delete({
   type: "memory",
-  request: {
-    tenant_id: "acme_corp",
-    sub_tenant_id: "user_alex",
-    ids: ["mem_user_alex_tone"],
-  },
+  tenantId: "acme_corp",
+  subTenantId: "user_alex",
+  ids: ["mem_user_alex_tone"],
 });
 ```
 

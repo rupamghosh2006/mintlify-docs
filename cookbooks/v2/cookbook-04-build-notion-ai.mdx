@@ -121,11 +121,11 @@ def upload_batch(sources: list, sub_tenant_id: str = None) -> list:
     if sub_tenant_id:
         for s in sources:
             s["sub_tenant_id"] = sub_tenant_id
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         app_knowledge=json.dumps(sources),
     )
-    return [r.source_id for r in (result.results or []) if r.source_id]
+    return [r.id for r in (result.results or []) if r.id]
 
 
 def ingest_notion_database(database_id: str, sub_tenant_id: str = None) -> list:
@@ -216,25 +216,25 @@ def ingest_space(space_key: str, sub_tenant_id: str = None) -> list:
 
 After uploading, always verify that HydraDB has fully processed and indexed your content before running search queries.
 
-**Endpoint:** `GET /source/status?source_ids=SOURCE_ID&tenant_id=TENANT` - Check indexing status
+**Endpoint:** `GET /context/status?ids=SOURCE_ID&tenant_id=TENANT` - Check indexing status
 
 ```python
-def poll_until_indexed(source_id: str, timeout: int = 120, interval: int = 3):
+def poll_until_indexed(id: str, timeout: int = 120, interval: int = 3):
     """Poll until indexed, errored, or timeout."""
     deadline = time.time() + timeout
     while time.time() < deadline:
-        result = client.source.status(
+        result = client.context.status(
             tenant_id=TENANT_ID,
-            source_ids=source_id,
+            ids=id,
         )
         items  = result.statuses or []
         status = items[0].indexing_status if items else None
         if status == "completed":
             return True
         if status == "errored":
-            raise RuntimeError(f"Indexing failed for {source_id}")
+            raise RuntimeError(f"Indexing failed for {id}")
         time.sleep(interval)
-    raise TimeoutError(f"Indexing timed out for {source_id}")
+    raise TimeoutError(f"Indexing timed out for {id}")
 
 def verify_all(ids: list):
     for fid in ids:
@@ -247,12 +247,12 @@ def verify_all(ids: list):
 
 Beyond documents, HydraDB stores **user memories** - preferences, habits, and patterns that personalize search per user. Set `infer: true` to let HydraDB extract implicit signals from text. Set `infer: false` to store facts verbatim.
 
-**Endpoint:** `POST /source/ingest` - Add a user memory
+**Endpoint:** `POST /context/ingest` - Add a user memory
 
 ### Bash
 
 ```bash
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -292,7 +292,7 @@ def add_user_memory(
     if sub_tenant_id:
         payload["sub_tenant_id"] = sub_tenant_id
 
-    return client.source.ingest(
+    return client.context.ingest(
     type='memory',**payload)
 
 
@@ -489,7 +489,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Upload app sources (Notion, Slack, Confluence…)
 
-**POST** `/source/ingest` - Max 20/call, 1s between batches
+**POST** `/context/ingest` - Max 20/call, 1s between batches
 
 ```json
 [{
@@ -508,10 +508,10 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com`. Header
 
 ### Upload a single file (PDF / DOCX)
 
-**POST** `/source/ingest` - Single file with tenant_id as form field
+**POST** `/context/ingest` - Single file with tenant_id as form field
 
 ```bash
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "files=@/path/to/document.pdf" \
   -F "tenant_id=notion-ai-workspace"
@@ -519,7 +519,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 ### Verify processing
 
-**POST** `/source/status?source_ids=SOURCE_ID&tenant_id=YOUR_TENANT` - Poll until status = "completed"
+**POST** `/context/status?ids=SOURCE_ID&tenant_id=YOUR_TENANT` - Poll until status = "completed"
 
 ### Full search
 
@@ -557,7 +557,7 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 
 ### Add user memory
 
-**POST** `/source/ingest` - memories[] array wrapper - consistent SDK format
+**POST** `/context/ingest` - memories[] array wrapper - consistent SDK format
 
 ```json
 {

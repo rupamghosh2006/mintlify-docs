@@ -62,7 +62,7 @@ graph TD
     C["Internal Metrics\n(CSV / JSON exports)"] -->|SDK upload| B
     D["Board Memos\n(PDF / text)"] -->|SDK upload| B
     B --> E["Temporal Knowledge Graph\n+ Vector Index"]
-    F["Analyst Profile\n(/source/ingest)"] --> E
+    F["Analyst Profile\n(/context/ingest)"] --> E
     E -->|"/query\nrecency_bias + graph_context"| G["Context Assembly"]
     G --> I["App-Layer LLM Synthesis\n(gpt-4o / gemini)"]
     I --> J["Analyst Response\nwith Citations + Timeline"]
@@ -110,7 +110,7 @@ print(result)
 
 ### 2.1 Earnings Call Transcripts & SEC Filings (PDF)
 
-Earnings PDFs are the primary source. Tag each with structured metadata - `ticker`, `period`, `doc_type`, `fiscal_year`, `fiscal_quarter` - so you can filter search to a specific company or time range before semantic search even runs.
+Earnings PDFs are the primary context. Tag each with structured metadata - `ticker`, `period`, `doc_type`, `fiscal_year`, `fiscal_quarter` - so you can filter search to a specific company or time range before semantic search even runs.
 
 ```python
 # ingest/earnings_pdfs.py
@@ -130,7 +130,7 @@ def ingest_earnings_pdf(
     period_end_date: str, # ISO 8601, e.g. "2023-06-30T00:00:00Z"
 ) -> str:
     """
-    Upload a single earnings PDF. Returns the source_id for verification.
+    Upload a single earnings PDF. Returns the id for verification.
 
     IMPORTANT: tenant_id and sub_tenant_id must appear both as top-level
     SDK params AND inside the app_knowledge JSON - AppKnowledgeModel validates both.
@@ -156,16 +156,16 @@ def ingest_earnings_pdf(
 
     with open(file_path, "rb") as f:
         # FIX: SDK expects a tuple of (filename, file_obj, mime_type), not a raw file handle.
-        result = client.source.ingest(
+        result = client.context.ingest(
             tenant_id=TENANT_ID,
             sub_tenant_id=sub_tenant_id,
             app_knowledge=app_knowledge,
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    source_id = result.results[0].source_id if result.results else str(result)
-    print(f"Uploaded {ticker} {period_label} {doc_type} → source_id: {source_id}")
-    return source_id
+    id = result.results[0].id if result.results else str(result)
+    print(f"Uploaded {ticker} {period_label} {doc_type} → id: {id}")
+    return id
 
 
 def ingest_earnings_batch(filings: list[dict]) -> list[str]:
@@ -174,15 +174,15 @@ def ingest_earnings_batch(filings: list[dict]) -> list[str]:
     Each item in filings: {file_path, ticker, doc_type, fiscal_year,
                            fiscal_quarter, period_label, period_end_date}
     """
-    source_ids = []
+    ids = []
     for i in range(0, len(filings), 20):
         batch = filings[i:i+20]
         for filing in batch:
             fid = ingest_earnings_pdf(**filing)
-            source_ids.append(fid)
+            ids.append(fid)
         if i + 20 < len(filings):
             time.sleep(1)   # rate limit between batches
-    return source_ids
+    return ids
 
 
 # ── Example: ingest 4 quarters of ACME Corp transcripts ─────────────────
@@ -224,12 +224,12 @@ filings = [
         "period_end_date": "2023-12-31T00:00:00Z",
     },
 ]
-source_ids = ingest_earnings_batch(filings)
+ids = ingest_earnings_batch(filings)
 # Output:
-# Uploaded ACME Q1 2023 earnings_transcript → source_id: 988293fa-e29
-# Uploaded ACME Q2 2023 earnings_transcript → source_id: 9d7951c8-160
-# Uploaded ACME Q3 2023 earnings_transcript → source_id: 2cf6ea6e-5fe
-# Uploaded ACME Q4 2023 earnings_transcript → source_id: edff67d5-237
+# Uploaded ACME Q1 2023 earnings_transcript → id: 988293fa-e29
+# Uploaded ACME Q2 2023 earnings_transcript → id: 9d7951c8-160
+# Uploaded ACME Q3 2023 earnings_transcript → id: 2cf6ea6e-5fe
+# Uploaded ACME Q4 2023 earnings_transcript → id: edff67d5-237
 ```
 
 > **The `timestamp` field is load-bearing.** HydraDB uses `timestamp` to sort and weight results when `recency_bias` is set. If you leave it blank or use the upload date instead of the reporting period end date, every Q2 and Q4 call will look equally "recent" and temporal queries will fail. Always use the fiscal period end date.
@@ -270,7 +270,7 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
         metrics: dict               {revenue_usd: ..., arr_usd: ..., churn_pct: ..., ...}
     }
 
-    Uses /source/ingest (not upload_knowledge) because metrics are
+    Uses /context/ingest (not upload_knowledge) because metrics are
     structured facts that benefit from infer:true graph extraction.
     """
     memory_ids = []
@@ -278,7 +278,7 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
     for item in metrics_by_period:
         text_chunk = format_metrics_as_text(item["metrics"], item["period_label"])
 
-        result = client.source.ingest(
+        result = client.context.ingest(
             type='memory',
             tenant_id=TENANT_ID,
             sub_tenant_id="internal-metrics",
@@ -296,7 +296,7 @@ def ingest_metrics_series(metrics_by_period: list[dict]) -> list[str]:
                 }
             }],
         )
-        memory_ids.append(result.results[0].source_id if result.results else "ok")
+        memory_ids.append(result.results[0].id if result.results else "ok")
         print(f"Stored metrics: {item['period_label']} ({item['ticker']})")
 
     return memory_ids
@@ -424,16 +424,16 @@ def ingest_board_memo(
 
     with open(file_path, "rb") as f:
         # FIX: SDK expects a tuple of (filename, file_obj, mime_type), not a raw file handle.
-        result = client.source.ingest(
+        result = client.context.ingest(
             tenant_id=TENANT_ID,
             sub_tenant_id=sub_tenant_id,
             app_knowledge=app_knowledge,
             files=[(os.path.basename(file_path), f, "application/pdf")],
         )
 
-    source_id = result.results[0].source_id if result.results else str(result)
-    print(f"Uploaded memo: {ticker} {period_label} → {source_id}")
-    return source_id
+    id = result.results[0].id if result.results else str(result)
+    print(f"Uploaded memo: {ticker} {period_label} → {id}")
+    return id
 ```
 
 ### 2.4 Verify Indexing Before Going Live
@@ -448,21 +448,21 @@ from hydra_db import HydraDB
 TENANT_ID = "financial-analyst"
 client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 
-def verify_all_indexed(source_ids: list[str], poll_interval: int = 3, max_polls: int = 20) -> bool:
+def verify_all_indexed(ids: list[str], poll_interval: int = 3, max_polls: int = 20) -> bool:
     """
-    Poll /source/status until all source_ids report status 'completed'.
+    Poll /context/status until all ids report status 'completed'.
     Returns True when all are ready, raises if any fail after max_polls.
     """
-    pending = set(source_ids)
+    pending = set(ids)
     for attempt in range(max_polls):
         if not pending:
             print("All documents indexed ✓")
             return True
 
         for fid in list(pending):
-            status = client.source.status(
+            status = client.context.status(
                 tenant_id=TENANT_ID,
-                source_ids=[fid],
+                ids=[fid],
             )
             items = status.statuses or []
             s = items[0].indexing_status if items else "unknown"
@@ -488,10 +488,10 @@ def verify_all_indexed(source_ids: list[str], poll_interval: int = 3, max_polls:
 #   ✓ 2cf6ea6e-5fe - indexed
 #   ✓ edff67d5-237 - indexed
 #   All documents indexed ✓
-verify_all_indexed(source_ids)
+verify_all_indexed(ids)
 ```
 
-> **Batch limit reminder.** Maximum 20 sources per request. Wait 1 second between batches. Call [`/source/status`](/api-reference/v2/endpoint/source-status) before any production query.
+> **Batch limit reminder.** Maximum 20 sources per request. Wait 1 second between batches. Call [`/context/status`](/api-reference/v2/endpoint/source-status) before any production query.
 
 ---
 
@@ -515,7 +515,7 @@ def store_analyst_profile(user_id: str, profile_text: str) -> dict:
     profile_text: natural language - focus, companies covered, preferred depth, style
     infer: true   - HydraDB extracts signals + builds graph connections automatically
     """
-    result = client.source.ingest(
+    result = client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"analyst-{user_id}",
@@ -1252,7 +1252,7 @@ def generate_quarterly_briefing(
     briefing_text = resp.choices[0].message.content
 
     # ── 5. Store briefing back to HydraDB ────────────────────────────────
-    store_resp = client.source.ingest(
+    store_resp = client.context.ingest(
         type='memory',
         tenant_id=TENANT_ID,
         sub_tenant_id=f"analyst-{analyst_user_id}",
@@ -1385,7 +1385,7 @@ POST /tenants
 ### Upload Financial Document (SDK required)
 
 ```http
-POST /source/ingest
+POST /context/ingest
 Content-Type: multipart/form-data
 ```
 
@@ -1414,7 +1414,7 @@ Content-Type: multipart/form-data
 ### Upload PDF via cURL
 
 ```bash
-curl -X POST 'https://api.hydradb.com/source/ingest' \
+curl -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -F "files=@ACME_Q2_2023_transcript.pdf" \
   -F "tenant_id=financial-analyst" \
@@ -1424,13 +1424,13 @@ curl -X POST 'https://api.hydradb.com/source/ingest' \
 ### Verify Indexing
 
 ```http
-GET /source/status?source_ids=SOURCE_ID&tenant_id=financial-analyst
+GET /context/status?ids=SOURCE_ID&tenant_id=financial-analyst
 ```
 
 ### Store Metrics / Analyst Memory
 
 ```http
-POST /source/ingest
+POST /context/ingest
 ```
 
 ```json
@@ -1600,9 +1600,9 @@ Tested across 3 company corpora (4 quarters of earnings transcripts + internal m
 | Wrong `timestamp` on upload | Q1 and Q4 both surface for "most recent" queries | Use `period_end_date`, not upload date |
 | Too high `recency_bias` for trend queries | Only Q4 results returned for "how did X trend?" | Use `recency_bias: 0.3` for trend questions |
 | Missing `fiscal_quarter` in metadata | "Q2" filter returns all quarters | Add `fiscal_quarter: 2` to `meta` on upload |
-| `file=f` instead of `files=[f]` in SDK | `TypeError` on `source.ingest()` | SDK expects a **list**: `files=[f]` not `file=f` |
-| Raw `requests` for PDF upload | 422 error on `/source/ingest` | Use the SDK: `pip install hydradb-sdk` |
-| No `/source/status` polling | Queries return empty results silently | Always poll status before querying |
+| `file=f` instead of `files=[f]` in SDK | `TypeError` on `context.ingest()` | SDK expects a **list**: `files=[f]` not `file=f` |
+| Raw `requests` for PDF upload | 422 error on `/context/ingest` | Use the SDK: `pip install hydradb-sdk` |
+| No `/context/status` polling | Queries return empty results silently | Always poll status before querying |
 | `infer: false` on analyst profiles | No personalization applied | Leave `infer: true` (the default) for profiles |
 | Empty `chunks` passed to LLM | Confident hallucinations about quarters | Add guard: `if not chunks: return "No data found"` |
 | Mismatched `sub_tenant_id` on read/write | Empty results despite successful ingestion | Read and write sub-tenants must match exactly |

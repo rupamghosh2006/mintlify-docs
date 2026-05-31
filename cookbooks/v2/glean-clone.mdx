@@ -204,7 +204,7 @@ const normalizedData = {
 
 Use HydraDB's batch upload capabilities for efficient data ingestion:
 
-> **Best Practice**: Always verify processing after upload using the `/source/status` endpoint to ensure your data is properly indexed.
+> **Best Practice**: Always verify processing after upload using the `/context/status` endpoint to ensure your data is properly indexed.
 
 
 <CodeGroup>
@@ -222,7 +222,7 @@ def upload_batch(sources: list, tenant_id: str, sub_tenant_id: str = None):
         for source in sources
     ]
 
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=tenant_id,
         app_knowledge=json.dumps(app_knowledge)
     )
@@ -234,14 +234,14 @@ def upload_with_verification(sources: list, tenant_id: str, sub_tenant_id: str =
 
     if upload_result.results:
         for item in upload_result.results:
-            source_id = item.source_id
-            status = client.source.status(
+            id = item.id
+            status = client.context.status(
                 tenant_id=tenant_id,
-                source_ids=[source_id]
+                ids=[id]
             )
             items = status.statuses or []
             if items and items[0].indexing_status == "errored":
-                raise Exception(f"Processing failed for source {source_id}")
+                raise Exception(f"Processing failed for source {id}")
 
     return upload_result
 ```
@@ -258,7 +258,7 @@ const uploadBatch = async (sources: any[], tenantId: string, subTenantId?: strin
     sub_tenant_id: subTenantId || tenantId
   }));
 
-  const result = await client.source.ingest({
+  const result = await client.context.ingest({
     tenant_id: tenantId,
     app_knowledge: JSON.stringify(appKnowledge)
   });
@@ -271,13 +271,13 @@ const uploadWithVerification = async (sources: any[], tenantId: string, subTenan
   const uploadResult = await uploadBatch(sources, tenantId, subTenantId);
 
   if (uploadResult.ids) {
-    for (const sourceId of uploadResult.ids) {
-      const status = await client.source.status({
+    for (const id of uploadResult.ids) {
+      const status = await client.context.status({
         tenant_id: tenantId,
-        source_ids: [sourceId]
+        ids: [id]
       });
       if (status.indexing_status === "errored") {
-        throw new Error(`Processing failed for source ${sourceId}`);
+        throw new Error(`Processing failed for source ${id}`);
       }
     }
   }
@@ -1188,7 +1188,7 @@ def slack_webhook():
             }
         }
 
-        client.source.ingest(
+        client.context.ingest(
             tenant_id=os.environ["TENANT_ID"],
             app_knowledge=json.dumps([normalized_data])
         )
@@ -1221,7 +1221,7 @@ app.post("/webhooks/slack", async (req, res) => {
       }
     };
 
-    await client.source.ingest({
+    await client.context.ingest({
       tenant_id: process.env.TENANT_ID!,
       app_knowledge: JSON.stringify([normalizedData])
     });
@@ -1533,7 +1533,7 @@ class SearchAnalytics {
 - **Batch Limits**: Limit to 20 app sources per request with 1-second intervals between batches
 - **Incremental Sync**: Only sync new/changed data to minimize API calls
 - **Error Handling**: Implement retry logic with exponential backoff
-- **Processing Verification**: Always verify upload processing using `/source/status`
+- **Processing Verification**: Always verify upload processing using `/context/status`
 - **Rate Limiting**: Respect API rate limits and implement queuing
 
 ### 2. Search Optimization
@@ -1590,10 +1590,10 @@ Remember to monitor performance, gather user feedback, and continuously iterate 
 
 | Date | Change |
 |------|--------|
-| 2026-05-14 | Replaced raw `fetch()`-based `HydraDBDataIngestion` class with official SDK calls (`client.source.ingest`, `client.source.status`) |
+| 2026-05-14 | Replaced raw `fetch()`-based `HydraDBDataIngestion` class with official SDK calls (`client.context.ingest`, `client.context.status`) |
 | 2026-05-14 | Replaced raw `fetch()`-based `GleanSearch` class with `client.query` SDK call |
 | 2026-05-14 | Replaced `AdvancedSearch` class with standalone SDK helper functions (`searchWithFilters`, `searchWithContext`, `conversationalSearch`) |
 | 2026-05-14 | Replaced `PersonalizedSearch` class with flat SDK-based `searchWithMemory` function |
-| 2026-05-14 | Replaced webhook `cortexIngestion.uploadBatch()` call with `client.source.ingest()` SDK call |
+| 2026-05-14 | Replaced webhook `cortexIngestion.uploadBatch()` call with `client.context.ingest()` SDK call |
 | 2026-05-14 | Added Python SDK equivalents in `<CodeGroup>` tabs for all replaced code blocks |
 | 2026-05-14 | Removed "Status: In progress" notice |

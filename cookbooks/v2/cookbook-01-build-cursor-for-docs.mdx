@@ -130,9 +130,9 @@ Polling for readiness...
 
 ### Step 2 - Upload One File
 
-**What:** Uploads a single file using **multipart form-data** to `/source/ingest` - the recommended beginner path. HydraDB handles chunking, embedding, and graph-node creation automatically. The returned `source_id` is what you use in Step 3 to verify indexing.
+**What:** Uploads a single file using **multipart form-data** to `/context/ingest` - the recommended beginner path. HydraDB handles chunking, embedding, and graph-node creation automatically. The returned `id` is what you use in Step 3 to verify indexing.
 
-> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/source/ingest`** - the tested beginner path. An advanced JSON body mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
+> 💡 **Two ingestion modes exist.** This step uses **multipart file upload via `/context/ingest`** - the tested beginner path. An advanced JSON body mode (used in Phases 1–2) supports structured IDs and explicit graph `relations`. Use file upload here first.
 
 First, create a sample document:
 
@@ -164,7 +164,7 @@ def upload_file(filepath: str):
     filename = os.path.basename(filepath)
 
     with open(filepath, "rb") as f:
-        result = client.source.ingest(
+        result = client.context.ingest(
             tenant_id=TENANT_ID,
             files=[(filename, f, "text/markdown")],
         )
@@ -174,20 +174,20 @@ def upload_file(filepath: str):
 
 if __name__ == "__main__":
     result = upload_file("phase0/sample_docs/auth_middleware.md")
-    # Note the source_id from the response - you need it for Step 3
-    print("\nCopy your source_id for use in verify.py:", result)
+    # Note the id from the response - you need it for Step 3
+    print("\nCopy your id for use in verify.py:", result)
 ```
 
 **Expected output:**
 
 ```
 STATUS CODE: 200
-RESPONSE: {"results": [{"source_id": "YOUR_SOURCE_ID_HERE", "filename": "auth_middleware.md", "status": "accepted", "error": null}]}
+RESPONSE: {"results": [{"id": "YOUR_SOURCE_ID_HERE", "filename": "auth_middleware.md", "status": "accepted", "error": null}]}
 
-Copy your source_id for use in verify.py: {'results': [{'source_id': 'YOUR_SOURCE_ID_HERE', 'filename': 'auth_middleware.md', 'status': 'accepted', 'error': None}]}
+Copy your id for use in verify.py: {'results': [{'id': 'YOUR_SOURCE_ID_HERE', 'filename': 'auth_middleware.md', 'status': 'accepted', 'error': None}]}
 ```
 
-The exact value of `source_id` depends on HydraDB's internal file registration. Copy the value returned and use it in Step 3.
+The exact value of `id` depends on HydraDB's internal file registration. Copy the value returned and use it in Step 3.
 
 **If it fails:**
 - `404 Tenant does not exist` - Step 1 not complete, or `tenant_id` mismatch.
@@ -197,35 +197,35 @@ The exact value of `source_id` depends on HydraDB's internal file registration. 
 
 ### Step 3 - Verify Indexing
 
-**What:** Polls `/source/status` using the `source_id` returned in Step 2. HydraDB returns a `statuses` array; you read `statuses[0].indexing_status`. Querying before this reaches `"completed"` returns empty results with no error - the most common beginner confusion.
+**What:** Polls `/context/status` using the `id` returned in Step 2. HydraDB returns a `statuses` array; you read `statuses[0].indexing_status`. Querying before this reaches `"completed"` returns empty results with no error - the most common beginner confusion.
 
-Replace `YOUR_SOURCE_ID_HERE` with the `source_id` from Step 2:
+Replace `YOUR_SOURCE_ID_HERE` with the `id` from Step 2:
 
 ```python
 import sys, os, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import client, TENANT_ID
 
-# Replace with the source_id returned by upload_file.py in Step 2
+# Replace with the id returned by upload_file.py in Step 2
 SOURCE_ID = "YOUR_SOURCE_ID_HERE"
 
-def verify_source(source_id: str, timeout: int = 120, interval: int = 3):
+def verify_source(id: str, timeout: int = 120, interval: int = 3):
     """
-    Polls /source/status until indexing_status is "completed" or "errored".
+    Polls /context/status until indexing_status is "completed" or "errored".
     """
-    print(f"Verifying '{source_id}'...")
+    print(f"Verifying '{id}'...")
     deadline = time.time() + timeout
     while time.time() < deadline:
-        status = client.source.status(
+        status = client.context.status(
             tenant_id=TENANT_ID,
-            source_ids=[source_id],
+            ids=[id],
         )
         print("STATUS:", status)
 
         items = status.statuses or []
         if items:
             s = items[0].indexing_status
-            if   s == "completed": print(f"✓ '{source_id}' ready."); return
+            if   s == "completed": print(f"✓ '{id}' ready."); return
             elif s == "errored":   print("Indexing errored."); return
             print(f"  indexing_status: {s} - waiting...")
 
@@ -241,10 +241,10 @@ if __name__ == "__main__":
 ```
 Verifying 'YOUR_SOURCE_ID_HERE'...
 STATUS CODE: 200
-RESPONSE: {"statuses": [{"source_id": "YOUR_SOURCE_ID_HERE", "indexing_status": "processing"}]}
+RESPONSE: {"statuses": [{"id": "YOUR_SOURCE_ID_HERE", "indexing_status": "processing"}]}
   indexing_status: processing - waiting...
 STATUS CODE: 200
-RESPONSE: {"statuses": [{"source_id": "YOUR_SOURCE_ID_HERE", "indexing_status": "completed"}]}
+RESPONSE: {"statuses": [{"id": "YOUR_SOURCE_ID_HERE", "indexing_status": "completed"}]}
 ✓ 'YOUR_SOURCE_ID_HERE' ready.
 ```
 
@@ -378,7 +378,7 @@ The response also includes a `sources` array - a deduplicated list of the origin
 
 ### P1 · Step 1 - Batch Upload with Explicit IDs (JSON Ingestion)
 
-**What:** Switches to **JSON body ingestion** via `/source/ingest` with `app_knowledge` field - the advanced ingestion path. This gives you full control over IDs, timestamps, collections, metadata, and (in Phase 2) explicit graph `relations`. The `{repo_name}/{relative_path}` ID convention is required for Phase 2 graph linking.
+**What:** Switches to **JSON body ingestion** via `/context/ingest` with `app_knowledge` field - the advanced ingestion path. This gives you full control over IDs, timestamps, collections, metadata, and (in Phase 2) explicit graph `relations`. The `{repo_name}/{relative_path}` ID convention is required for Phase 2 graph linking.
 
 > ⚠️ **Advanced path - stricter validation.** JSON ingestion requires well-formed payloads with `id`, `type`, and `content.text` on every item. Malformed requests are rejected outright. Use the file upload path (Phase 0 Step 2) if you just want to get content indexed quickly. Use JSON ingestion when you need stable IDs and graph relations.
 
@@ -400,11 +400,11 @@ def git_timestamp(repo_path: str, rel_path: str) -> str:
     except: return "2020-01-01T00:00:00Z"
 
 def upload_batch(batch: list) -> list:
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         app_knowledge=json.dumps(batch),
     )
-    ids = [r.source_id for r in (result.results or []) if r.source_id]
+    ids = [r.id for r in (result.results or []) if r.id]
     print(f"  Uploaded {len(ids)} items")
     return ids
 
@@ -537,7 +537,7 @@ Connect GitHub source files to their pull requests, Slack decision threads, and 
 
 ### Why Each Source Type Matters
 
-A developer asking "why does the auth middleware skip token validation for internal IPs?" cannot be answered by any single source. Here is what each source type contributes:
+A developer asking "why does the auth middleware skip token validation for internal IPs?" cannot be answered by any single context. Here is what each source type contributes:
 
 | Source | Answers | Role | Without it |
 |---|---|---|---|
@@ -622,7 +622,7 @@ def ingest_pull_requests(prs: list, repo_name: str) -> list:
         reviews  = "\n\n".join(r["body"] for r in pr.get("reviews",[]) if r.get("body"))
         comments = "\n\n".join(c["body"] for c in pr.get("comments",[]) if c.get("body"))
         # IDs must exactly match those set in ingest_directory()
-        source_ids = [f"{repo_name}/{fname}" for fname in changed]
+        ids = [f"{repo_name}/{fname}" for fname in changed]
         content = (
             f"PR #{pr['number']}: {pr['title']}\n"
             f"Author: {pr['user']['login']} | Merged: {pr['merged_at']}\n\n"
@@ -638,7 +638,7 @@ def ingest_pull_requests(prs: list, repo_name: str) -> list:
             "timestamp":   pr["merged_at"],
             "content":     {"text": content},
             "collections": ["pull-requests"],
-            "relations":   {"hydradb_source_ids": source_ids},
+            "relations":   {"hydradb_source_ids": ids},
             "metadata": {"doc_type":"pull_request","pr_number":pr["number"],
                       "author":pr["user"]["login"],"changed_files":changed},
         })
@@ -979,9 +979,9 @@ def build_context_block(recall_payload) -> str:
 
     source_lines = []
     for source in sources:
-        title     = source.title or "Untitled"
-        source_id = source.id or ""
-        source_lines.append(f"- {title} ({source_id})")
+        title     = context.title or "Untitled"
+        id = context.id or ""
+        source_lines.append(f"- {title} ({id})")
 
     sources_text = "\n".join(source_lines)
 
@@ -1115,7 +1115,7 @@ async def chat(body: dict):
 
     async def stream():
         # Emit sources first so the client can render citations immediately
-        sources_list = [{"title": s.title, "source_id": s.id} for s in (recall_payload.sources or [])]
+        sources_list = [{"title": s.title, "id": s.id} for s in (recall_payload.sources or [])]
         yield json.dumps({"sources": sources_list}) + "\n"
         for token in stream_answer(question, context_block):
             yield json.dumps({"text": token}) + "\n"
@@ -1140,7 +1140,7 @@ def ask(body: dict):
 
     return {
         "answer":        full_answer,
-        "sources":       [{"title": s.title, "source_id": s.id} for s in (recall_payload.sources or [])],
+        "sources":       [{"title": s.title, "id": s.id} for s in (recall_payload.sources or [])],
         "chunks":        [{"chunk_content": c.chunk_content, "relevancy_score": c.relevancy_score,
                            "source_title": c.source_title} for c in (recall_payload.chunks or [])],
         "graph_context": None,
@@ -1283,7 +1283,7 @@ A good progression: Phase 0 search in the terminal → FastAPI `/ask` in Postman
 
 **Cause:** The endpoint path has a typo, extra slash, or missing segment. Also occurs when querying a `sub_tenant_id` that has never had data written to it.
 
-**Fix:** Correct paths: `/source/ingest` (file upload or JSON batch with `app_knowledge`), `/query`, `/source/status`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
+**Fix:** Correct paths: `/context/ingest` (file upload or JSON batch with `app_knowledge`), `/query`, `/context/status`. If using `sub_tenant_id`, confirm at least one batch was successfully uploaded to that sub-tenant first.
 
 ### 400 - Provide at least one of: files or app_knowledge
 
@@ -1319,7 +1319,7 @@ def stream_answer(question: str, context: str):
 ## Production Notes
 
 - **Batch size and rate limits.** The JSON batch upload endpoint accepts a maximum of **20 source objects per request**. Always sleep 1 second between batches. For large repos (1,000+ files), expect ingestion to take 10–30 minutes total.
-- **Indexing delays.** Indexing is async. Never rely on a fixed sleep; always poll [`/source/status`](/api-reference/v2/endpoint/source-status) until the `statuses` array shows `"indexing_status": "completed"`.
+- **Indexing delays.** Indexing is async. Never rely on a fixed sleep; always poll [`/context/status`](/api-reference/v2/endpoint/source-status) until the `statuses` array shows `"indexing_status": "completed"`.
 - **Consistency and upserts.** HydraDB upserts by `id` - re-uploading replaces the existing document. There is a brief window where search may return stale chunks. Run verify on new IDs before marking a deployment complete.
 - **LLM context window.** The basic `build_context_block` assembles all chunk text. For production, add a `relevancy_score` filter and a character cap (e.g. 12,000 chars) to prevent exceeding GPT-4o's context window.
 - **Graph edge consistency.** Graph edges only form if both sides exist and are indexed. Always ingest source files first, then PRs. Re-ingest affected PRs if you add new files after initial ingestion.
@@ -1353,11 +1353,11 @@ GET /tenants/status?tenant_id=engineering-docs
 
 ### Upload File - Beginner Path
 
-**POST** `/source/ingest` - Multipart form-data · field name `"files"` · tenant_id as form field
+**POST** `/context/ingest` - Multipart form-data · field name `"files"` · tenant_id as form field
 
 ```python
 # Correct multipart file upload
-client.source.ingest(
+client.context.ingest(
     tenant_id=TENANT_ID,
     files=[(filename, f, "text/markdown")],
 )
@@ -1366,7 +1366,7 @@ client.source.ingest(
 {
   "results": [
     {
-      "source_id": "<id>",
+      "id": "<id>",
       "filename":  "auth_middleware.md",
       "status":    "accepted",
       "error":     null
@@ -1377,12 +1377,12 @@ client.source.ingest(
 
 ### Upload Sources - JSON Body (Advanced)
 
-**POST** `/source/ingest` - Max 20 items · body field `app_knowledge` (JSON string) · supports relations
+**POST** `/context/ingest` - Max 20 items · body field `app_knowledge` (JSON string) · supports relations
 
 ```python
 import json
 
-client.source.ingest(
+client.context.ingest(
     tenant_id="engineering-docs",
     app_knowledge=json.dumps([{
         "id":          "myrepo/auth/middleware.py",
@@ -1401,15 +1401,15 @@ client.source.ingest(
 
 ### Verify Indexing
 
-**POST** `/source/status` - Returns `statuses[]` array · poll until `"completed"`
+**POST** `/context/status` - Returns `statuses[]` array · poll until `"completed"`
 
 ```json
-// Required: ?source_ids=<id>&tenant_id=engineering-docs
+// Required: ?ids=<id>&tenant_id=engineering-docs
 
 // Response:
 {
   "statuses": [
-    { "source_id": "<id>", "indexing_status": "completed" }
+    { "id": "<id>", "indexing_status": "completed" }
   ]
 }
 // indexing_status: "processing" | "completed" | "errored"

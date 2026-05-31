@@ -49,14 +49,14 @@ HydraDB fixes this with three capabilities that standard vector search can't rep
 ```mermaid
 graph LR
     A["Signal Sources<br/>RSS · LinkedIn · G2 · Earnings PDFs"] -->|"raw text"| B["Ingestion Layer<br/>connectors/press.py<br/>connectors/jobs.py<br/>connectors/reviews.py<br/>connectors/earnings.py"]
-    B -->|"POST /source/ingest<br/>multipart form-data"| C["HydraDB<br/>tenant: competitive-intel<br/>sub_tenant: acme-corp"]
+    B -->|"POST /context/ingest<br/>multipart form-data"| C["HydraDB<br/>tenant: competitive-intel<br/>sub_tenant: acme-corp"]
     D["Analyst / Agent"] -->|"POST /query<br/>query + recency_bias"| C
     C -->|"ranked chunks + graph_context"| D
     D -->|"weekly briefing"| E["Slack #sales-intel<br/>Slack #product-intel"]
 ```
 
 - **Signal Sources**: Press releases via RSS, job postings from LinkedIn/Greenhouse, customer reviews from G2/Capterra, earnings transcripts as plain text or PDF.
-- **Ingestion Layer**: Connector scripts that format content and upload to HydraDB via `POST /source/ingest`.
+- **Ingestion Layer**: Connector scripts that format content and upload to HydraDB via `POST /context/ingest`.
 - **HydraDB**: Stores all signals with timestamps, builds a context graph, and ranks results by recency at query time.
 - **Analyst / Agent**: A human analyst, a Slack bot, or an LLM that calls `POST /query` with a natural language query.
 
@@ -102,11 +102,11 @@ Output:
 
 ## Step 2 - Ingest Competitor Signals
 
-All four signal types use `POST /source/ingest`. This endpoint uses **multipart form-data**, not JSON. `tenant_id` and `sub_tenant_id` are form fields, not body keys.
+All four signal types use `POST /context/ingest`. This endpoint uses **multipart form-data**, not JSON. `tenant_id` and `sub_tenant_id` are form fields, not body keys.
 
 > **Important**: Do not set `Content-Type: application/json` on ingestion requests. The endpoint expects `multipart/form-data`. Let your HTTP client set the boundary automatically - only pass `Authorization` in headers.
 
-> **Batch limit**: Max 20 sources per request. Wait 1 second between batches. Always call `GET /source/status` before running search - queries against unindexed sources return empty results.
+> **Batch limit**: Max 20 sources per request. Wait 1 second between batches. Always call `GET /context/status` before running search - queries against unindexed sources return empty results.
 
 The upload response looks like this for all signal types:
 
@@ -116,7 +116,7 @@ The upload response looks like this for all signal types:
   "message": "Knowledge uploaded successfully",
   "results": [
     {
-      "source_id": "d25fb5a6-0378-4bcb-8cbc-2012c3d12ca2",
+      "id": "d25fb5a6-0378-4bcb-8cbc-2012c3d12ca2",
       "filename": "press-acme-corp-1234567890.txt",
       "status": "queued",
       "error": null
@@ -127,7 +127,7 @@ The upload response looks like this for all signal types:
 }
 ```
 
-Save the `source_id` from `results[0].source_id` - you need it to verify indexing.
+Save the `id` from `results[0].id` - you need it to verify indexing.
 
 ### 2.1 Press Releases & Blog Posts
 
@@ -148,19 +148,19 @@ def ingest_press_release(competitor: str, title: str, text: str) -> str:
     competitor: normalised name, e.g. "acme-corp"
     title:      article headline
     text:       full article body
-    Returns:    source_id for verification
+    Returns:    id for verification
     """
     content  = f"Signal type: press_release\nCompetitor: {competitor}\nTitle: {title}\n\n{text}"
     filename = f"press-{competitor}-{int(time.time())}.txt"
 
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         files=[(filename, content.encode("utf-8"), "text/plain")],
     )
-    source_id = result.results[0].source_id
-    print(f"[press] Uploaded {filename} → source_id: {source_id}")
-    return source_id
+    id = result.results[0].id
+    print(f"[press] Uploaded {filename} → id: {id}")
+    return id
 ```
 
 ### 2.2 Job Postings
@@ -183,7 +183,7 @@ def ingest_job_posting(competitor: str, title: str, department: str, description
     title:       job title - included in content for graph linking
     department:  e.g. "Engineering", "Product", "Sales"
     description: full job description text
-    Returns:     source_id for verification
+    Returns:     id for verification
     """
     content = (
         f"Signal type: job_posting\n"
@@ -194,14 +194,14 @@ def ingest_job_posting(competitor: str, title: str, department: str, description
     )
     filename = f"job-{competitor}-{int(time.time())}.txt"
 
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         files=[(filename, content.encode("utf-8"), "text/plain")],
     )
-    source_id = result.results[0].source_id
-    print(f"[jobs] Uploaded {filename} → source_id: {source_id}")
-    return source_id
+    id = result.results[0].id
+    print(f"[jobs] Uploaded {filename} → id: {id}")
+    return id
 ```
 
 ### 2.3 Customer Reviews (G2 / Capterra / Trustpilot)
@@ -231,7 +231,7 @@ def ingest_review(
     body:          full review text
     rating:        1–5 stars
     reviewer_role: e.g. "IT Director", "VP Engineering"
-    Returns:       source_id for verification
+    Returns:       id for verification
     """
     sentiment = "positive" if rating >= 4 else "negative" if rating <= 2 else "neutral"
     content   = (
@@ -244,14 +244,14 @@ def ingest_review(
     )
     filename = f"review-{competitor}-{int(time.time())}.txt"
 
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         files=[(filename, content.encode("utf-8"), "text/plain")],
     )
-    source_id = result.results[0].source_id
-    print(f"[reviews] Uploaded {filename} ({sentiment}) → source_id: {source_id}")
-    return source_id
+    id = result.results[0].id
+    print(f"[reviews] Uploaded {filename} ({sentiment}) → id: {id}")
+    return id
 ```
 
 ### 2.4 Earnings Call Transcripts
@@ -273,7 +273,7 @@ def ingest_earnings_transcript(competitor: str, quarter: str, transcript: str) -
     competitor:  e.g. "acme-corp"
     quarter:     e.g. "2024-Q3"
     transcript:  full text of the earnings call
-    Returns:     source_id for verification
+    Returns:     id for verification
     """
     content = (
         f"Signal type: earnings_call\n"
@@ -283,27 +283,27 @@ def ingest_earnings_transcript(competitor: str, quarter: str, transcript: str) -
     )
     filename = f"earnings-{competitor}-{quarter}-{int(time.time())}.txt"
 
-    result = client.source.ingest(
+    result = client.context.ingest(
         tenant_id=TENANT_ID,
         sub_tenant_id=competitor,
         files=[(filename, content.encode("utf-8"), "text/plain")],
     )
-    source_id = result.results[0].source_id
-    print(f"[earnings] Uploaded {filename} → source_id: {source_id}")
-    return source_id
+    id = result.results[0].id
+    print(f"[earnings] Uploaded {filename} → id: {id}")
+    return id
 ```
 
 ---
 
 ## Step 3 - Verify Indexing
 
-After uploading, poll `GET /source/status` until `indexing_status` is `completed`. HydraDB indexes asynchronously - typically 10–30 seconds per file. Do not query until indexing is complete; unindexed sources return empty results.
+After uploading, poll `GET /context/status` until `indexing_status` is `completed`. HydraDB indexes asynchronously - typically 10–30 seconds per file. Do not query until indexing is complete; unindexed sources return empty results.
 
-> **Note**: [`GET /source/status`](/api-reference/v2/endpoint/source-status) takes `source_ids` and `tenant_id` as **query parameters**. Pass multiple `source_ids` to check a batch in one call.
+> **Note**: [`GET /context/status`](/api-reference/v2/endpoint/source-status) takes `ids` and `tenant_id` as **query parameters**. Pass multiple `ids` to check a batch in one call.
 
 ```bash
 curl -X POST \
-  'https://api.hydradb.com/source/status?tenant_id=competitive-intel&source_ids=YOUR_SOURCE_ID' \
+  'https://api.hydradb.com/context/status?tenant_id=competitive-intel&ids=YOUR_SOURCE_ID' \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -314,7 +314,7 @@ curl -X POST \
 {
   "statuses": [
     {
-      "source_id": "d25fb5a6-0378-4bcb-8cbc-2012c3d12ca2",
+      "id": "d25fb5a6-0378-4bcb-8cbc-2012c3d12ca2",
       "indexing_status": "completed",
       "error_code": "",
       "error_message": "",
@@ -334,29 +334,29 @@ client = HydraDB(token=os.environ["HYDRA_DB_API_KEY"])
 TENANT_ID = "competitive-intel"
 
 
-def wait_until_indexed(source_id: str, max_tries: int = 20, interval: int = 3) -> None:
+def wait_until_indexed(id: str, max_tries: int = 20, interval: int = 3) -> None:
     """
-    Poll /source/status until the source is indexed or times out.
+    Poll /context/status until the source is indexed or times out.
     Raises RuntimeError if indexing errors. Warns on timeout (may still complete).
     """
     for i in range(max_tries):
         time.sleep(interval)
-        status_result = client.source.status(
+        status_result = client.context.status(
             tenant_id=TENANT_ID,
-            source_ids=[source_id],
+            ids=[id],
         )
         items  = status_result.statuses or []
         status = items[0].indexing_status if items else None
 
         if status == "completed":
-            print(f"Indexed ✓ ({source_id})")
+            print(f"Indexed ✓ ({id})")
             return
         if status == "errored":
-            raise RuntimeError(f"Indexing failed for source_id: {source_id}")
+            raise RuntimeError(f"Indexing failed for id: {id}")
 
         print(f"Indexing... {status or 'queued'} (attempt {i+1}/{max_tries})")
 
-    print(f"Timeout - {source_id} may still complete in background.")
+    print(f"Timeout - {id} may still complete in background.")
 ```
 
 Output (typical run with 1 source):
@@ -449,7 +449,7 @@ print_results(result)
   "chunks": [
     {
       "chunk_uuid": "d25fb5a6-..._chunk_0",
-      "source_id":  "d25fb5a6-...",
+      "id":  "d25fb5a6-...",
       "chunk_content": "Signal type: press_release\nCompetitor: acme-corp\n\nAcme Corp today announced AcmeShield...",
       "relevancy_score": 0.818,
       "additional_metadata": {
@@ -639,8 +639,8 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | `POST` | `/tenants` | Create the competitive-intel tenant |
-| `POST` | `/source/ingest` | Upload a signal file (multipart form-data) |
-| `POST` | `/source/status?tenant_id=...&source_ids=...` | Check indexing status |
+| `POST` | `/context/ingest` | Upload a signal file (multipart form-data) |
+| `POST` | `/context/status?tenant_id=...&ids=...` | Check indexing status |
 | `POST` | `/query` | Query indexed signals |
 
 ### Create Tenant
@@ -660,7 +660,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 
 ### Verify Processing (URL params + empty body)
 ```
-GET /source/status?tenant_id=competitive-intel&source_ids=YOUR_SOURCE_ID
+GET /context/status?tenant_id=competitive-intel&ids=YOUR_SOURCE_ID
 Body: {}
 ```
 
@@ -725,7 +725,7 @@ competitive_intel_agent/
 │   ├── reviews.py                # ingest G2 / Capterra / Trustpilot reviews
 │   └── earnings.py               # ingest earnings call transcripts
 ├── ingest/
-│   └── verify.py                 # poll /source/status until indexed
+│   └── verify.py                 # poll /context/status until indexed
 ├── query/
 │   ├── search.py                 # ask_about_competitor() - point-in-time
 │   └── trends.py                 # ask_trend_question() - historical comparison

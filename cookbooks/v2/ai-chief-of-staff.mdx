@@ -144,7 +144,7 @@ HydraDB treats each callable as a **knowledge object**. The minimal schema:
 
 ### 1.2 Upload to HydraDB
 
-Use the `/source/ingest` endpoint with `app_knowledge` to register each function as a knowledge object.
+Use the `/context/ingest` endpoint with `app_knowledge` to register each function as a knowledge object.
 
 
 ```ts
@@ -152,7 +152,7 @@ import { HydraDBClient } from "@hydradb/sdk";
 
 const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
 
-await client.source.ingest({
+await client.context.ingest({
   tenant_id: "your_tenant_id",
   sub_tenant_id: "your_sub_tenant_id",
   app_knowledge: JSON.stringify([
@@ -214,14 +214,14 @@ class Orchestrator {
     const execResult = await exec(topChunk);
 
     // 3️⃣ Optional: feed result back to HydraDB as a user memory
-    await this.client.source.ingest({
+    await this.client.context.ingest({
       type: 'memory',
       tenant_id: userContext.tenantId,
       sub_tenant_id: userContext.subTenantId,
       upsert: true,
       memories: [
         {
-          source_id: `exec_${functionId}_${Date.now()}`,
+          id: `exec_${functionId}_${Date.now()}`,
           text: `Executed function "${functionId}" for task: "${task}". Result: ${summarize(execResult)}`,
           infer: true
         }
@@ -393,14 +393,14 @@ Auto-tune by feeding metrics back to HydraDB's memory:
 
 
 ```ts
-await client.source.ingest({
+await client.context.ingest({
   type: 'memory',
   tenant_id: "your_tenant_id",
   sub_tenant_id: "your_sub_tenant_id",
   upsert: true,
   memories: [
     {
-      source_id: "metrics_calendar_event",
+      id: "metrics_calendar_event",
       text: 'Function "create_calendar_event" had slow_response signal with p95 of 2500ms.',
       infer: true
     }

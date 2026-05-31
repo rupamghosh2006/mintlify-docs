@@ -79,16 +79,16 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme",
-  sub_tenant_id: "team-mobile",
+  tenantId: "acme",
+  subTenantId: "team-mobile",
   query: "How do we rotate API keys?",
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 8,
+  queryBy: "hybrid",
+  maxResults: 8,
   alpha: 0.8,
-  recency_bias: 0.2,
-  graph_context: true,
-  metadata_filters: { project: "phoenix" },
+  recencyBias: 0.2,
+  graphContext: true,
+  metadataFilters: { project: "phoenix" },
 });
 ```
 
@@ -138,11 +138,11 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme",
+  tenantId: "acme",
   query: "How does onboarding work?",
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 8,
+  queryBy: "hybrid",
+  maxResults: 8,
   alpha: 0.8,
 });
 ```
@@ -184,13 +184,13 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme",
+  tenantId: "acme",
   query: "TimeoutError in payments-worker v4.2.1",
   type: "knowledge",
-  query_by: "hybrid",
-  max_results: 5,
+  queryBy: "hybrid",
+  maxResults: 5,
   alpha: 0.3,
-  recency_bias: 0.4,
+  recencyBias: 0.4,
 });
 ```
 
@@ -233,12 +233,12 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme",
-  sub_tenant_id: "team-mobile",
+  tenantId: "acme",
+  subTenantId: "team-mobile",
   query: "What is the current sprint status?",
   type: "knowledge",
-  query_by: "hybrid",
-  metadata_filters: { project: "phoenix" },
+  queryBy: "hybrid",
+  metadataFilters: { project: "phoenix" },
 });
 ```
 
@@ -278,12 +278,12 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 ```typescript TypeScript SDK
 const result = await client.query({
-  tenant_id: "acme",
+  tenantId: "acme",
   query: "mechanical engineer",
   type: "knowledge",
-  query_by: "text",
+  queryBy: "text",
   operator: "phrase",
-  max_results: 10,
+  maxResults: 10,
 });
 ```
 

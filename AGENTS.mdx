@@ -321,19 +321,19 @@ const client = new HydraDBClient({
   token: process.env.HYDRA_DB_API_KEY,
 });
 
-const tenant_id = "my_first_tenant";
+const tenantId = "my_first_tenant";
 
-await client.tenants.create({ tenantId: tenant_id });
+await client.tenants.create({ tenantId: tenantId });
 
 while (true) {
-  const status = await client.tenants.status({ tenantId: tenant_id });
+  const status = await client.tenants.status({ tenantId: tenantId });
   if (status.data.infra.readyForIngestion) break;
   await new Promise((resolve) => setTimeout(resolve, 5_000));
 }
 
 const ingest = await client.context.ingest({
   type: "memory",
-  tenantId: tenant_id,
+  tenantId: tenantId,
   subTenantId: "user_alex",
   memories: JSON.stringify([
     {
@@ -349,7 +349,7 @@ const ingestId = ingest.data.results[0].id;
 
 while (true) {
   const status = (await client.context.status({
-    tenantId: tenant_id,
+    tenantId: tenantId,
     subTenantId: "user_alex",
     ids: [ingestId],
   })).data.statuses[0];
@@ -363,7 +363,7 @@ while (true) {
 }
 
 const result = await client.query({
-  tenantId: tenant_id,
+  tenantId: tenantId,
   subTenantId: "user_alex",
   query: "What does the user prefer?",
   type: "memory",

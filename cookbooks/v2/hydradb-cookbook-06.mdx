@@ -452,7 +452,7 @@ class ChiefOfStaffOrchestrator:
             metadata_filters={"deprecated": False},
         )
 
-        chunks = search.chunks or []
+        chunks = search.data.chunks or []
         if not chunks:
             return {"status": "no_match", "message": "No function found for this task."}
 
@@ -886,7 +886,7 @@ def generate_execution_plan(
         metadata_filters={"deprecated": False},
     )
 
-    chunks = search.chunks or []
+    chunks = search.data.chunks or []
     if not chunks:
         return []
 

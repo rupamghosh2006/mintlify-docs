@@ -8295,7 +8295,7 @@
           },
           "type": {
             "$ref": "#/components/schemas/SourceType",
-            "description": "What to search: 'knowledge', 'memory', or 'all' (both merged). Mirrors the same values used by /source/ingest's `type` field.",
+            "description": "What to search: 'knowledge', 'memory', or 'all' (both merged). Mirrors the same values used by /context/ingest's `type` field.",
             "default": "knowledge"
           },
           "query_by": {

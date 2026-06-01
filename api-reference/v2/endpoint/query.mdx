@@ -122,6 +122,53 @@ curl -X POST 'https://api.hydradb.com/query' \
 
 </RequestExample>
 
+### Transforming the response into LLM context
+
+Use `build_string` / `buildString` from the SDK. It takes any `POST /query` result and returns a formatted plain string.
+
+<CodeGroup>
+```python Python SDK
+from hydra_db import HydraDB
+from hydra_db.helpers import build_string
+
+client = HydraDB(token="YOUR_API_KEY")
+
+result = client.query(
+    tenant_id="your-tenant",
+    sub_tenant_id="your-sub-tenant",
+    query="How does authentication work?",
+    type="knowledge",
+    query_by="hybrid",
+    max_results=5,
+    mode="fast",
+    graph_context=True,
+)
+
+context = build_string(result)
+```
+```typescript TypeScript SDK
+import { HydraDBClient, buildString } from "@hydradb/sdk";
+
+const client = new HydraDBClient({ token: process.env.HYDRA_DB_API_KEY });
+
+const result = await client.query({
+  tenantId: "your-tenant",
+  subTenantId: "your-sub-tenant",
+  query: "How does authentication work?",
+  type: "knowledge",
+  queryBy: "hybrid",
+  maxResults: 5,
+  mode: "fast",
+  graphContext: true,
+});
+
+const context = buildString(result);
+```
+</CodeGroup>
+
+
+
+
 ## Common use-cases and their configurations
 
 <AccordionGroup>
@@ -557,8 +604,6 @@ result = client.query(
 </ResponseExample>
 
 A zero-result query returns empty arrays/maps rather than an error, as shown in the **Zero results** tab.
-
-For formatting `RetrievalResult` into an LLM prompt, see [How to Use API Results](/essentials/v2/api-results).
 
 ## Behavior notes
 

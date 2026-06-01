@@ -832,11 +832,9 @@ All SDK methods used in this cookbook.
 | `client.tenants.create(tenant_id=...)` | Create the onboarding tenant |
 | `client.tenants.status(tenant_id=...)` | Check tenant is ready |
 | `client.context.ingest(tenant_id=..., documents=..., document_metadata=...)` | Upload company knowledge documents |
-| `client.context.ingest(
-    type='memory',tenant_id=..., sub_tenant_id=..., memories=[...])` | Store per-hire memory |
+| `client.context.ingest(type='memory', tenant_id=..., sub_tenant_id=..., memories=[...])` | Store per-hire memory |
 | `client.query(tenant_id=..., query=..., max_results=..., mode=...)` | Retrieve company context for a hire question |
-| `client.query(
-    type="memory",tenant_id=..., sub_tenant_id=..., query=...)` | Search hire memory for manager dashboard |
+| `client.query(type="memory", tenant_id=..., sub_tenant_id=..., query=...)` | Search hire memory for manager dashboard |
 
 ### client.context.ingest - key parameters
 

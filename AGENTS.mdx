@@ -16,7 +16,7 @@ This document is a self-contained reference designed for AI coding agents. It co
 5. **`POST /query`** (`client.query()`): Retrieve context via `type: "knowledge"`, `"memory"`, or `"all"`.
 
 
-> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/recall/full_recall`, `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/context/*`, and `/query`.
+> **Important:** Prefer the v2 surface in this guide. Older v1 routes like `/ingestion/upload_knowledge`, `/list/data`, and `/tenants/create` may still appear in the OpenAPI file for compatibility, but new integrations should use the consolidated v2 endpoints: `/tenants`, `/context/*`, and `/query`.
 
 ---
 
@@ -33,7 +33,7 @@ This document is a self-contained reference designed for AI coding agents. It co
 
 ### Response envelope
 
-Core raw HTTP responses (`/tenants`, `/context/*`, and `/search`) are wrapped:
+Core raw HTTP responses (`/tenants`, `/context/*`, and `/query`) are wrapped:
 
 ```json
 {
@@ -1136,9 +1136,6 @@ try {
 | `client.upload.knowledge(...)` | `client.context.ingest(type="knowledge", ...)` |
 | `client.upload.addMemory(...)` | `client.context.ingest(type="memory", ...)` |
 | `client.upload.verifyProcessing(...)` | `client.context.status(...)` |
-| `client.search.fullRecall(...)` | `client.query(type="knowledge", ...)` |
-| `client.search.recallPreferences(...)` | `client.query(type="memory", ...)` |
-| `client.search.booleanRecall(...)` | `client.query(query_by="text", ...)` |
 | `client.fetch.listData(...)` | `client.context.list(...)` |
 | `client.fetch.graphRelationsBySourceId(...)` | `client.context.relations(...)` |
 | `client.fetch.content(...)` | `client.context.inspect(...)` |

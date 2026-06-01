@@ -5,7 +5,8 @@
 		"hygiene:install": "TMPFILE=$(mktemp) && curl -fsSL https://raw.githubusercontent.com/usecortex/mintlify-hygiene/main/install.sh -o \"$TMPFILE\" && bash \"$TMPFILE\" --dest ./bin && rm -f \"$TMPFILE\"",
 		"hygiene:ensure": "test -x ./bin/mintlify-hygiene || npm run hygiene:install",
 		"hygiene": "npm run hygiene:ensure && ./bin/mintlify-hygiene check",
-		"hygiene:strict": "npm run hygiene:ensure && ./bin/mintlify-hygiene check --deny-warnings"
+		"hygiene:strict": "npm run hygiene:ensure && ./bin/mintlify-hygiene check --deny-warnings",
+		"verify:agents-endpoints": "python scripts/verify_agents_endpoints.py"
 	},
 	"dependencies": {
 		"@hydradb/sdk": "^0.0.3",

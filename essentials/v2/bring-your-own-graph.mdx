@@ -31,7 +31,7 @@ Pick the right tool:
 
 ## 3. The `graph_payload` shape
 
-`graph_payload` is a JSON string: a **map keyed by source id** — a document's `file_metadata` `id` or an `app_knowledge` item's `id` — where each value is that source's graph (an `entities` map + a `relations` list). Attach graphs to several sources in one request by adding more keys.
+`graph_payload` is a JSON string: a **map keyed by source id** — a document's `document_metadata` `id` or an `app_knowledge` item's `id` — where each value is that source's graph (an `entities` map + a `relations` list). Attach graphs to several sources in one request by adding more keys.
 
 ```json
 {
@@ -53,7 +53,7 @@ Pick the right tool:
 }
 ```
 
-- **Top-level key** — the id of the source this graph belongs to (a document's `file_metadata` `id` or an `app_knowledge` item's `id`). A key matching no source in the request is rejected with `400`.
+- **Top-level key** — the id of the source this graph belongs to (a document's `document_metadata` `id` or an `app_knowledge` item's `id`). A key matching no source in the request is rejected with `400`.
 - **`entities`** — a map keyed by a caller-local id. Each entity has a `name` (required), `type`, `namespace`, and optional `identifier` (an external id — display-only). The entity key is just a handle for relations to reference; it is not stored.
 - **`relations`** — a list of edges. `source` and `target` are entity-map keys; `predicate` is any plain string; `context` and `temporal_details` are optional per relation.
 - **No `chunk_id`** — you never supply or see chunk ids; HydraDB resolves them server-side when it links your relations to the source's chunks.
@@ -66,7 +66,7 @@ Pick the right tool:
 - **Replace mode.** A BYOG document's graph is your `graph_payload`; LLM extraction is skipped for it. The document is still chunked and embedded, so it stays fully vector-searchable.
 - **Chunk linking.** Each relation is linked to the document's most relevant chunk(s), so `graph_context` results hydrate the right passages. Linking is permissive (see [Limitations](#7-limitations)).
 - **Queryable like any graph.** Your relations appear in the `/query` `graph_context` slice (tagged `origin: "byog"` in metadata) and traverse exactly like extracted ones — see [Context Graphs](/essentials/v2/context-graphs).
-- **Durable across re-ingest.** Re-uploading the same source — or a connector re-sync, which carries no payload — re-applies your stored graph rather than re-extracting. Your facts are not lost on re-ingest.
+- **Durable across re-ingest.** Your graph is persisted server-side, so it outlives a single upload. Re-ingesting the same source **without** a `graph_payload` — a connector re-sync, or just iterating on the document's content — re-applies your stored graph: HydraDB does **not** fall back to LLM extraction and does **not** error. Your facts are never silently lost. To change the graph, re-ingest **with** a new `graph_payload`; it replaces the stored copy (replace mode).
 
 ---
 
@@ -83,7 +83,7 @@ Pick the right tool:
 | `name` / `predicate` length | ≤ 256 chars |
 
 <Note>
-`graph_payload` is **per-source**: each top-level key must match a `file_metadata` document `id` or an `app_knowledge` item `id` in the same request. Attach graphs to multiple documents and/or app sources at once. A document must carry an `id` in `file_metadata` to be targeted (that `id` is the map key). Knowledge-only.
+`graph_payload` is **per-source**: each top-level key must match a document's `document_metadata` `id` or an `app_knowledge` item `id` in the same request. Attach graphs to multiple documents and/or app sources at once. A document must carry an `id` in `document_metadata` to be targeted (that `id` is the map key). Knowledge-only.
 </Note>
 
 ---
@@ -260,7 +260,7 @@ curl -X POST 'https://api.hydradb.com/query' \
   }'
 ```
 
-Your triplet comes back in `graph_context`, identical to an extracted one:
+Your triplet comes back in `graph_context` and traverses just like an extracted one — the `origin: "byog"` tag on the relation marks it as yours:
 
 ```json
 {
@@ -270,7 +270,7 @@ Your triplet comes back in `graph_context`, identical to an extracted one:
         "triplets": [
           {
             "source": { "name": "alice carter", "type": "PERSON" },
-            "relation": { "canonical_predicate": "OWNS", "context": "Alice Carter owns the billing policy." },
+            "relation": { "canonical_predicate": "OWNS", "context": "Alice Carter owns the billing policy.", "origin": "byog" },
             "target": { "name": "billing policy", "type": "POLICY" }
           }
         ]

@@ -4092,7 +4092,7 @@
             "schema": {
               "type": "string",
               "description": "Fetch mode: 'content', 'url', or 'both'",
-              "default": "content",
+              "default": "both",
               "title": "Mode"
             },
             "description": "Fetch mode: 'content', 'url', or 'both'"
@@ -10894,6 +10894,18 @@
             ],
             "title": "Content Base64",
             "description": "File content as base64 (for binary files, if mode includes 'content')"
+          },
+          "inferred_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inferred Content",
+            "description": "Model-inferred/derived content for the source (e.g. the inferred memory text), when available"
           },
           "presigned_url": {
             "anyOf": [

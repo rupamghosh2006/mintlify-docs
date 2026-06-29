@@ -11,7 +11,7 @@ Most applications start every conversation from scratch. Memories let your agent
 
 A memory is one unit of context: a stated preference, an inferred trait, a past conversation, a decision, feedback, or a fact your agent should be able to retrieve later. HydraDB stores every memory in a structural [context graph](/essentials/v2/context-graphs), so related preferences surface together at retrieval time.
 
-Use Memories when the context belongs to a specific user, workspace, or session. Use [Knowledge](/essentials/v2/knowledge) when the context should be shared across your tenant - see [Knowledge vs Memories](/essentials/v2/knowledge#1-what-it-is) for the side-by-side comparison.
+Use Memories when the context belongs to a specific user, workspace, or session. Use [Knowledge](/essentials/v2/knowledge) when the context should be shared across your database - see [Knowledge vs Memories](/essentials/v2/knowledge#1-what-it-is) for the side-by-side comparison.
 
 ---
 
@@ -24,7 +24,7 @@ If the answer is yes, store it as [Knowledge](/essentials/v2/knowledge). If the 
 | If the content is… | Store it as… |
 |---|---|
 | About a specific user or session | Memory |
-| Shared across all users in your tenant | [Knowledge](/essentials/v2/knowledge) |
+| Shared across all users in your database | [Knowledge](/essentials/v2/knowledge) |
 
 HydraDB can infer various kinds of things for memories. [see more](/essentials/v2/memories#use-infer-true-when-the-input-is-raw-signal)
 
@@ -97,8 +97,8 @@ The full schema lives on [`POST /context/ingest`](/api-reference/v2/endpoint/ing
 | Field | Default | Description |
 |---|---|---|
 | <Field name="type" type="memory" required /> |  -  | Selects the Memories store. Use singular `memory`. |
-| <Field name="database" type="string" required /> |  -  | Target tenant. The `database` field was formerly `tenant_id`. |
-| <Field name="collection" type="string" recommended /> | default sub-tenant | User, workspace, or session scope for the memory. The `collection` field was formerly `sub_tenant_id`. |
+| <Field name="database" type="string" required /> |  -  | Target database. The `database` field was formerly `tenant_id`. |
+| <Field name="collection" type="string" recommended /> | default collection | User, workspace, or session scope for the memory. The `collection` field was formerly `sub_tenant_id`. |
 | <Field name="upsert" type="boolean" /> | `true` | Replace existing memories with the same `id`. |
 | <Field name="memories" type="string (JSON array)" required /> |  -  | JSON-stringified array of memory items. |
 
@@ -450,7 +450,7 @@ If you sent the same input with `infer: false`, HydraDB would index the event lo
 |---|---|---|
 | Sending `"memory": "..."` instead of `"memories": [...]` | Validation fails | Use `"memories": [ { "text": "..." } ]`  -  always an array of objects |
 | Omitting `database` | Request validation error | Include `database` on every call |
-| Omitting `collection` for per-user data | The memory lands in the default sub-tenant and may surface in the wrong scope | Use the user's ID as `collection` for B2C separation |
+| Omitting `collection` for per-user data | The memory lands in the default collection and may surface in the wrong scope | Use the user's ID as `collection` for B2C separation |
 | Setting `custom_instructions` with `infer: false` | Instructions are ignored | Set `infer: true` if you need instructions to affect extraction |
 | Extracting preferences yourself before sending raw logs | You duplicate work HydraDB can do for you | Send the raw signal with `infer: true` |
 | Sending pre-extracted facts with `infer: true` | HydraDB may re-derive the memory and change the original phrasing | Use `infer: false` for already-structured facts |
@@ -463,7 +463,7 @@ If you sent the same input with `infer: false`, HydraDB would index the event lo
 
 ## Related
 
-- [Knowledge](/essentials/v2/knowledge)  -  shared, tenant-wide document context
+- [Knowledge](/essentials/v2/knowledge)  -  shared, database-wide document context
 - [Query](/essentials/v2/query)  -  how memories are retrieved at query time
 - [Multi-tenant support](/essentials/v2/multi-tenant)  -  scoping memories per user or workspace
 - [Metadata](/essentials/v2/metadata)  -  designing filterable fields

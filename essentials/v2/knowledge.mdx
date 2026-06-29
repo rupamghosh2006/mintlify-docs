@@ -7,14 +7,14 @@ import { Field } from "/snippets/field.jsx";
 
 ## 1. What it is
 
-Knowledge is the shared, tenant-wide context that every user and agent in a tenant can query  -  product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and anything else that ought to be reusable across the workspace.
+Knowledge is the shared, database-wide context that every user and agent in a database can query  -  product documents, internal wikis, policy PDFs, Slack threads, Notion pages, CSVs, emails, and anything else that ought to be reusable across the workspace.
 
 Knowledge is the counterpart to [Memories](/essentials/v2/memories), which holds per-user context. Both are retrievable through the same [`POST /query`](/api-reference/v2/endpoint/query) endpoint, but they live in separate stores; you pick which one to query via the `type` parameter (see [Query](/essentials/v2/query)).
 
 | | Knowledge | Memories |
 |---|---|---|
 | **Content** | Documents, files, app-generated content | User preferences, conversations, inferred traits |
-| **Scope** | Shared across all users in a tenant | Per-user, scoped by `collection` (formerly `sub_tenant_id`) |
+| **Scope** | Shared across all users in a database | Per-user, scoped by `collection` (formerly `sub_tenant_id`) |
 | **Mutability** | Versioned  -  replaced or deleted explicitly | Dynamic  -  evolves with every interaction |
 | **Query via** | [`POST /query`](/api-reference/v2/endpoint/query) with `type: "knowledge"` | [`POST /query`](/api-reference/v2/endpoint/query) with `type: "memory"` |
 | **`vectorstore_status`** | `vectorstore_status.knowledge` | `vectorstore_status.memories` |
@@ -43,7 +43,7 @@ The pipeline runs **asynchronously**. The ingest call returns `202 Accepted` wit
 
 Reach for Knowledge ingestion when the content is:
 
-- **Shared across all users** in your tenant  -  product docs, policy PDFs, runbooks, wikis, internal tooling.
+- **Shared across all users** in your database  -  product docs, policy PDFs, runbooks, wikis, internal tooling.
 - **Static or infrequently updated**  -  versioned by replacing the source rather than appending.
 - **Document-structured** rather than conversational  -  files, threads, pages, articles.
 
@@ -343,7 +343,7 @@ The full schema lives on [`POST /context/ingest`](/api-reference/v2/endpoint/ing
 | Field | Description |
 |---|---|
 | <Field name="id" type="string" recommended /> | Stable ID. Used as the upsert/delete/status key. |
-| <Field name="database" type="string" recommended /> | Tenant that owns the item. Must match form-level `database` (formerly `tenant_id`) when present. |
+| <Field name="database" type="string" recommended /> | Database that owns the item. Must match form-level `database` (formerly `tenant_id`) when present. |
 | <Field name="collection" type="string" recommended /> | Logical partition. Must match form-level `collection` when present. |
 | <Field name="title" type="string" recommended /> | Short title, subject, ticket title, or page name. |
 | <Field name="type" type="string" recommended /> | Source category for display/analytics, such as `slack`, `notion`, `gmail`, or `jira`. |
@@ -363,8 +363,8 @@ The full schema lives on [`POST /context/ingest`](/api-reference/v2/endpoint/ing
 
 | Field | Default | Description |
 |---|---|---|
-| <Field name="database" type="string" required /> |  -  | Target tenant. |
-| <Field name="collection" type="string" /> | none | Scope this knowledge to a sub-tenant. If omitted, knowledge is available to all sub-tenants. |
+| <Field name="database" type="string" required /> |  -  | Target database. |
+| <Field name="collection" type="string" /> | none | Scope this knowledge to a collection. If omitted, knowledge is available to all collections. |
 | <Field name="upsert" type="boolean" /> | `true` | Replace existing items with the same `id`. |
 
 ---

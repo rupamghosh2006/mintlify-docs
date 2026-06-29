@@ -147,9 +147,9 @@ The v1 SDK methods remain available on the `<2.0.0` releases of `hydradb-sdk` / 
 
 ## Getting started
 
-### Create a tenant
+### Create a database
 
-A tenant is an isolated workspace. Most organizations create one tenant total, with sub-tenants for users or teams. See [Multi-Tenant](/essentials/v2/multi-tenant) for the full model.
+A database is an isolated workspace. Most organizations create one database total, with collections for users or teams. See [Multi-Tenant](/essentials/v2/multi-tenant) for the full model.
 
 <CodeGroup>
 ```python Python SDK
@@ -173,7 +173,7 @@ const response = await client.tenants.create({
 ```
 </CodeGroup>
 
-Tenant creation is asynchronous. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) until provisioning completes:
+Database creation is asynchronous. Poll [`tenants.status`](/api-reference/v2/endpoint/tenant-status) until provisioning completes:
 
 <CodeGroup>
 ```python Python SDK
@@ -516,7 +516,7 @@ try:
         type="knowledge",
     )
 except NotFoundError:
-    # Handle missing tenant / resource (HTTP 404)
+    # Handle missing database / resource (HTTP 404)
     pass
 except TooManyRequestsError:
     # Rate limit (HTTP 429) — retry with backoff
@@ -540,7 +540,7 @@ try {
     const code = error.body?.error?.code;
 
     if (code === "TENANT_NOT_FOUND") {
-      // Handle missing tenant
+      // Handle missing database
     } else if (error.statusCode === 429) {
       // Rate limit — retry with backoff
     } else {

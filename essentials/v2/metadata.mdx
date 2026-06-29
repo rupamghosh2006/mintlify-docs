@@ -279,7 +279,7 @@ Top-level `compliance_framework` is the fast scope, applied in the vector store 
 
 ## 6. Advanced patterns
 
-**Stacked scopes with sub-tenant partitioning.** Use `collection` for the partition (per-user, per-workspace), and use `metadata_filters` to scope *inside* that partition. They're complementary, not interchangeable. See [Multi-Tenant](/essentials/v2/multi-tenant).
+**Stacked scopes with collection partitioning.** Use `collection` for the partition (per-user, per-workspace), and use `metadata_filters` to scope *inside* that partition. They're complementary, not interchangeable. See [Multi-Tenant](/essentials/v2/multi-tenant).
 
 **Published vs draft.** Add a `status` field with `enable_match: true` to your schema; tag every source with `metadata.status = "draft" | "published"`; pass `metadata_filters: { status: "published" }` on user-facing queries. Keeps work-in-progress out of customer answers automatically.
 

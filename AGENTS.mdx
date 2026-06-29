@@ -105,26 +105,26 @@ Use the same `type` enum across context lifecycle APIs and search. Search additi
 ### Do not mix scopes accidentally
 
 - `database` (formerly `tenant_id`) is the hard isolation boundary.
-- `collection` (formerly `sub_tenant_id`) is a logical partition inside a tenant, typically user/workspace/team.
-- Use the same `collection` on writes and reads. Data written under one sub-tenant should not be expected to appear from another.
+- `collection` (formerly `sub_tenant_id`) is a logical partition inside a database, typically user/workspace/team.
+- Use the same `collection` on writes and reads. Data written under one collection should not be expected to appear from another.
 - Do not use `metadata_filters` as a substitute for `collection`.
 
 ---
 
 ## 2. Core primitives
 
-### Tenants and sub-tenants
+### Databases and collections
 
-A tenant is an isolated workspace. A sub-tenant partitions data inside a tenant.
+A database is an isolated workspace. A collection partitions data inside a database.
 
 Recommended patterns:
 
 | Use case | Pattern |
 |---|---|
 | B2B SaaS | one `database` per customer; `collection` for workspace/team/user |
-| B2C app | one app/customer tenant; `collection = user_id` |
+| B2C app | one app/customer database; `collection = user_id` |
 | Environment isolation | separate `database`s for prod/staging |
-| Shared knowledge | tenant-wide/default sub-tenant or consistent shared scope |
+| Shared knowledge | database-wide/default collection or consistent shared scope |
 | User memories | `collection = user_id` |
 
 ### Knowledge
@@ -437,7 +437,7 @@ Use SDK autocomplete/returned object shape for the exact field spelling.
 |---|---|
 | `type` | `"knowledge"` or `"memory"`; default is `"knowledge"` |
 | `database` | target tenant |
-| `collection` | optional logical partition; default sub-tenant if omitted |
+| `collection` | optional logical partition; default collection if omitted |
 | `upsert` | default `true`; replaces existing sources with same ID |
 | `documents` | binary uploads for knowledge |
 | `document_metadata` | JSON-stringified array, one item per document |
@@ -650,8 +650,8 @@ Payload shape:
   "event": "indexing.status_changed",
   "delivery_id": "<delivery_id>",
   "id": "<id>",
-  "tenant_id": "<tenant_id>",
-  "sub_tenant_id": "<sub_tenant_id>",
+  "database": "<database>",
+  "collection": "<collection>",
   "status": "completed",
   "timestamp": "<ISO-8601 timestamp>",
   "error_code": null,
@@ -847,8 +847,8 @@ openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 question = "How does authentication work?"
 
 result = hydra.query(
-    database="your-tenant",
-    collection="your-sub-tenant",
+    database="your-database",
+    collection="your-collection",
     query=question,
     type="knowledge",
     query_by="hybrid",
@@ -881,8 +881,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const question = "How does authentication work?";
 
 const result = await hydra.query({
-  database: "your-tenant",
-  collection: "your-sub-tenant",
+  database: "your-database",
+  collection: "your-collection",
   query: question,
   type: "knowledge",
   queryBy: "hybrid",
@@ -1223,18 +1223,18 @@ Use `type` on raw `/query` requests to select `knowledge`, `memory`, or `all`. T
 
 ```bash
 export HYDRA_DB_API_KEY="your_api_key"
-TENANT_ID="agent_docs_demo"
-SUB_TENANT_ID="user_alex"
+DATABASE="agent_docs_demo"
+COLLECTION="user_alex"
 
 # 1. Create a tenant.
 curl -s -X POST 'https://api.hydradb.com/tenants' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
-  -d "{\"database\":\"${TENANT_ID}\"}"
+  -d "{\"database\":\"${DATABASE}\"}"
 
 # 2. Check readiness. Poll this until .data.infra.ready_for_ingestion is true.
-curl -s "https://api.hydradb.com/tenants/status?database=${TENANT_ID}" \
+curl -s "https://api.hydradb.com/tenants/status?database=${DATABASE}" \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" | jq '.data.infra'
 
@@ -1243,8 +1243,8 @@ INGEST_ID=$(curl -s -X POST 'https://api.hydradb.com/context/ingest' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -F "type=memory" \
-  -F "database=${TENANT_ID}" \
-  -F "collection=${SUB_TENANT_ID}" \
+  -F "database=${DATABASE}" \
+  -F "collection=${COLLECTION}" \
   -F 'memories=[{"id":"alex_pref_001","text":"Alex prefers concise technical answers.","infer":true,"user_name":"Alex"}]' \
   | jq -r '.data.results[0].id')
 
@@ -1252,8 +1252,8 @@ INGEST_ID=$(curl -s -X POST 'https://api.hydradb.com/context/ingest' \
 curl -s -G 'https://api.hydradb.com/context/status' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
-  --data-urlencode "database=${TENANT_ID}" \
-  --data-urlencode "collection=${SUB_TENANT_ID}" \
+  --data-urlencode "database=${DATABASE}" \
+  --data-urlencode "collection=${COLLECTION}" \
   --data-urlencode "ids=${INGEST_ID}" \
   | jq '.data.statuses[0]'
 
@@ -1262,7 +1262,7 @@ curl -s -X POST 'https://api.hydradb.com/query' \
   -H "Authorization: Bearer $HYDRA_DB_API_KEY" \
   -H "API-Version: 2" \
   -H "Content-Type: application/json" \
-  -d "{\"database\":\"${TENANT_ID}\",\"collection\":\"${SUB_TENANT_ID}\",\"query\":\"How should I answer Alex?\",\"type\":\"memory\",\"query_by\":\"hybrid\",\"mode\":\"thinking\"}" \
+  -d "{\"database\":\"${DATABASE}\",\"collection\":\"${COLLECTION}\",\"query\":\"How should I answer Alex?\",\"type\":\"memory\",\"query_by\":\"hybrid\",\"mode\":\"thinking\"}" \
   | jq '.data.chunks'
 ```
 

@@ -54,7 +54,7 @@ Do **not** put the primary app text in a top-level `content` object for app-nati
 
 ## 3. Ingest an app source
 
-Send `app_knowledge` as a **JSON-stringified** form value. Each item should include the request-level tenant fields inside the item too; if supplied, they must match the form-level `database` and `collection`.
+Send `app_knowledge` as a **JSON-stringified** form value. Each item should include the request-level scope fields inside the item too; if supplied, they must match the form-level `database` and `collection`.
 
 <CodeGroup>
 ```python Python SDK
@@ -649,7 +649,7 @@ At recall time, `query_apps: true` lets the app-aware lane find an initial sourc
 | Field | Why send it | Query / ingestion effect |
 |---|---|---|
 | <Field name="id" type="string" required /> | Stable HydraDB ID for this item. | Upsert key, delete/status/list ID, and direct relation target. |
-| <Field name="database" type="string" required /> | Tenant that owns the item. | Must match the form-level `database` when present. |
+| <Field name="database" type="string" required /> | Database that owns the item. | Must match the form-level `database` when present. |
 | <Field name="collection" type="string" required /> | Logical partition. Use `"default"` if you do not partition. | Must match the form-level `collection` when present. |
 | <Field name="title" type="string" recommended /> | Human-readable subject, page name, ticket title, or message label. | Improves display, citations, and semantic matching. |
 | <Field name="type" type="string" recommended /> | Source category such as `slack`, `gmail`, `jira`, `notion`, `salesforce`, or `linear_comment`. | Preserved for source rendering and analytics; not the app discriminator. |

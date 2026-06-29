@@ -1,13 +1,13 @@
 ---
 title: "Perplexity for Internal Knowledge"
-description: "Ingest Slack, Gmail, Confluence, GitHub, and Linear into one HydraDB tenant. Ask any question in natural language and get a cited, synthesized answer drawing from across all your company's knowledge - including 'what led to the decision to sunset Project X?' with full decision provenance."
+description: "Ingest Slack, Gmail, Confluence, GitHub, and Linear into one HydraDB database. Ask any question in natural language and get a cited, synthesized answer drawing from across all your company's knowledge - including 'what led to the decision to sunset Project X?' with full decision provenance."
 ---
 
 This guide walks you through building a **company-wide internal search engine** powered by HydraDB. Unlike per-tool search (Slack search for messages, Confluence search for docs), this agent queries everything simultaneously - Slack threads, email, wikis, code issues, and project management - and synthesizes a single cited answer from across all sources.
 
 > **Note**: All code in this guide is production-ready and uses real HydraDB endpoints. Base URL: `https://api.hydradb.com`. Get your API key at [app.hydradb.com](https://app.hydradb.com).
 
-> **Goal**: Ingest six source types into one HydraDB tenant, store per-user memory profiles for personalized answers, and answer three query patterns - simple factual lookup, decision provenance, and cross-source synthesis - all through `POST /query`.
+> **Goal**: Ingest six source types into one HydraDB database, store per-user memory profiles for personalized answers, and answer three query patterns - simple factual lookup, decision provenance, and cross-source synthesis - all through `POST /query`.
 
 ---
 
@@ -22,7 +22,7 @@ This guide walks you through building a **company-wide internal search engine** 
 ## What You'll Build
 
 By the end of this cookbook, you'll be able to:
-- Ingest Slack threads, Gmail, Confluence pages, GitHub issues, and Linear tickets into a single HydraDB tenant
+- Ingest Slack threads, Gmail, Confluence pages, GitHub issues, and Linear tickets into a single HydraDB database
 - Answer cross-source questions like "Why did we move to a monorepo?" that span multiple tools and time periods
 - Use `recency_bias` and `graph_context: true` to surface the most relevant, connected context across all sources
 - Store per-user memory so answers are personalized to each employee's role and project context
@@ -44,7 +44,7 @@ The critical capability that makes this possible is HydraDB's context graph. It 
 ```mermaid
 graph LR
     A["Slack · Gmail · Confluence<br/>GitHub · Linear · Notion"] -->|"multipart upload"| B["Ingestion Layer<br/>connectors/slack.py<br/>connectors/gmail.py<br/>connectors/confluence.py<br/>connectors/github.py"]
-    B -->|"POST /context/ingest"| C["HydraDB<br/>tenant: company-knowledge<br/>sub_tenants: slack, email, docs, github"]
+    B -->|"POST /context/ingest"| C["HydraDB<br/>database: company-knowledge<br/>collections: slack, email, docs, github"]
     D["User / Slack bot / Web UI"] -->|"POST /query"| C
     C -->|"ranked chunks + graph_context"| D
     E["POST /context/ingest"] -->|"user profile"| C
@@ -59,7 +59,7 @@ graph LR
 
 ## Step 1 - Create Tenant
 
-One tenant for all company knowledge. Use `collection` to isolate by source type - `"slack"`, `"email"`, `"docs"`, `"github"`. All created automatically on first write, no setup required.
+One database for all company knowledge. Use `collection` to isolate by source type - `"slack"`, `"email"`, `"docs"`, `"github"`. All created automatically on first write, no setup required.
 
 ```bash
 curl -X POST 'https://api.hydradb.com/tenants' \
@@ -1241,7 +1241,7 @@ console.log(answer);
 
 ### 5.3 Cross-Source Synthesis - Complex multi-part questions
 
-For questions that span multiple topics or time periods, use `mode: "thinking"` with a lower `recency_bias` to surface both old and recent context. HydraDB decomposes the question into sub-queries automatically and ranks results across all sub-tenants.
+For questions that span multiple topics or time periods, use `mode: "thinking"` with a lower `recency_bias` to surface both old and recent context. HydraDB decomposes the question into sub-queries automatically and ranks results across all collections.
 
 ```python
 # search/synthesis.py
@@ -1439,7 +1439,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `POST` | `/tenants` | Create the company-knowledge tenant |
+| `POST` | `/tenants` | Create the company-knowledge database |
 | `POST` | `/context/ingest` | Upload a source file (multipart form-data) |
 | `GET` | `/context/status?database=...&ids=...` | Check indexing status |
 | `POST` | `/context/ingest` | Store a user profile memory |
@@ -1541,7 +1541,7 @@ Tested across a 2-year company knowledge base: 12 Slack channels, 3 Gmail accoun
 
 ```
 internal_search/
-├── setup.py                      # tenant creation + shared constants
+├── setup.py                      # database creation + shared constants
 ├── config.py                     # API_KEY, TENANT_ID, BASE_URL
 ├── requirements.txt
 ├── connectors/
@@ -1583,7 +1583,7 @@ atlassian-python-api
 
 ## Next Steps
 
-1. Run `setup.py` to create your tenant.
+1. Run `setup.py` to create your database.
 2. Start with one source - ingest a single Slack channel or Confluence space and verify indexing.
 3. Store profiles for 2–3 users via `memory/profiles.py`.
 4. Run `python search/qa.py` with a real question to confirm results.

@@ -85,12 +85,12 @@ curl -X POST 'https://api.hydradb.com/tenants' \
 
 | Name | Description |
 | --- | --- |
-| <Field name="database" type="string" required /> | Account-scoped tenant identifier. Use a stable, case-sensitive ID up to 25 characters; prefer lowercase letters, numbers, and underscores for portability. Formerly `tenant_id`; the `tenant_id` alias is still accepted (deprecated). |
+| <Field name="database" type="string" required /> | Account-scoped database identifier. Use a stable, case-sensitive ID up to 25 characters; prefer lowercase letters, numbers, and underscores for portability. Formerly `tenant_id`; the `tenant_id` alias is still accepted (deprecated). |
 | <Field name="tenant_metadata_schema" type="array" /> | Defines tenant-level metadata fields. See the [Scoping using metadata](/essentials/v2/metadata#schema-declaration-set-at-tenant-creation) guide for detailed schema parameters. (default=`null`) |
 
 ## Successful response
 
-Always check if a tenant is ready before using it. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to check.
+Always check if a database is ready before using it. Use [Tenant Status](/api-reference/v2/endpoint/tenant-status) to check.
 
 <ResponseExample>
 
@@ -99,7 +99,7 @@ Always check if a tenant is ready before using it. Use [Tenant Status](/api-refe
   "success": true,
   "data": {
     "status": "accepted",
-    "tenant_id": "my_first_tenant",
+    "database": "my_first_tenant",
     "message": "Tenant creation started in the background. Use GET /tenants/status?tenant_id=... to check progress."
   },
   "error": null,
@@ -129,21 +129,21 @@ Always check if a tenant is ready before using it. Use [Tenant Status](/api-refe
 
 ## What happens after tenant creation?
 
-1. Create the tenant with `POST /tenants`
-2. **Default sub-tenant:** A default sub-tenant is provisioned automatically when a tenant is created. This default sub tenant stores all your context. Create additional sub-tenants at any time to scope data to users, teams, or projects.
-3. **Retry failed tenants:** If a tenant appears in `data.failed_tenant_ids`, re-create that tenant with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
-4. Start [ingesting context](/api-reference/v2/endpoint/ingest-context) once tenants are ready
-5. Check status of [ingestion](/api-reference/v2/endpoint/source-status). Start querying the tenant once the recently ingested sources show `completed`
+1. Create the database with `POST /tenants`
+2. **Default collection:** A default collection is provisioned automatically when a database is created. This default collection stores all your context. Create additional collections at any time to scope data to users, teams, or projects.
+3. **Retry failed databases:** If a database appears in `data.failed_databases`, re-create that database with `POST /tenants` after addressing the reported issue. Poll status again before ingestion.
+4. Start [ingesting context](/api-reference/v2/endpoint/ingest-context) once databases are ready
+5. Check status of [ingestion](/api-reference/v2/endpoint/source-status). Start querying the database once the recently ingested sources show `completed`
 
 ---
 
 ## Defining metadata schema
 
 <Warning>
-  Schema field names are **immutable** after tenant creation. You can add per-document free-form metadata fields at ingestion time, but tenant-level fields cannot be mutated. Plan your schema carefully before creating the tenant.
+  Schema field names are **immutable** after database creation. You can add per-document free-form metadata fields at ingestion time, but tenant-level fields cannot be mutated. Plan your schema carefully before creating the database.
 </Warning>
 
-You can define a custom schema at tenant creation to enable fast, deterministic exact-match filtering or text-based search on metadata fields.
+You can define a custom schema at database creation to enable fast, deterministic exact-match filtering or text-based search on metadata fields.
 
 For detailed parameters, valid data types, shorthand flags, and comprehensive configuration examples, see the [metadata](/essentials/v2/metadata) guide.
 

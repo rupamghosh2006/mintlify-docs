@@ -33,7 +33,7 @@ By the end of this cookbook, you'll be able to:
 
 Before writing code, understand the three primitives you'll use throughout this cookbook:
 
-- **Tenant** - your workspace. All data is isolated per tenant. Think of it as your "company" in HydraDB. Create one per application.
+- **Database** - your workspace. All data is isolated per database. Think of it as your "company" in HydraDB. Create one per application.
 - **Memory** - any unit of context: a Notion page, a Confluence doc, a Slack thread, a user preference. HydraDB automatically chunks, embeds, and connects memories into a context graph.
 - **Search** - the retrieval call your agent makes before acting. HydraDB's search runs a multi-stage pipeline: metadata filtering → graph traversal → semantic retrieval → personalized ranking.
 
@@ -55,7 +55,7 @@ Before writing code, understand the three primitives you'll use throughout this 
 
 ## Step 01 - Create a Tenant
 
-Every HydraDB workspace starts with a tenant. Create one for your knowledge base - it provides complete data isolation and multi-tenant support out of the box.
+Every HydraDB workspace starts with a database. Create one for your knowledge base - it provides complete data isolation and multi-tenant support out of the box.
 
 **Endpoint:** `POST /tenants` - Create your workspace
 
@@ -75,16 +75,16 @@ import os, time, uuid
 from hydra_db import HydraDB
 
 API_KEY   = os.environ["HYDRA_DB_API_KEY"]
-TENANT_ID = "notion-ai-workspace"
+DATABASE_ID = "notion-ai-workspace"
 
 client = HydraDB(token=API_KEY)
 
-# Create tenant - idempotent, safe to re-run
-resp = client.tenants.create(database=TENANT_ID)
+# Create database - idempotent, safe to re-run
+resp = client.tenants.create(database=DATABASE_ID)
 print("Tenant:", resp)
 ```
 
-> **Sub-tenants for teams:** Use `collection` to isolate data by department. Engineering, Sales, HR each get their own namespace within your tenant - no configuration needed, just pass the ID on upload.
+> **Collections for teams:** Use `collection` to isolate data by department. Engineering, Sales, HR each get their own namespace within your database - no configuration needed, just pass the ID on upload.
 
 ---
 
@@ -122,7 +122,7 @@ def upload_batch(sources: list, collection: str = None) -> list:
         for s in sources:
             s["collection"] = collection
     result = client.context.ingest(
-        database=TENANT_ID,
+        database=DATABASE_ID,
         app_knowledge=json.dumps(sources),
     )
     return [r.id for r in (result.data.results or []) if r.id]
@@ -216,7 +216,7 @@ def ingest_space(space_key: str, collection: str = None) -> list:
 
 After uploading, always verify that HydraDB has fully processed and indexed your content before running search queries.
 
-**Endpoint:** `GET /context/status?ids=ID&database=TENANT` - Check indexing status
+**Endpoint:** `GET /context/status?ids=ID&database=DATABASE` - Check indexing status
 
 ```python
 def poll_until_indexed(id: str, timeout: int = 120, interval: int = 3):
@@ -224,7 +224,7 @@ def poll_until_indexed(id: str, timeout: int = 120, interval: int = 3):
     deadline = time.time() + timeout
     while time.time() < deadline:
         result = client.context.status(
-            database=TENANT_ID,
+            database=DATABASE_ID,
             ids=id,
         )
         items  = result.data.statuses or []
@@ -286,7 +286,7 @@ def add_user_memory(
             "user_name": user_name,
             "infer":     infer,
         }],
-        "database": TENANT_ID,
+        "database": DATABASE_ID,
         "upsert":    True,
     }
     if collection:
@@ -332,7 +332,7 @@ def recall_context(
     graph_context: true enables cross-document entity linking.
     """
     payload = {
-        "database":     TENANT_ID,
+        "database":     DATABASE_ID,
         "query":         query,
         "max_results":   max_results,
         "mode":          "thinking",
@@ -381,7 +381,7 @@ def ask_workspace(
     Returns chunks, sources, and graph_context. Generate the final answer in your app layer.
     """
     payload = {
-        "database":     TENANT_ID,
+        "database":     DATABASE_ID,
         "query":         question,
         "max_results":   max_results,
         "graph_context": True,
@@ -519,7 +519,7 @@ curl -X POST 'https://api.hydradb.com/context/ingest' \
 
 ### Verify processing
 
-**GET** `/context/status?ids=ID&database=YOUR_TENANT` - Poll until status = "completed"
+**GET** `/context/status?ids=ID&database=YOUR_DATABASE` - Poll until status = "completed"
 
 ### Full search
 

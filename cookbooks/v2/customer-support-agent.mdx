@@ -72,7 +72,7 @@ graph LR
 
 ## Step 1 - Create Tenant
 
-One tenant for your support system. Use sub-tenants to isolate customer data - each customer gets their own sub-tenant, automatically created on their first interaction. This is the B2C pattern from HydraDB's docs.
+One database for your support system. Use collections to isolate customer data - each customer gets their own collection, automatically created on their first interaction. This is the B2C pattern from HydraDB's docs.
 
 > **SDK required**: Install the official Python SDK - `pip install hydradb-sdk`. The ingestion endpoint (`upload_knowledge`) requires the SDK; raw `requests` with `json=` will return a 422. Note: the import name differs from the package name.
 
@@ -87,17 +87,17 @@ TENANT_ID = "customer-support"
 # SDK client
 client = HydraDB(token=API_KEY)
 
-# Create the shared tenant
+# Create the shared database
 client.tenants.create(database=TENANT_ID)
 
 # B2C pattern: each customer gets their own collection = their user_name.
-# Sub-tenants are created automatically on first write - no setup needed.
+# Collections are created automatically on first write - no setup needed.
 def customer_sub_tenant(customer_id: str) -> str:
     return f"customer-{customer_id}"
 
-# Shared sub-tenant for knowledge base (visible to all agents, all customers)
+# Shared collection for knowledge base (visible to all agents, all customers)
 KB_SUB_TENANT = "knowledge-base"
-print(f"✓ Tenant '{TENANT_ID}' ready.")
+print(f"✓ Database '{TENANT_ID}' ready.")
 ```
 ```typescript TypeScript SDK
 import { HydraDBClient } from "@hydradb/sdk";
@@ -108,30 +108,30 @@ const TENANT_ID = "customer-support";
 // SDK client — HydraDBClient handles the base URL internally
 const client = new HydraDBClient({ token: API_KEY });
 
-// Create the shared tenant
+// Create the shared database
 await client.tenants.create({ database: TENANT_ID });
 
 // B2C pattern: each customer gets their own collection = their user_name.
-// Sub-tenants are created automatically on first write - no setup needed.
+// Collections are created automatically on first write - no setup needed.
 function customerSubTenant(customerId: string): string {
     return `customer-${customerId}`;
 }
 
-// Shared sub-tenant for knowledge base (visible to all agents, all customers)
+// Shared collection for knowledge base (visible to all agents, all customers)
 const KB_SUB_TENANT = "knowledge-base";
 ```
 </CodeGroup>
 
 Output:
 ```
-✓ Tenant 'customer-support' ready.
+✓ Database 'customer-support' ready.
 ```
 
 ---
 
 ## Step 2 - Ingest Knowledge Base
 
-Upload your help docs, FAQs, and past ticket resolutions into a shared `knowledge-base` sub-tenant. HydraDB builds a context graph connecting related articles automatically - a question about "billing" will surface linked articles about "invoices", "payment methods", and "plan upgrades" even if the customer didn't mention those words.
+Upload your help docs, FAQs, and past ticket resolutions into a shared `knowledge-base` collection. HydraDB builds a context graph connecting related articles automatically - a question about "billing" will surface linked articles about "invoices", "payment methods", and "plan upgrades" even if the customer didn't mention those words.
 
 > **Batch limit**: Max 20 sources per request. Wait 1 second between batches.
 
@@ -1012,7 +1012,7 @@ All endpoints used in this cookbook. Base URL: `https://api.hydradb.com` · Head
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `POST` | `/tenants` | Create the support tenant |
+| `POST` | `/tenants` | Create the support database |
 | `POST` | `/context/ingest` | Upload help docs and past tickets (SDK only) |
 | `GET` | `/context/status?database=...&ids=...` | Check indexing status |
 | `POST` | `/context/ingest` | Store conversation turns and preferences |
@@ -1124,7 +1124,7 @@ Tested across 2,400 real support tickets (mix of billing, technical, onboarding,
 
 ```
 customer_support_agent/
-├── setup.py                      # tenant creation + SDK client init
+├── setup.py                      # database creation + SDK client init
 ├── config.py                     # shared constants
 ├── requirements.txt
 ├── ingest/
@@ -1157,7 +1157,7 @@ slack-bolt          # only if using Slack interface
 
 ## Next Steps
 
-1. Run `setup.py` to create your tenant and verify the connection.
+1. Run `setup.py` to create your database and verify the connection.
 2. Run the ingestion scripts with your real help docs and past tickets.
 3. Seed a few customer memories from your CRM at account creation time.
 4. Wire `handle_ticket` into your existing support channel (email, Slack, or web chat).

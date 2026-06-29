@@ -189,7 +189,7 @@ const normalizedData = {
   },
   url: 'https://app.com/item/123', // Optional: source URL
   description: 'Optional description of the source', // Optional
-  metadata: {}, // Optional tenant-level metadata
+  metadata: {}, // Optional database-level metadata
   additional_metadata: {
     author: 'user@company.com',
     id: 'original_id',
@@ -942,7 +942,7 @@ const MemoryEnhancedSearch = ({ userId }) => {
 - **Respect Privacy**: Always give users control over their data and preferences
 - **Transparency**: Show users what preferences are being used and allow them to modify them
 - **Graceful Degradation**: Ensure the system works well even without user history
-- **Sub-Tenant Isolation**: Use `collection` to isolate user data for personalized experiences
+- **Collection Isolation**: Use `collection` to isolate user data for personalized experiences
 - **Performance**: Cache user profiles to avoid repeated API calls
 
 

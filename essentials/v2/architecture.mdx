@@ -142,17 +142,17 @@ That's the whole loop. Most of what changes between integrations is *what* you p
 
 ## Tenant isolation
 
-A `database` (formerly `tenant_id`, still accepted as a deprecated alias) is the top-level isolation boundary  -  no tenant can read another tenant's data. Within a tenant, `collection` (formerly `sub_tenant_id`) carves out logical partitions: users, teams, workspaces, or projects. Omitting `collection` on any call resolves to the tenant's default sub-tenant, which is auto-created with the tenant itself.
+A `database` (formerly `tenant_id`, still accepted as a deprecated alias) is the top-level isolation boundary  -  no database can read another database's data. Within a database, `collection` (formerly `sub_tenant_id`) carves out logical partitions: users, teams, workspaces, or projects. Omitting `collection` on any call resolves to the database's default collection, which is auto-created with the database itself.
 
 The right mapping depends on your product shape:
 
-| Product shape | Tenant pattern | Sub-tenant pattern |
+| Product shape | Database pattern | Collection pattern |
 |---|---|---|
-| **B2B SaaS** | One tenant per customer organization | One sub-tenant per team, workspace, or end user |
-| **B2C app** | One tenant for your application | One sub-tenant per end user |
-| **Internal tools** | One tenant per company or environment | One sub-tenant per department or project |
+| **B2B SaaS** | One database per customer organization | One collection per team, workspace, or end user |
+| **B2C app** | One database for your application | One collection per end user |
+| **Internal tools** | One database per company or environment | One collection per department or project |
 
-The deeper trade-offs  -  when to spin up a new tenant vs. a new sub-tenant, how scoping interacts with [metadata filters](/essentials/v2/metadata), and how this affects [Memories](/essentials/v2/memories)  -  are covered in [Multi-Tenant Support](/essentials/v2/multi-tenant).
+The deeper trade-offs  -  when to spin up a new database vs. a new collection, how scoping interacts with [metadata filters](/essentials/v2/metadata), and how this affects [Memories](/essentials/v2/memories)  -  are covered in [Multi-Tenant Support](/essentials/v2/multi-tenant).
 
 ---
 
@@ -160,7 +160,7 @@ The deeper trade-offs  -  when to spin up a new tenant vs. a new sub-tenant, how
 
 [`POST /query`](/api-reference/v2/endpoint/query) is the single retrieval endpoint. Two parameters describe the request: `type` picks the collection, `query_by` picks the method. From there, every call goes through the same pipeline:
 
-1. **Authenticate and scope.** Validate `database`, resolve the tenant, and apply the requested `collection`.
+1. **Authenticate and scope.** Validate `database`, resolve the database, and apply the requested `collection`.
 2. **Filter before ranking.** Apply `metadata_filters` to narrow the candidate set (see [Metadata](/essentials/v2/metadata)).
 3. **Retrieve.** Run hybrid retrieval over the semantic vector store and the keyword bm25 index, or BM25-only retrieval when `query_by: "text"`.
 4. **Blend.** Use `alpha` to weight semantic vs. keyword bm25 contributions (`1.0` = pure semantic, `0.0` = pure BM25).
@@ -178,7 +178,7 @@ A short cheat sheet for the parameters you'll touch most often, and where each o
 | Field | Used in | What it does |
 |---|---|---|
 | `database` | Every call | Selects the isolated workspace. Required on every request. |
-| `collection` | Ingest + query | Narrows data to a user, team, or workspace inside the tenant. |
+| `collection` | Ingest + query | Narrows data to a user, team, or workspace inside the database. |
 | `metadata` | [Ingest](/api-reference/v2/endpoint/ingest-context) | Schema-aligned metadata indexed at ingest. Must match the [tenant metadata schema](/essentials/v2/metadata) declared at tenant creation. |
 | `additional_metadata` | [Ingest](/api-reference/v2/endpoint/ingest-context) | Free-form per-document metadata. Stored alongside the source; filterable at query via `metadata_filters.additional_metadata`. |
 | `metadata_filters` | [Query](/api-reference/v2/endpoint/query) | Deterministic narrowing before ranking. Top-level keys match `metadata`; nested `additional_metadata` filters free-form fields. |

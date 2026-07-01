@@ -12782,7 +12782,8 @@
         "required": [
           "provider",
           "name",
-          "tenant_id"
+          "tenant_id",
+          "credentials"
         ],
         "properties": {
           "provider": {

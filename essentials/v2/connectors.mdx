@@ -51,8 +51,24 @@ curl -X POST 'https://api.hydradb.com/connectors' \
 | `name` | Human-readable label for this connector |
 | `tenant_id` | Which tenant receives the synced data |
 | `sub_tenant_id` | Which sub-tenant partition receives the data |
-| `provider_account_scope` | Identifies the external account  -  used in deduplication so two accounts of the same provider don't collide |
+| `provider_account_scope` | Stable identifier for the external account. See below. |
 | `credentials` | Provider API token or access token |
+
+### provider_account_scope
+
+`provider_account_scope` tells HydraDB which external account this connector belongs to. It becomes part of the deduplication key for every object the connector syncs, so two objects with the same content but from different accounts don't overwrite each other.
+
+**What value to use:**
+
+| Provider | Value to use | Example |
+|---|---|---|
+| Slack | Workspace ID (starts with `T`) | `T12345ACME` |
+| GitHub | Organization or user login | `my-github-org` |
+| Linear | Workspace name or ID | `acme-linear` |
+| Notion | Workspace name or ID | `acme-notion` |
+| Gmail | Leave empty — use `account_email` in `additional_metadata` to scope by account instead | |
+
+**Why it matters:** if you create two Slack connectors for different workspaces but give them the same `provider_account_scope` (or omit it on both), their synced messages share a deduplication namespace and will overwrite each other. Set a distinct value per connector whenever you connect more than one account of the same provider.
 
 ### Configuring resources
 

@@ -1,11 +1,10 @@
 ---
 title: "Configure Connector"
 description: "Activate resources for sync and set sync options."
+openapi: "api-reference/v2/openapi.json POST /connectors/{id}/configure"
 ---
 
 import { Field } from "/snippets/field.jsx";
-
-`POST /connectors/:id/configure`
 
 Activates one or more resources and sets sync options. This is the step between discovery and the first sync. You can call configure again at any time to add resources, change `sub_tenant_id`, or update metadata — the cursor is preserved on reconfigure.
 

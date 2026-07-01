@@ -1,11 +1,10 @@
 ---
 title: "Create Connector"
 description: "Create a new connector that continuously syncs data from an external provider."
+openapi: "api-reference/v2/openapi.json POST /connectors"
 ---
 
 import { Field } from "/snippets/field.jsx";
-
-`POST /connectors`
 
 Creates a connector and stores credentials for a single provider account. After creation, call [Discover](/api-reference/v2/endpoint/discover-connector-resources) to see available resources, then [Configure](/api-reference/v2/endpoint/configure-connector) to activate them.
 

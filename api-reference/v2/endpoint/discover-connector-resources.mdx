@@ -1,11 +1,10 @@
 ---
 title: "Discover Resources"
 description: "List all resources available from the provider before activating them."
+openapi: "api-reference/v2/openapi.json GET /connectors/{id}/discover"
 ---
 
 import { Field } from "/snippets/field.jsx";
-
-`GET /connectors/:id/discover`
 
 Queries the provider (Slack, GitHub, Linear, Notion, or Gmail) and returns every resource available to the connector's credentials: channels, repos, teams, projects, databases, pages, or labels. Call this before [Configure](/api-reference/v2/endpoint/configure-connector) to decide which resources to activate.
 

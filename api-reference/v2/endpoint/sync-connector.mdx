@@ -1,9 +1,8 @@
 ---
 title: "Sync Connector"
 description: "Trigger an on-demand sync for a connector."
+openapi: "api-reference/v2/openapi.json POST /connectors/{id}/sync"
 ---
-
-`POST /connectors/:id/sync`
 
 Starts an immediate sync for all configured resources. Syncs also run on a schedule (default: hourly), so this endpoint is only needed when you want to force a sync outside the normal cadence.
 

@@ -147,7 +147,9 @@ Use `sub_tenant_ids` when one query should fan out across multiple user, workspa
 }
 ```
 
-A list gives every sub-tenant equal normalized weight. An object treats values as positive relative ranking weights with at most one decimal place and normalizes them server-side. You can send at most 100 sub-tenants. When `max_results` is omitted, HydraDB uses up to 10 results per sub-tenant, capped at 1000 fanout candidates before the final ranked response is shaped.
+A list gives every sub-tenant equal normalized weight. An object treats values as positive relative ranking weights with at most one decimal place and normalizes them server-side. You can send at most 100 sub-tenants. When `max_results` is omitted, HydraDB uses up to 10 results per sub-tenant, capped at 1000 fanout candidates before the final ranked response is shaped. When `max_results` is set, it is the final global response cap across the merged fanout result set.
+
+> **Caching tip:** `sub_tenant_ids` list order is not semantically significant for fanout selection. Sort list values before constructing cache keys; for weighted objects, sort keys and keep weights at the documented one-decimal precision so equivalent calls share the same cache entry.
 
 ### Transforming the response into LLM context
 

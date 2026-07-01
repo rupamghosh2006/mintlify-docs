@@ -158,7 +158,7 @@ const completion = await openai.chat.completions.create({
 });
 ```
 
-If you need to query several users, teams, or workspaces at once, pass `sub_tenant_ids`. A list gives every scope equal normalized weight; an object applies relative ranking weights with at most one decimal place before the final merged ranking:
+If you need to query several users, teams, or workspaces at once, pass `sub_tenant_ids`. A list gives every scope equal normalized weight; an object applies relative ranking weights with at most one decimal place before the final merged ranking. When `max_results` is set, it caps the final merged response across all selected sub-tenants:
 
 ```json
 {
@@ -203,7 +203,7 @@ If you need to keep Knowledge and Memories formatted differently in the prompt, 
 
 **Recall-then-rerank.** Ask for more chunks than you actually need (`max_results: 20`) and apply your own reranker  -  recency windows, compliance filters, business rules  -  before picking the final top-k for the prompt.
 
-**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_ids, query, type, query_by)`. Recall is fast, but skipping it entirely is faster.
+**Cache the prompt context.** If the same query repeats inside a session, cache the `RetrievalResult` keyed by `(tenant_id, sub_tenant_ids, query, type, query_by)`. Normalize `sub_tenant_ids` before hashing - sort list values; for weighted objects, sort keys and keep weights at the documented one-decimal precision. Recall is fast, but skipping it entirely is faster.
 
 ---
 

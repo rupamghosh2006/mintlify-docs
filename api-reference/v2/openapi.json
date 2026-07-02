@@ -4575,10 +4575,12 @@
                     "type": "string"
                   },
                   "sub_tenant_id": {
+                    "deprecated": true,
                     "title": "sub_tenant_id",
                     "type": "string"
                   },
                   "tenant_id": {
+                    "deprecated": true,
                     "title": "tenant_id",
                     "type": "string"
                   },

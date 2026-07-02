@@ -497,15 +497,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -546,15 +537,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -623,15 +605,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -673,15 +646,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -726,15 +690,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -779,15 +734,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -934,15 +880,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -985,15 +922,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1036,15 +964,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1081,15 +1000,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1124,15 +1034,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1167,15 +1068,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1228,15 +1120,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1278,15 +1161,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1328,15 +1202,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1384,15 +1249,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1427,15 +1283,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1469,15 +1316,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1515,15 +1353,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1562,15 +1391,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1605,15 +1425,6 @@
             "example": {
               "collection": "team_docs",
               "database": "acme_corp",
-              "deprecation": [
-                {
-                  "deprecated": true,
-                  "deprecated_field": "tenant_id",
-                  "deprecated_since": "2.0.1",
-                  "message": "Success",
-                  "preferred_field": "database"
-                }
-              ],
               "latency_ms": 12.3,
               "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
               "source_type": "file"
@@ -1848,7 +1659,7 @@
             "type": "string"
           },
           "message": {
-            "example": "Success",
+            "example": "tenant_id is deprecated; use database instead.",
             "type": "string"
           },
           "preferred_field": {
@@ -2021,15 +1832,6 @@
           },
           "deprecation": {
             "description": "Deprecation lists any migration nudges that apply to this request — the\ncaller used a legacy /tenants route, a legacy tenant_id/sub_tenant_id field,\nor the deprecated sub_tenant_ids selector. It is a non-breaking signal (the\nstatus code is unchanged); omitempty keeps it absent for fully-migrated\nrequests. A list so independent deprecations coexist without clobbering.",
-            "example": [
-              {
-                "deprecated": true,
-                "deprecated_field": "tenant_id",
-                "deprecated_since": "2.0.1",
-                "message": "Success",
-                "preferred_field": "database"
-              }
-            ],
             "items": {
               "$ref": "#/components/schemas/handler.deprecationNotice"
             },
@@ -4575,10 +4377,12 @@
                     "type": "string"
                   },
                   "sub_tenant_id": {
+                    "deprecated": true,
                     "title": "sub_tenant_id",
                     "type": "string"
                   },
                   "tenant_id": {
+                    "deprecated": true,
                     "title": "tenant_id",
                     "type": "string"
                   },

@@ -1,15 +1,12 @@
 ---
 title: "Update Metadata Schema"
 description: "Add new database metadata schema fields after database creation."
+openapi: "api-reference/v2/openapi.json PATCH /databases/{database}/metadata-schema"
 ---
 
 import { Field } from "/snippets/field.jsx";
 
 Use this endpoint to add new fields to a database's `tenant_metadata_schema`.
-
-```http
-PATCH /databases/{database}/metadata-schema
-```
 
 <Warning>
   This endpoint is additive only. It cannot delete fields, rename fields, or change the type/flags of existing fields.

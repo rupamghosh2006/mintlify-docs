@@ -1817,6 +1817,26 @@
         ],
         "type": "object"
       },
+      "handler.metadataSchemaUpdateResponse": {
+        "properties": {
+          "added_fields": {
+            "example": [
+              "region",
+              "summary_label"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "database": {
+            "example": "acme_corp",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "handler.resourceCreateReq": {
         "properties": {
           "additional_metadata": {
@@ -3271,6 +3291,29 @@
             ],
             "items": {
               "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "type": "object"
+      },
+      "tenants.TenantMetadataSchemaUpdateRequest": {
+        "properties": {
+          "add_fields": {
+            "example": [
+              {
+                "data_type": "VARCHAR",
+                "enable_analyzer": false,
+                "enable_dense_embedding": true,
+                "enable_match": true,
+                "enable_sparse_embedding": false,
+                "max_length": 256,
+                "name": "category"
+              }
+            ],
+            "items": {
+              "$ref": "#/components/schemas/tenants.CustomPropertyDefinition"
             },
             "type": "array",
             "uniqueItems": false
@@ -5331,6 +5374,99 @@
         ],
         "x-fern-sdk-group-name": "databases",
         "x-fern-sdk-method-name": "status"
+      }
+    },
+    "/databases/{database}/metadata-schema": {
+      "patch": {
+        "description": "Add new metadata schema fields to an existing database. Additive only — existing fields cannot be deleted or retyped.",
+        "parameters": [
+          {
+            "description": "Database identifier",
+            "in": "path",
+            "name": "database",
+            "required": true,
+            "schema": {
+              "example": "acme_corp",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/tenants.TenantMetadataSchemaUpdateRequest",
+                "description": "Metadata schema fields to add",
+                "summary": "request"
+              }
+            }
+          },
+          "description": "Metadata schema fields to add",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/handler.metadataSchemaUpdateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/handler.ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/handler.ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/handler.ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/handler.ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Update metadata schema",
+        "tags": [
+          "database-management"
+        ],
+        "x-fern-sdk-group-name": "databases",
+        "x-fern-sdk-method-name": "update_metadata_schema"
       }
     },
     "/query": {

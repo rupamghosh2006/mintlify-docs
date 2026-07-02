@@ -324,6 +324,39 @@
             "type": "number"
           },
           "relations": {
+            "example": [
+              {
+                "chunk_id": "HydraEmbeddings123_0",
+                "relations": [
+                  {
+                    "canonical_predicate": "works_at",
+                    "chunk_id": "HydraEmbeddings123_0",
+                    "confidence": 0.92,
+                    "context": "Ada joined Acme Corp in 2024 as a staff engineer.",
+                    "raw_predicate": "is employed by",
+                    "relationship_id": "rel_1234",
+                    "source_entity_id": "entity_1a2b",
+                    "target_entity_id": "entity_3c4d",
+                    "temporal_details": "since 2024",
+                    "timestamp": "2026-07-02T10:00:00Z"
+                  }
+                ],
+                "source": {
+                  "entity_id": "entity_1a2b",
+                  "identifier": "Acme Corp",
+                  "name": "general",
+                  "namespace": "organization",
+                  "type": "knowledge"
+                },
+                "target": {
+                  "entity_id": "entity_1a2b",
+                  "identifier": "Acme Corp",
+                  "name": "general",
+                  "namespace": "organization",
+                  "type": "knowledge"
+                }
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/graph.TripletWithEvidence"
             },
@@ -393,6 +426,20 @@
             "type": "string"
           },
           "relations": {
+            "example": [
+              {
+                "canonical_predicate": "works_at",
+                "chunk_id": "HydraEmbeddings123_0",
+                "confidence": 0.92,
+                "context": "Ada joined Acme Corp in 2024 as a staff engineer.",
+                "raw_predicate": "is employed by",
+                "relationship_id": "rel_1234",
+                "source_entity_id": "entity_1a2b",
+                "target_entity_id": "entity_3c4d",
+                "temporal_details": "since 2024",
+                "timestamp": "2026-07-02T10:00:00Z"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/graph.RelationEvidence"
             },
@@ -400,10 +447,24 @@
             "uniqueItems": false
           },
           "source": {
-            "$ref": "#/components/schemas/graph.Entity"
+            "$ref": "#/components/schemas/graph.Entity",
+            "example": {
+              "entity_id": "entity_1a2b",
+              "identifier": "Acme Corp",
+              "name": "general",
+              "namespace": "organization",
+              "type": "knowledge"
+            }
           },
           "target": {
-            "$ref": "#/components/schemas/graph.Entity"
+            "$ref": "#/components/schemas/graph.Entity",
+            "example": {
+              "entity_id": "entity_1a2b",
+              "identifier": "Acme Corp",
+              "name": "general",
+              "namespace": "organization",
+              "type": "knowledge"
+            }
           }
         },
         "type": "object"
@@ -411,13 +472,44 @@
       "handler.Envelope-fetch_V2SourceFetchResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/fetch.V2SourceFetchResponse"
+            "$ref": "#/components/schemas/fetch.V2SourceFetchResponse",
+            "example": {
+              "content": "# Q4 Report\n\nRevenue grew 23% quarter over quarter.",
+              "content_type": "application/pdf",
+              "error": "",
+              "id": "HydraDoc1234",
+              "inferred_content": "Summary: Q4 revenue rose 23% QoQ, driven by enterprise expansion.",
+              "message": "Success",
+              "presigned_url": "https://storage.hydradb.com/sources/HydraDoc1234?sig=...",
+              "size_bytes": 20480,
+              "success": true
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -429,13 +521,44 @@
       "handler.Envelope-github_com_hydradb_hydradb-application_internal_service_MetadataEditResult": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/github_com_hydradb_hydradb-application_internal_service.MetadataEditResult"
+            "$ref": "#/components/schemas/github_com_hydradb_hydradb-application_internal_service.MetadataEditResult",
+            "example": {
+              "chunk_rows_matched": 1,
+              "chunk_rows_modified": 1,
+              "id": "HydraDoc1234",
+              "milvus_rows_synced": 1,
+              "milvus_sync_required": true,
+              "milvus_synced": true,
+              "sub_tenant_id": "sub_tenant_4567",
+              "tenant_id": "tenant_1234",
+              "updated": true
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -447,13 +570,72 @@
       "handler.Envelope-graph_GraphRelationsResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/graph.GraphRelationsResponse"
+            "$ref": "#/components/schemas/graph.GraphRelationsResponse",
+            "example": {
+              "is_truncated": false,
+              "message": "Success",
+              "next_cursor": 0.5,
+              "relations": [
+                {
+                  "chunk_id": "HydraEmbeddings123_0",
+                  "relations": [
+                    {
+                      "canonical_predicate": "works_at",
+                      "chunk_id": "HydraEmbeddings123_0",
+                      "confidence": 0.92,
+                      "context": "Ada joined Acme Corp in 2024 as a staff engineer.",
+                      "raw_predicate": "is employed by",
+                      "relationship_id": "rel_1234",
+                      "source_entity_id": "entity_1a2b",
+                      "target_entity_id": "entity_3c4d",
+                      "temporal_details": "since 2024",
+                      "timestamp": "2026-07-02T10:00:00Z"
+                    }
+                  ],
+                  "source": {
+                    "entity_id": "entity_1a2b",
+                    "identifier": "Acme Corp",
+                    "name": "general",
+                    "namespace": "organization",
+                    "type": "knowledge"
+                  },
+                  "target": {
+                    "entity_id": "entity_1a2b",
+                    "identifier": "Acme Corp",
+                    "name": "general",
+                    "namespace": "organization",
+                    "type": "knowledge"
+                  }
+                }
+              ],
+              "success": true
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -465,13 +647,45 @@
       "handler.Envelope-ingestion_V2BatchProcessingStatus": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/ingestion.V2BatchProcessingStatus"
+            "$ref": "#/components/schemas/ingestion.V2BatchProcessingStatus",
+            "example": {
+              "statuses": [
+                {
+                  "error_code": "",
+                  "error_message": "",
+                  "id": "HydraDoc1234",
+                  "indexing_status": "completed",
+                  "message": "Source processed successfully.",
+                  "success": true
+                }
+              ]
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -483,13 +697,48 @@
       "handler.Envelope-ingestion_V2SourceUploadResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/ingestion.V2SourceUploadResponse"
+            "$ref": "#/components/schemas/ingestion.V2SourceUploadResponse",
+            "example": {
+              "failed_count": 0,
+              "message": "Success",
+              "results": [
+                {
+                  "error": "",
+                  "filename": "policy.pdf",
+                  "id": "HydraDoc1234",
+                  "relations_created": 5,
+                  "status": "queued"
+                }
+              ],
+              "success": true,
+              "success_count": 2
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -501,13 +750,48 @@
       "handler.Envelope-list_V2SourceListResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/list.V2SourceListResponse"
+            "$ref": "#/components/schemas/list.V2SourceListResponse",
+            "example": {
+              "inner": {
+                "message": "Success",
+                "pagination": {
+                  "has_next": true,
+                  "has_previous": false,
+                  "page": 1,
+                  "page_size": 50,
+                  "total": 128,
+                  "total_pages": 3
+                },
+                "success": true,
+                "total": 128
+              }
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -519,13 +803,85 @@
       "handler.Envelope-search_V2RetrievalResult": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/search.V2RetrievalResult"
+            "$ref": "#/components/schemas/search.V2RetrievalResult",
+            "example": {
+              "additional_context": "The user is a senior engineer onboarding to the platform.",
+              "chunks": [
+                {
+                  "additional_metadata": {
+                    "author": "ada",
+                    "doc_version": 3
+                  },
+                  "chunk_content": "HydraDB supports hybrid retrieval across knowledge and memories.",
+                  "chunk_uuid": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                  "extra_context_ids": [
+                    "HydraEmbeddings123_2",
+                    "HydraEmbeddings123_3"
+                  ],
+                  "id": "HydraDoc1234",
+                  "layout": "text",
+                  "metadata": {
+                    "department": "finance",
+                    "priority": 7
+                  },
+                  "relevancy_score": 0.87,
+                  "source_last_updated_time": "2026-07-02T12:30:00Z",
+                  "source_title": "Project Phoenix Overview",
+                  "source_type": "file",
+                  "source_upload_time": "2026-07-02T10:00:00Z",
+                  "sub_tenant_id": "sub_tenant_4567"
+                }
+              ],
+              "graph_context": true,
+              "sources": [
+                {
+                  "additional_metadata": {
+                    "author": "ada",
+                    "doc_version": 3
+                  },
+                  "app_external_id": "C0123456789",
+                  "app_kind": "slack",
+                  "app_provider": "slack",
+                  "description": "Internal overview of the Project Phoenix rollout.",
+                  "id": "HydraDoc1234",
+                  "metadata": {
+                    "department": "finance",
+                    "priority": 7
+                  },
+                  "sub_tenant_id": "sub_tenant_4567",
+                  "timestamp": "2026-07-02T10:00:00Z",
+                  "title": "Project Phoenix Overview",
+                  "type": "knowledge",
+                  "url": "https://docs.hydradb.com/phoenix"
+                }
+              ]
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -537,13 +893,46 @@
       "handler.Envelope-sources_MemoryDeleteResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/sources.MemoryDeleteResponse"
+            "$ref": "#/components/schemas/sources.MemoryDeleteResponse",
+            "example": {
+              "deleted_count": 1,
+              "message": "Success",
+              "results": [
+                {
+                  "deleted": true,
+                  "error": "",
+                  "id": "HydraDoc1234"
+                }
+              ],
+              "success": true,
+              "user_memory_deleted": 1
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -555,13 +944,46 @@
       "handler.Envelope-tenants_InfraStatusResponseV2": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.InfraStatusResponseV2"
+            "$ref": "#/components/schemas/tenants.InfraStatusResponseV2",
+            "example": {
+              "database": "acme_corp",
+              "infra": {
+                "graph_status": true,
+                "scheduler_status": true,
+                "vectorstore_status": {
+                  "knowledge": true,
+                  "memories": true
+                }
+              },
+              "message": "Success",
+              "org_id": "org_1a2b3c"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -573,13 +995,40 @@
       "handler.Envelope-tenants_SubTenantIdsResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.SubTenantIdsResponse"
+            "$ref": "#/components/schemas/tenants.SubTenantIdsResponse",
+            "example": {
+              "collections": [
+                "team_docs",
+                "engineering"
+              ],
+              "message": "Success"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -591,13 +1040,38 @@
       "handler.Envelope-tenants_TenantCreateAcceptedResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.TenantCreateAcceptedResponse"
+            "$ref": "#/components/schemas/tenants.TenantCreateAcceptedResponse",
+            "example": {
+              "database": "acme_corp",
+              "message": "Success",
+              "status": "completed"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -609,13 +1083,38 @@
       "handler.Envelope-tenants_TenantDeleteResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.TenantDeleteResponse"
+            "$ref": "#/components/schemas/tenants.TenantDeleteResponse",
+            "example": {
+              "database": "acme_corp",
+              "message": "Success",
+              "status": "completed"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -627,13 +1126,56 @@
       "handler.Envelope-tenants_TenantIdsResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.TenantIdsResponse"
+            "$ref": "#/components/schemas/tenants.TenantIdsResponse",
+            "example": {
+              "databases": [
+                "acme_corp",
+                "research_kb"
+              ],
+              "failed_databases": [
+                {
+                  "database": "acme_corp",
+                  "error": ""
+                }
+              ],
+              "failed_tenant_ids": [
+                {
+                  "database": "acme_corp",
+                  "error": ""
+                }
+              ],
+              "message": "Success",
+              "tenant_ids": [
+                "tenant_1234",
+                "tenant_5678"
+              ]
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -645,13 +1187,45 @@
       "handler.Envelope-tenants_TenantStatsResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/tenants.TenantStatsResponse"
+            "$ref": "#/components/schemas/tenants.TenantStatsResponse",
+            "example": {
+              "database": "acme_corp",
+              "knowledge_collection": {
+                "dimensions": 1536,
+                "row_count": 1280
+              },
+              "memory_collection": {
+                "dimensions": 1536,
+                "row_count": 1280
+              },
+              "message": "Success"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -663,13 +1237,45 @@
       "handler.Envelope-webhooks_DeliveryItem": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.DeliveryItem"
+            "$ref": "#/components/schemas/webhooks.DeliveryItem",
+            "example": {
+              "attempts": 1,
+              "created_at": "2026-07-02T10:00:00Z",
+              "delivery_id": "dlv_9f8e7d6c",
+              "doc_id": "HydraDoc1234",
+              "error_code": "",
+              "error_message": "",
+              "event_type": "indexing.status_changed",
+              "indexing_status": "completed",
+              "status": "completed",
+              "updated_at": "2026-07-02T10:00:05Z"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -681,13 +1287,51 @@
       "handler.Envelope-webhooks_DeliveryListResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.DeliveryListResponse"
+            "$ref": "#/components/schemas/webhooks.DeliveryListResponse",
+            "example": {
+              "count": 12,
+              "deliveries": [
+                {
+                  "attempts": 1,
+                  "created_at": "2026-07-02T10:00:00Z",
+                  "delivery_id": "dlv_9f8e7d6c",
+                  "doc_id": "HydraDoc1234",
+                  "error_code": "",
+                  "error_message": "",
+                  "event_type": "indexing.status_changed",
+                  "indexing_status": "completed",
+                  "status": "completed",
+                  "updated_at": "2026-07-02T10:00:05Z"
+                }
+              ],
+              "next_cursor": "eyJvZmZzZXQiOjUwfQ=="
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -699,13 +1343,38 @@
       "handler.Envelope-webhooks_RetryResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.RetryResponse"
+            "$ref": "#/components/schemas/webhooks.RetryResponse",
+            "example": {
+              "delivery_id": "dlv_9f8e7d6c",
+              "message": "Success",
+              "queued": true
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -717,13 +1386,37 @@
       "handler.Envelope-webhooks_WebhookDeleteResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.WebhookDeleteResponse"
+            "$ref": "#/components/schemas/webhooks.WebhookDeleteResponse",
+            "example": {
+              "deleted": true,
+              "message": "Success"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -735,13 +1428,41 @@
       "handler.Envelope-webhooks_WebhookGetResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.WebhookGetResponse"
+            "$ref": "#/components/schemas/webhooks.WebhookGetResponse",
+            "example": {
+              "event_types": [
+                "indexing.status_changed"
+              ],
+              "registered": true,
+              "signing_secret_configured": true,
+              "url": "https://docs.hydradb.com/phoenix"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -753,13 +1474,42 @@
       "handler.Envelope-webhooks_WebhookRegisterResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.WebhookRegisterResponse"
+            "$ref": "#/components/schemas/webhooks.WebhookRegisterResponse",
+            "example": {
+              "event_types": [
+                "indexing.status_changed"
+              ],
+              "message": "Success",
+              "registered": true,
+              "signing_secret_configured": true,
+              "url": "https://docs.hydradb.com/phoenix"
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -771,13 +1521,38 @@
       "handler.Envelope-webhooks_WebhookTestResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/webhooks.WebhookTestResponse"
+            "$ref": "#/components/schemas/webhooks.WebhookTestResponse",
+            "example": {
+              "delivered": true,
+              "message": "Success",
+              "status_code": 200
+            }
           },
           "error": {
-            "$ref": "#/components/schemas/handler.apiError"
+            "$ref": "#/components/schemas/handler.apiError",
+            "example": {
+              "code": "DATABASE_NOT_FOUND",
+              "message": "Database not found"
+            }
           },
           "meta": {
-            "$ref": "#/components/schemas/handler.responseMeta"
+            "$ref": "#/components/schemas/handler.responseMeta",
+            "example": {
+              "collection": "team_docs",
+              "database": "acme_corp",
+              "deprecation": [
+                {
+                  "deprecated": true,
+                  "deprecated_field": "tenant_id",
+                  "deprecated_since": "2.0.1",
+                  "message": "Success",
+                  "preferred_field": "database"
+                }
+              ],
+              "latency_ms": 12.3,
+              "request_id": "9d13aef4-02f4-4e73-8c62-4c2601d04f9d",
+              "source_type": "file"
+            }
           },
           "success": {
             "example": true,
@@ -818,7 +1593,15 @@
       "handler.ErrorResponse": {
         "properties": {
           "detail": {
-            "$ref": "#/components/schemas/handler.ErrorDetail"
+            "$ref": "#/components/schemas/handler.ErrorDetail",
+            "example": {
+              "deprecated": true,
+              "deprecated_field": "tenant_id",
+              "error_code": "VALIDATION_ERROR",
+              "message": "Request validation failed",
+              "preferred_field": "database",
+              "success": true
+            }
           }
         },
         "type": "object"
@@ -847,6 +1630,23 @@
             "type": "integer"
           },
           "resources": {
+            "example": [
+              {
+                "additional_metadata": {
+                  "author": "ada",
+                  "doc_version": 3
+                },
+                "metadata": {
+                  "department": "finance",
+                  "priority": 7
+                },
+                "name": "general",
+                "resource_id": "C0123456789",
+                "resource_type": "channel",
+                "sub_tenant_id": "sub_tenant_4567",
+                "tenant_id": "tenant_1234"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/handler.resourceMapping"
             },
@@ -1132,6 +1932,15 @@
           },
           "deprecation": {
             "description": "Deprecation lists any migration nudges that apply to this request — the\ncaller used a legacy /tenants route, a legacy tenant_id/sub_tenant_id field,\nor the deprecated sub_tenant_ids selector. It is a non-breaking signal (the\nstatus code is unchanged); omitempty keeps it absent for fully-migrated\nrequests. A list so independent deprecations coexist without clobbering.",
+            "example": [
+              {
+                "deprecated": true,
+                "deprecated_field": "tenant_id",
+                "deprecated_since": "2.0.1",
+                "message": "Success",
+                "preferred_field": "database"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/handler.deprecationNotice"
             },
@@ -1179,6 +1988,16 @@
       "ingestion.V2BatchProcessingStatus": {
         "properties": {
           "statuses": {
+            "example": [
+              {
+                "error_code": "",
+                "error_message": "",
+                "id": "HydraDoc1234",
+                "indexing_status": "completed",
+                "message": "Source processed successfully.",
+                "success": true
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/ingestion.V2ProcessingStatus"
             },
@@ -1228,6 +2047,15 @@
             "type": "string"
           },
           "results": {
+            "example": [
+              {
+                "error": "",
+                "filename": "policy.pdf",
+                "id": "HydraDoc1234",
+                "relations_created": 5,
+                "status": "queued"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/ingestion.V2SourceUploadResultItem"
             },
@@ -1270,7 +2098,8 @@
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/ingestion.SourceStatus"
+            "$ref": "#/components/schemas/ingestion.SourceStatus",
+            "example": "queued"
           }
         },
         "type": "object"
@@ -1308,7 +2137,15 @@
             "type": "string"
           },
           "pagination": {
-            "$ref": "#/components/schemas/dashboard.PaginationMeta"
+            "$ref": "#/components/schemas/dashboard.PaginationMeta",
+            "example": {
+              "has_next": true,
+              "has_previous": false,
+              "page": 1,
+              "page_size": 50,
+              "total": 128,
+              "total_pages": 3
+            }
           },
           "sources": {
             "items": {
@@ -1341,7 +2178,10 @@
             "type": "string"
           },
           "filters": {
-            "$ref": "#/components/schemas/list.ContentFilter"
+            "$ref": "#/components/schemas/list.ContentFilter",
+            "example": {
+              "channel": "general"
+            }
           },
           "ids": {
             "example": [
@@ -1394,7 +2234,20 @@
       "list.V2SourceListResponse": {
         "properties": {
           "inner": {
-            "$ref": "#/components/schemas/list.SourceListResponse"
+            "$ref": "#/components/schemas/list.SourceListResponse",
+            "example": {
+              "message": "Success",
+              "pagination": {
+                "has_next": true,
+                "has_previous": false,
+                "page": 1,
+                "page_size": 50,
+                "total": 128,
+                "total_pages": 3
+              },
+              "success": true,
+              "total": 128
+            }
           }
         },
         "type": "object"
@@ -1417,6 +2270,35 @@
             "type": "object"
           },
           "chunk_relations": {
+            "example": [
+              {
+                "combined_context": "Acme Corp deploys HydraDB in production for context retrieval.",
+                "group_id": "grp_1234",
+                "relevancy_score": 0.87,
+                "source_chunk_ids": [
+                  "HydraEmbeddings123_0",
+                  "HydraEmbeddings123_1"
+                ],
+                "triplets": [
+                  {
+                    "relation": {
+                      "confidence": 0.92,
+                      "predicate": "works_at"
+                    },
+                    "source": {
+                      "entity_id": "entity_1a2b",
+                      "name": "Ada",
+                      "type": "person"
+                    },
+                    "target": {
+                      "entity_id": "entity_3c4d",
+                      "name": "Acme Corp",
+                      "type": "organization"
+                    }
+                  }
+                ]
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/search.ScoredPathResponse"
             },
@@ -1424,6 +2306,35 @@
             "uniqueItems": false
           },
           "query_paths": {
+            "example": [
+              {
+                "combined_context": "Acme Corp deploys HydraDB in production for context retrieval.",
+                "group_id": "grp_1234",
+                "relevancy_score": 0.87,
+                "source_chunk_ids": [
+                  "HydraEmbeddings123_0",
+                  "HydraEmbeddings123_1"
+                ],
+                "triplets": [
+                  {
+                    "relation": {
+                      "confidence": 0.92,
+                      "predicate": "works_at"
+                    },
+                    "source": {
+                      "entity_id": "entity_1a2b",
+                      "name": "Ada",
+                      "type": "person"
+                    },
+                    "target": {
+                      "entity_id": "entity_3c4d",
+                      "name": "Acme Corp",
+                      "type": "organization"
+                    }
+                  }
+                ]
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/search.ScoredPathResponse"
             },
@@ -1586,14 +2497,16 @@
             "$ref": "#/components/schemas/search.MetadataFilters"
           },
           "mode": {
-            "$ref": "#/components/schemas/search.RecallMode"
+            "$ref": "#/components/schemas/search.RecallMode",
+            "example": "thinking"
           },
           "num_related_chunks": {
             "example": 3,
             "type": "integer"
           },
           "operator": {
-            "$ref": "#/components/schemas/search.Operator"
+            "$ref": "#/components/schemas/search.Operator",
+            "example": "and"
           },
           "query": {
             "example": "Which mode does the user prefer?",
@@ -1606,7 +2519,8 @@
           },
           "query_by": {
             "$ref": "#/components/schemas/search.QueryBy",
-            "description": "Retrieval method to use for the query."
+            "description": "Retrieval method to use for the query.",
+            "example": "hybrid"
           },
           "query_forceful_relations": {
             "description": "Whether to force relation expansion for graph-aware query retrieval. Defaults to true when omitted.",
@@ -1664,7 +2578,8 @@
           },
           "type": {
             "$ref": "#/components/schemas/search.SourceType",
-            "description": "Corpus to query: knowledge, memory, or all."
+            "description": "Corpus to query: knowledge, memory, or all.",
+            "example": "knowledge"
           }
         },
         "type": "object"
@@ -1708,6 +2623,24 @@
             "uniqueItems": false
           },
           "triplets": {
+            "example": [
+              {
+                "relation": {
+                  "confidence": 0.92,
+                  "predicate": "works_at"
+                },
+                "source": {
+                  "entity_id": "entity_1a2b",
+                  "name": "Ada",
+                  "type": "person"
+                },
+                "target": {
+                  "entity_id": "entity_3c4d",
+                  "name": "Acme Corp",
+                  "type": "organization"
+                }
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/search.PathTriplet"
             },
@@ -1877,6 +2810,32 @@
             "type": "object"
           },
           "chunks": {
+            "example": [
+              {
+                "additional_metadata": {
+                  "author": "ada",
+                  "doc_version": 3
+                },
+                "chunk_content": "HydraDB supports hybrid retrieval across knowledge and memories.",
+                "chunk_uuid": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "extra_context_ids": [
+                  "HydraEmbeddings123_2",
+                  "HydraEmbeddings123_3"
+                ],
+                "id": "HydraDoc1234",
+                "layout": "text",
+                "metadata": {
+                  "department": "finance",
+                  "priority": 7
+                },
+                "relevancy_score": 0.87,
+                "source_last_updated_time": "2026-07-02T12:30:00Z",
+                "source_title": "Project Phoenix Overview",
+                "source_type": "file",
+                "source_upload_time": "2026-07-02T10:00:00Z",
+                "sub_tenant_id": "sub_tenant_4567"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/search.V2Chunk"
             },
@@ -1884,9 +2843,32 @@
             "uniqueItems": false
           },
           "graph_context": {
-            "$ref": "#/components/schemas/search.GraphContext"
+            "$ref": "#/components/schemas/search.GraphContext",
+            "example": true
           },
           "sources": {
+            "example": [
+              {
+                "additional_metadata": {
+                  "author": "ada",
+                  "doc_version": 3
+                },
+                "app_external_id": "C0123456789",
+                "app_kind": "slack",
+                "app_provider": "slack",
+                "description": "Internal overview of the Project Phoenix rollout.",
+                "id": "HydraDoc1234",
+                "metadata": {
+                  "department": "finance",
+                  "priority": 7
+                },
+                "sub_tenant_id": "sub_tenant_4567",
+                "timestamp": "2026-07-02T10:00:00Z",
+                "title": "Project Phoenix Overview",
+                "type": "knowledge",
+                "url": "https://docs.hydradb.com/phoenix"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/search.SourceInfo"
             },
@@ -1907,6 +2889,13 @@
             "type": "string"
           },
           "results": {
+            "example": [
+              {
+                "deleted": true,
+                "error": "",
+                "id": "HydraDoc1234"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/sources.SourceDeleteResultItem"
             },
@@ -1996,7 +2985,8 @@
       "tenants.CustomPropertyDefinition": {
         "properties": {
           "data_type": {
-            "$ref": "#/components/schemas/tenants.MilvusDataType"
+            "$ref": "#/components/schemas/tenants.MilvusDataType",
+            "example": "VARCHAR"
           },
           "enable_analyzer": {
             "example": false,
@@ -2019,7 +3009,7 @@
             "type": "integer"
           },
           "name": {
-            "example": "general",
+            "example": "category",
             "type": "string"
           }
         },
@@ -2049,7 +3039,15 @@
             "type": "string"
           },
           "infra": {
-            "$ref": "#/components/schemas/tenants.InfraV2"
+            "$ref": "#/components/schemas/tenants.InfraV2",
+            "example": {
+              "graph_status": true,
+              "scheduler_status": true,
+              "vectorstore_status": {
+                "knowledge": true,
+                "memories": true
+              }
+            }
           },
           "message": {
             "example": "Success",
@@ -2077,7 +3075,11 @@
             "type": "boolean"
           },
           "vectorstore_status": {
-            "$ref": "#/components/schemas/tenants.VectorstoreStatusV2"
+            "$ref": "#/components/schemas/tenants.VectorstoreStatusV2",
+            "example": {
+              "knowledge": true,
+              "memories": true
+            }
           }
         },
         "type": "object"
@@ -2178,6 +3180,17 @@
             "type": "string"
           },
           "tenant_metadata_schema": {
+            "example": [
+              {
+                "data_type": "VARCHAR",
+                "enable_analyzer": false,
+                "enable_dense_embedding": true,
+                "enable_match": true,
+                "enable_sparse_embedding": false,
+                "max_length": 256,
+                "name": "category"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/tenants.CustomPropertyDefinition"
             },
@@ -2222,6 +3235,12 @@
             "uniqueItems": false
           },
           "failed_databases": {
+            "example": [
+              {
+                "database": "acme_corp",
+                "error": ""
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/tenants.FailedTenant"
             },
@@ -2229,6 +3248,12 @@
             "uniqueItems": false
           },
           "failed_tenant_ids": {
+            "example": [
+              {
+                "database": "acme_corp",
+                "error": ""
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/tenants.FailedTenant"
             },
@@ -2260,10 +3285,18 @@
             "type": "string"
           },
           "knowledge_collection": {
-            "$ref": "#/components/schemas/tenants.CollectionStats"
+            "$ref": "#/components/schemas/tenants.CollectionStats",
+            "example": {
+              "dimensions": 1536,
+              "row_count": 1280
+            }
           },
           "memory_collection": {
-            "$ref": "#/components/schemas/tenants.CollectionStats"
+            "$ref": "#/components/schemas/tenants.CollectionStats",
+            "example": {
+              "dimensions": 1536,
+              "row_count": 1280
+            }
           },
           "message": {
             "example": "Success",
@@ -2341,6 +3374,20 @@
             "type": "integer"
           },
           "deliveries": {
+            "example": [
+              {
+                "attempts": 1,
+                "created_at": "2026-07-02T10:00:00Z",
+                "delivery_id": "dlv_9f8e7d6c",
+                "doc_id": "HydraDoc1234",
+                "error_code": "",
+                "error_message": "",
+                "event_type": "indexing.status_changed",
+                "indexing_status": "completed",
+                "status": "completed",
+                "updated_at": "2026-07-02T10:00:05Z"
+              }
+            ],
             "items": {
               "$ref": "#/components/schemas/webhooks.DeliveryItem"
             },

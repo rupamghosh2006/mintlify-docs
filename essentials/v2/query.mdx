@@ -58,7 +58,7 @@ The `database` field was formerly `tenant_id` and `collection` was formerly `sub
 
 Most of the time the defaults are right. When they aren't, here's where to start:
 
-- `mode`  -  If omitted, defaults to `"fast"`. Pick `"fast"` or `"thinking"` explicitly when you know your traffic shape. Use `"auto"` when query complexity varies call-to-call: it scores the query before retrieval and routes to `"fast"` or `"thinking"` (defaulting to `"thinking"` when the signal is inconclusive), and overrides `graph_context` to match whichever it picks. `auto` must be requested explicitly - it never happens implicitly.
+- `mode`  -  If omitted, defaults to `"auto"`: it scores the query before retrieval and routes to `"fast"` or `"thinking"` (defaulting to `"thinking"` when the signal is inconclusive), and overrides `graph_context` to match whichever it picks. Pick `"fast"` or `"thinking"` explicitly instead when you know your traffic shape and want a deterministic pipeline.
 - `alpha`  -  Start at `0.8`. Lower toward `0.3–0.5` when the query contains literal tokens (error codes, SKUs, product names). Raise toward `0.9` for conceptual questions. Use `"auto"` when query shape varies across calls.
 - `max_results`  -  Start at `10`. Drop to `5` for tight context windows; raise to `20` if you rerank downstream.
 - `additional_context`  -  Use it when the query alone is ambiguous. Keep it short and factual.
@@ -197,8 +197,8 @@ If you need to keep Knowledge and Memories formatted differently in the prompt, 
 | Recency doesn't seem to matter | `recency_bias` defaults to `0` | Set it explicitly between `0.1` and `1.0`. |
 | `operator: "phrase"` ignored | `query_by` not set to `"text"` | `operator` only applies to BM25 text query  -  switch `query_by` to `"text"`. |
 | `query_forceful_relations` ignored | Request uses `mode: "fast"` | Forceful-relation context is fetched only in `mode: "thinking"`. |
-| `graph_context` value ignored | Request uses `mode: "auto"` | `auto` overrides `graph_context` to match whichever pipeline it routes to; set `graph_context` explicitly only under `mode: "fast"` or `"thinking"`. |
-| Expected automatic routing, got `fast` every time | `mode` was omitted, not set to `"auto"` | Omitting `mode` defaults to `"fast"`  -  automatic routing only happens when you send `mode: "auto"` explicitly. |
+| `graph_context` value ignored | Request uses `mode: "auto"` (or `mode` was omitted) | `auto` overrides `graph_context` to match whichever pipeline it routes to; set `graph_context` explicitly only under `mode: "fast"` or `"thinking"`. |
+| Expected a deterministic `fast`/`thinking` pipeline, got auto-routed instead | `mode` was omitted | Omitting `mode` now defaults to `"auto"`  -  set `mode` explicitly to `"fast"` or `"thinking"` if you don't want automatic routing. |
 
 ---
 

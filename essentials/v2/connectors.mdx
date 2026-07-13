@@ -240,6 +240,10 @@ The response returns the provider identity, which provider streams get indexed, 
 | `filterable_fields` | Keys that support exact-match filtering. Each entry carries `filter_key`, the literal key to pass inside a query's `metadata_filters` |
 | `credential_schema` | JSON Schema describing the credentials the provider needs to connect. Omitted if the schema source is unavailable |
 
+<Note>
+  You cannot pinpoint or search over a single searchable field. All `searchable_fields` are combined into one indexed document text, and search queries run over that combined text as a whole. To narrow results, use `filterable_fields` with `metadata_filters` — that is the only per-field targeting mechanism.
+</Note>
+
 Each entry in `searchable_fields` and `filterable_fields` includes:
 
 | Property | Meaning |

@@ -109,7 +109,7 @@ Each resource accepts the following optional fields:
 | Field | Purpose |
 |---|---|
 | `sub_tenant_id` | Routes objects from this resource into a specific sub-tenant partition (overrides the connector-level `sub_tenant_id`) |
-| `metadata` | Key-value pairs merged into tenant metadata on every synced object from this resource. Undeclared keys are accepted but only keys in `tenant_metadata_schema` are indexed for filtering. |
+| `metadata` | Key-value pairs merged into tenant metadata on every synced object from this resource. Undeclared keys are accepted but only keys in `database_metadata_schema` are indexed for filtering. |
 | `additional_metadata` | Key-value pairs merged into document metadata on every synced object from this resource |
 
 See [Metadata on synced objects](#metadata-on-synced-objects) for how these merge with system-generated fields.
@@ -122,7 +122,7 @@ Every object synced by a connector lands in HydraDB with two metadata layers:
 
 ### Tenant metadata (`metadata`)
 
-Tenant metadata is the **schema-declared** layer. Fields here are defined once per tenant via `tenant_metadata_schema` and are indexed for fast, exact-match filtering. This is what you use for stable high-cardinality fields you filter on often  -  `department`, `region`, `status`, `priority`.
+Tenant metadata is the **schema-declared** layer. Fields here are defined once per tenant via `database_metadata_schema` and are indexed for fast, exact-match filtering. This is what you use for stable high-cardinality fields you filter on often  -  `department`, `region`, `status`, `priority`.
 
 HydraDB always writes `provider` into tenant metadata for every synced object. You can extend this with your own fields by passing `metadata` on each resource in `POST /connectors/:id/configure`. User-supplied fields are merged first; `provider` always takes precedence.
 

@@ -142,10 +142,34 @@ graph collections in it), only the collections are dropped and `deleted` is
   maintaining its own graph.
 </Note>
 
-Your query is executed **verbatim**. The full Cypher CRUD surface is
-supported - pattern matching, aggregation, `UNWIND`, `WITH` pipelines,
-`MERGE`, `shortestPath`, indexes (`CREATE INDEX FOR (n:Label) ON (n.prop)`),
-and `CALL { ... }` subqueries.
+Your query is executed **verbatim** - HydraDB never rewrites it. "CRUD" is the
+floor, not the ceiling: two kinds of work are fully supported.
+
+**Modelling and CRUD** - the day-to-day read/write surface: pattern matching,
+aggregation, `UNWIND`, `WITH` pipelines, `MERGE`, indexes
+(`CREATE INDEX FOR (n:Label) ON (n.prop)`), and `CALL { ... }` subqueries.
+
+**Graph traversal and exploration** - the part that makes this a graph rather
+than a table. You are not limited to reading and writing single nodes; you can
+walk relationships to arbitrary depth, expand a node's neighborhood, follow
+chains of edges, and find paths between nodes:
+
+- **Multi-hop patterns** - chain relationships across as many hops as you need
+  in one `MATCH`:
+  `MATCH (a:Person)-[:KNOWS]->(b)-[:WORKS_AT]->(c:Company) RETURN c.name`.
+- **Variable-length traversal** - follow a relationship an unbounded or bounded
+  number of hops with `*`:
+  `MATCH (a:Person {name:$n})-[:KNOWS*1..4]->(reach) RETURN DISTINCT reach.name`
+  returns everyone within four degrees.
+- **Neighborhood expansion** - pull a node's edges and neighbors in a single
+  query, in any direction:
+  `MATCH (p:Person {name:$n})-[r]-(nbr) RETURN type(r) AS rel, nbr.name AS neighbor`.
+- **Path finding** - `shortestPath` and `allShortestPaths` return the actual
+  path - nodes and edges in traversal order, not just the two endpoints. See
+  [Relationships and paths](#relationships-and-paths).
+- **Directed, typed, filtered traversal** - restrict to outgoing (`->`),
+  incoming (`<-`), or either (`-`) edges, filter by relationship type
+  (`[:KNOWS]`), and constrain node or edge properties anywhere along the walk.
 
 Two constructs are **rejected**. "Rejected" means the query is refused
 *before it runs*: the whole request fails with a `400` and a message

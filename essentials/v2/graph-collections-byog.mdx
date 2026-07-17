@@ -1,6 +1,6 @@
 ---
 title: "Graph Collections (BYOG)"
-description: "Bring Your Own Graph — full Cypher access to graph collections you own end-to-end."
+description: "Bring Your Own Graph - full Cypher access to graph collections you own end-to-end."
 ---
 
 Bring Your Own Graph (BYOG) gives you full **Cypher** access to graph
@@ -12,8 +12,8 @@ their Cypher and their data model as-is.
 - **Databases** group your collections. A BYOG database appears in your
   dashboard and in the standard database APIs like any other HydraDB database.
 - **Collections** are independent graphs inside a database. Queries run
-  against exactly one collection — collections never see each other's data.
-- **Full CRUD**: `CREATE`, `MERGE`, `MATCH`, `SET`, `DELETE` — reads and
+  against exactly one collection - collections never see each other's data.
+- **Full CRUD**: `CREATE`, `MERGE`, `MATCH`, `SET`, `DELETE` - reads and
   writes alike, sent verbatim. HydraDB never rewrites your query.
 - **Isolation is structural.** Each collection is a completely separate graph
   owned by your organization. There is no cross-tenant data to reach:
@@ -30,7 +30,7 @@ curl -X POST "$BASE/byog/databases" \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
   -d '{"database": "crm"}'
 
-# 2. Write data — collections auto-create on first use
+# 2. Write data - collections auto-create on first use
 curl -X POST "$BASE/byog/query" \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
   -d '{
@@ -60,18 +60,18 @@ Authorization: Bearer <api key>
 ```
 
 A missing or invalid key returns `403`. Databases are scoped to the
-organization that owns the API key — another organization's database names
+organization that owns the API key - another organization's database names
 are invisible to you (they behave exactly like names that don't exist).
 
 ## Endpoints
 
-### `POST /byog/databases` — create a database
+### `POST /byog/databases` - create a database
 
 ```json
 { "database": "crm" }
 ```
 
-Returns immediately with `{"database": "crm", "status": "ready"}` — there is
+Returns immediately with `{"database": "crm", "status": "ready"}` - there is
 no provisioning wait. Creating a name that already exists returns `409`.
 
 The database also shows up everywhere your other HydraDB databases do:
@@ -80,7 +80,7 @@ The database also shows up everywhere your other HydraDB databases do:
 the dashboard. Deleting it through the standard `DELETE /databases` flow
 removes its graph collections as well.
 
-### `POST /byog/query` — run Cypher
+### `POST /byog/query` - run Cypher
 
 ```json
 {
@@ -91,22 +91,22 @@ removes its graph collections as well.
 }
 ```
 
-- **Collections auto-create** — there is no create-collection call. The first
+- **Collections auto-create** - there is no create-collection call. The first
   write brings the collection into existence; reading a collection you never
   wrote to simply returns zero rows.
 - Collection names must match `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`.
   Database names have no charset restriction.
 - Always pass user data through `params` rather than string-building it into
-  the query — parameters are bound safely and keep query plans cacheable.
+  the query - parameters are bound safely and keep query plans cacheable.
 - Request bodies are capped at **256 KiB** (`413` beyond that). For bulk
   loads, send batches of rows with `UNWIND $rows AS row CREATE ...`.
 
-### `GET /byog/collections?database=crm` — list collections
+### `GET /byog/collections?database=crm` - list collections
 
 Returns the collection names that exist in the database. An unknown database
 returns `404`.
 
-### `DELETE /byog/collections` — drop one collection
+### `DELETE /byog/collections` - drop one collection
 
 ```json
 { "database": "crm", "collection": "contacts" }
@@ -115,14 +115,14 @@ returns `404`.
 Drops the collection and all its data. Deleting a collection that does not
 exist is a success (idempotent).
 
-### `DELETE /byog/databases` — drop a database
+### `DELETE /byog/databases` - drop a database
 
 ```json
 { "database": "crm" }
 ```
 
-Drops every collection in the database, and — if the database was created
-through `POST /byog/databases` — removes the database itself. The response
+Drops every collection in the database, and - if the database was created
+through `POST /byog/databases` - removes the database itself. The response
 lists what was removed:
 
 ```json
@@ -131,36 +131,36 @@ lists what was removed:
 
 If the database was created through the standard database API (and merely has
 graph collections in it), only the collections are dropped and `deleted` is
-`false` — manage the database itself through the standard `DELETE /databases`.
+`false` - manage the database itself through the standard `DELETE /databases`.
 
 ## Supported Cypher
 
-> **Coverage in one line:** essentially all of openCypher is supported — only
-> server-side procedures and file loading are excluded — which is the entire
+> **Coverage in one line:** essentially all of openCypher is supported - only
+> server-side procedures and file loading are excluded - which is the entire
 > surface a real application needs for modelling, loading, querying and
 > maintaining its own graph.
 
 Your query is executed **verbatim**. The full Cypher CRUD surface is
-supported — pattern matching, aggregation, `UNWIND`, `WITH` pipelines,
+supported - pattern matching, aggregation, `UNWIND`, `WITH` pipelines,
 `MERGE`, `shortestPath`, indexes (`CREATE INDEX FOR (n:Label) ON (n.prop)`),
 and `CALL { ... }` subqueries.
 
 Two constructs are rejected (with a `400` explaining why):
 
-- **Procedure calls** — `CALL some.procedure(...)`. Procedures are
+- **Procedure calls** - `CALL some.procedure(...)`. Procedures are
   engine-specific internals that HydraDB does not commit to supporting.
   (`CALL { ... }` *subqueries* are fine.)
-- **`LOAD CSV`** — server-side file/URL loading. Send data through `params`
+- **`LOAD CSV`** - server-side file/URL loading. Send data through `params`
   instead.
 
 A few dialect notes (each verified against the live service):
 
-- **Existence checks** are written as bare pattern predicates —
+- **Existence checks** are written as bare pattern predicates -
   `MATCH (p:Person) WHERE (p)-[:KNOWS]->() RETURN p.name AS name`.
   The `EXISTS { ... }` block form and the `exists()` function are not
   accepted.
 - **`shortestPath`** goes in a `RETURN` or `WITH` clause (not `MATCH p = …`)
-  and the traversal must be directed — see the paths example above.
+  and the traversal must be directed - see the paths example above.
 - **`allShortestPaths`** is the reverse: it goes in a `MATCH`, with both
   endpoints resolved in a prior clause:
   `MATCH (a:…), (b:…) WITH a, b MATCH p = allShortestPaths((a)-[*..6]->(b)) RETURN p`.
@@ -180,7 +180,7 @@ Successful calls return the standard HydraDB envelope:
 
 For `POST /byog/query`, `data` is always a JSON **array of row objects**, one
 per result row, keyed by your `RETURN` column names. Unaliased expressions use
-the expression text as the key — **alias everything you plan to parse**
+the expression text as the key - **alias everything you plan to parse**
 (`RETURN n.name AS name`). A pure write with no `RETURN` yields `data: []`.
 
 ### How values are rendered
@@ -188,14 +188,14 @@ the expression text as the key — **alias everything you plan to parse**
 | Cypher value | JSON |
 |---|---|
 | string / boolean / null | JSON string / boolean / null |
-| integer | JSON number. Graph integers are 64-bit; values beyond 2⁵³ lose precision in languages that parse numbers as doubles — keep your own ids inside the safe range, or return them as strings |
+| integer | JSON number. Graph integers are 64-bit; values beyond 2⁵³ lose precision in languages that parse numbers as doubles - keep your own ids inside the safe range, or return them as strings |
 | float | JSON number |
 | list / map | JSON array / object (rendered recursively) |
 | **node** | object with all node properties, plus `id` and `labels` |
 | **relationship** | object with all relationship properties, plus `id`, `relation`, `source_node_id`, `target_node_id` |
 | **path** | `{ "nodes": [...], "edges": [...] }` in traversal order |
 
-Example — `RETURN n` where `n` is a node:
+Example - `RETURN n` where `n` is a node:
 
 ```json
 { "data": [ { "n": { "id": 0, "labels": ["Person"], "name": "Alice", "age": 34 } } ] }
@@ -205,9 +205,9 @@ Two things to know about ids:
 
 - The `id` / `labels` / `relation` / `source_node_id` / `target_node_id` keys
   are added by the renderer. If you store a property with one of those names,
-  it will be shadowed in the *response* (the stored value is unaffected) —
+  it will be shadowed in the *response* (the stored value is unaffected) -
   avoid those property names or alias explicitly (`RETURN n.id AS my_id`).
-- `id` values are internal and stable only within the life of a collection —
+- `id` values are internal and stable only within the life of a collection -
   they can be reused after deletions and do not survive an export/re-import.
   Key your application on a property you own.
 
@@ -256,7 +256,7 @@ async function query(cypher: string, params: object = {}): Promise<Record<string
 }
 ```
 
-### Prefer scalars with aliases — they parse themselves
+### Prefer scalars with aliases - they parse themselves
 
 The easiest results to consume are the ones you shape in the query. Instead of
 returning whole nodes and digging properties out client-side, project exactly
@@ -282,7 +282,7 @@ alice = rows[0]["p"]        # {"id": 0, "labels": ["Person"], "name": "Alice", "
 props = {k: v for k, v in alice.items() if k not in ("id", "labels")}
 ```
 
-Remember `id` is internal and non-portable — treat it as opaque within a
+Remember `id` is internal and non-portable - treat it as opaque within a
 session and never store it. Key your data on a property you own (`ext_id`,
 `email`, …).
 
@@ -290,7 +290,7 @@ session and never store it. Key your data on a property you own (`ext_id`,
 
 A relationship row carries its endpoints as `source_node_id` /
 `target_node_id`, which match the `id` of nodes returned **in the same
-query** — return both sides and join client-side:
+query** - return both sides and join client-side:
 
 ```python
 rows = g.query("""
@@ -301,7 +301,7 @@ for row in rows:
     print(f'{row["a"]["name"]} knows {row["b"]["name"]} since {row["k"]["since"]}')
 ```
 
-A path is already assembled for you — `nodes` and `edges` in traversal order.
+A path is already assembled for you - `nodes` and `edges` in traversal order.
 Two constraints to know: `shortestPath` must appear in a `RETURN` or `WITH`
 clause (not in `MATCH p = ...`), and the traversal must be directed (`->`):
 
@@ -313,7 +313,7 @@ rows = g.query("""
 hops = [n["name"] for n in rows[0]["p"]["nodes"]]   # ["Alice", ..., "Bob"]
 ```
 
-### Pagination — the loop to copy
+### Pagination - the loop to copy
 
 Result sets past the deployment cap are silently truncated, so any read that
 *could* be large should page. A stable `ORDER BY` makes pages consistent:
@@ -332,7 +332,7 @@ def all_rows(cypher_body, page=500, params=None):
 people = list(all_rows("MATCH (p:Person) RETURN p.name AS name ORDER BY name"))
 ```
 
-### Bulk loading — the loop to copy
+### Bulk loading - the loop to copy
 
 Chunk rows to stay inside the 256 KiB body cap and the 30 s write budget;
 `MERGE` on your own key makes the load re-runnable after a failure:
@@ -349,13 +349,13 @@ def load(rows, chunk=500):
 
 ### Handling failures
 
-- **`400`** — the message tells you what to fix: your Cypher (compiler
+- **`400`** - the message tells you what to fix: your Cypher (compiler
   feedback is passed through) or a query that needs `LIMIT`/an index (budget
   timeout). Retrying unchanged will fail identically.
-- **`429` / `500`** — transient; retry with backoff. Writes built on `MERGE`
+- **`429` / `500`** - transient; retry with backoff. Writes built on `MERGE`
   (as above) are safe to retry; bare `CREATE` batches are not idempotent, so
-  a retried chunk can duplicate nodes — one more reason to key on your own id.
-- A write with no `RETURN` succeeds with `data: []` — don't treat empty as
+  a retried chunk can duplicate nodes - one more reason to key on your own id.
+- A write with no `RETURN` succeeds with `data: []` - don't treat empty as
   failure.
 
 ## Errors
@@ -370,23 +370,23 @@ Errors use HydraDB's structured error shape:
 |---|---|
 | `400` | Invalid request (missing fields, bad collection name), unsupported construct, **Cypher errors** (the compiler's message is passed through so you can fix the query), or **query timeout** |
 | `403` | Missing or invalid API key |
-| `404` | Unknown database — create it with `POST /byog/databases` |
+| `404` | Unknown database - create it with `POST /byog/databases` |
 | `409` | `POST /byog/databases` with a name that already exists |
 | `413` | Request body over 256 KiB |
-| `429` | Rate limit exceeded — back off and retry |
-| `500` | Something failed on our side — safe to retry; nothing for you to fix |
+| `429` | Rate limit exceeded - back off and retry |
+| `500` | Something failed on our side - safe to retry; nothing for you to fix |
 
 ## Limits & timeouts
 
 | Limit | Value | On exceeding |
 |---|---|---|
 | Request body | 256 KiB | `413` |
-| Read query execution | 8 s | `400` — "query exceeded the execution time budget; simplify it, add LIMIT, or create an index" |
+| Read query execution | 8 s | `400` - "query exceeded the execution time budget; simplify it, add LIMIT, or create an index" |
 | Write query execution | 30 s | same `400` |
-| Result set size | deployment-configured cap; rows beyond it are **silently dropped** | no error — paginate |
+| Result set size | deployment-configured cap; rows beyond it are **silently dropped** | no error - paginate |
 
 A query counts as a **write** (and gets the larger budget) when it contains
-any write clause — `CREATE`, `MERGE`, `SET`, `DELETE`, `REMOVE`, `FOREACH`.
+any write clause - `CREATE`, `MERGE`, `SET`, `DELETE`, `REMOVE`, `FOREACH`.
 
 Practical guidance:
 
@@ -395,8 +395,8 @@ Practical guidance:
   at the result-set cap are arbitrary.
 - **Chunk bulk imports** into `UNWIND $rows` batches sized to finish inside
   the 30 s write budget (and the 256 KiB body cap).
-- **Create indexes** for properties you filter on —
-  `CREATE INDEX FOR (n:Person) ON (n.name)` — long-running reads are usually
+- **Create indexes** for properties you filter on -
+  `CREATE INDEX FOR (n:Person) ON (n.name)` - long-running reads are usually
   missing one.
 
 ## Migrating from Neo4j
@@ -404,10 +404,10 @@ Practical guidance:
 Most application Cypher ports directly. The differences you are most likely
 to notice:
 
-- `CALL db.*` / `CALL apoc.*` procedures are not available — the equivalents
+- `CALL db.*` / `CALL apoc.*` procedures are not available - the equivalents
   are either plain Cypher or not part of the supported surface.
-- `LOAD CSV` is not available — batch data in through `params`.
-- Internal node ids are not portable (true in Neo4j as well) — migrate using
+- `LOAD CSV` is not available - batch data in through `params`.
+- Internal node ids are not portable (true in Neo4j as well) - migrate using
   your own key properties, e.g.
   `UNWIND $rows AS row MERGE (n:Person {ext_id: row.ext_id}) SET n += row`.
 

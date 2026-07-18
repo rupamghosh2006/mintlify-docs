@@ -38,35 +38,91 @@ make dev         # starts local dev server at http://localhost:3000
 ```
 mintlify-docs/
 ├── docs.json                  # Mintlify config (navigation, theme, logos)
-├── index.mdx                  # Home / landing page
-├── concepts.mdx               # Core concepts overview
-├── quickstart.mdx             # Getting started guide
-├── essentials/                 # Essential guides
-│   ├── recall.mdx             #   Recall functionality
-│   ├── memories.mdx           #   Working with memories
-│   ├── context-graph.mdx      #   Context graph
-│   ├── multi-tenant.mdx       #   Multi-tenancy
-│   ├── metadata.mdx           #   Metadata handling
-│   └── use-api-results.mdx    #   Using API results
+│
+├── get-started/               # Getting started (v1 & v2)
+│   ├── introduction.mdx       #   v1: Welcome
+│   ├── core-concepts.mdx      #   v1: Core primitives overview
+│   ├── quickstart.mdx         #   v1: 5-minute guide
+│   └── v2/                    #   v2: same structure, new API
+│       ├── introduction.mdx
+│       ├── core-concepts.mdx
+│       └── quickstart.mdx
+│
+├── essentials/                # Essential guides (v1 & v2)
+│   ├── memories.mdx           #   v1: User-scoped context
+│   ├── knowledge.mdx          #   v1: Shared document context
+│   ├── recall.mdx             #   v1: Retrieval
+│   ├── app-sources.mdx        #   v1: Slack, Notion, etc.
+│   ├── multi-tenant.mdx       #   v1: Sub-tenants & isolation
+│   ├── metadata.mdx           #   v1: Schema & filtering
+│   ├── context-graphs.mdx     #   v1: Entity relationships
+│   ├── architecture.mdx       #   v1: System overview
+│   ├── api-results.mdx        #   v1: Using API results
+│   ├── semantic-search.mdx    #   v1: Semantic search
+│   ├── webhooks.mdx           #   v1: Webhook events
+│   └── v2/                    #   v2: same concepts, new API
+│       ├── memories.mdx
+│       ├── knowledge.mdx
+│       ├── query.mdx
+│       ├── app-sources.mdx
+│       ├── connectors.mdx
+│       ├── api-results.mdx
+│       ├── metadata.mdx
+│       ├── multi-tenant.mdx
+│       ├── architecture.mdx
+│       ├── context-graphs.mdx
+│       ├── bring-your-own-graph.mdx
+│       ├── graph-collections-byog.mdx
+│       ├── semantic-search.mdx
+│       ├── webhooks.mdx
+│       └── memory-or-knowledge.mdx  # Decision guide
+│
+├── api-reference/             # API reference (v1 & v2)
+│   ├── openapi.json           #   v1 OpenAPI spec
+│   ├── index.mdx              #   v1 API overview
+│   ├── sdks.mdx               #   v1 SDK docs
+│   ├── error-responses.mdx    #   v1 error codes
+│   └── endpoint/              #   v1 endpoint docs
+│       ├── add-memory.mdx
+│       ├── upload-knowledge.mdx
+│       ├── delete-memory.mdx
+│       ├── full-recall.mdx
+│       ├── recall-preferences.mdx
+│       ├── verify-processing.mdx
+│       └── ...
+│   └── v2/                    #   v2 API reference
+│       ├── openapi.json
+│       ├── index.mdx
+│       ├── sdks.mdx
+│       ├── error-responses.mdx
+│       └── endpoint/
+│           ├── create-tenant.mdx
+│           ├── ingest-context.mdx
+│           ├── query.mdx
+│           └── ...
+│
+├── cookbooks/                 # End-to-end use cases (v1 & v2)
+│   ├── index.mdx
+│   ├── glean-clone.mdx
+│   ├── ai-chief-of-staff.mdx
+│   └── v2/
+│       ├── index.mdx
+│       └── ...
+│
 ├── plugins/                   # Plugin integrations
-│   ├── claude-code.mdx        #   Claude Code plugin
-│   ├── open-claw.mdx          #   OpenClaw plugin
-│   └── mcp.mdx                #   MCP integration
-├── use-cases/                 # Example use cases
-│   ├── glean-clone.mdx        #   Glean clone
-│   ├── ai-chief-of-staff.mdx  #   AI Chief of Staff
-│   ├── ai-linkedin-recruiter.mdx  # AI LinkedIn Recruiter
-│   └── ai-travel-planner.mdx  #   AI Travel Planner
-├── api-reference/             # API reference docs
-│   ├── openapi.json           #   OpenAPI spec
-│   ├── sdks.mdx               #   SDK overview
-│   ├── error-responses.mdx    #   Error responses
-│   └── endpoint/              #   Individual endpoint docs
-├── snippets/                  # Reusable MDX snippets
+│   ├── claude-code.mdx
+│   ├── mcp.mdx
+│   ├── cli.mdx
+│   └── openclaw.mdx
+│
+├── AGENTS.mdx                 # AI agent integration guide
+├── continuity-assurance.mdx   # Deployment & continuity policy
+├── archive/                   # Deprecated/old docs
+├── snippets/                  # Reusable MDX components
 ├── images/                    # Image assets
 ├── logo/                      # Brand logos (light/dark)
 ├── scripts/                   # Developer scripts
-│   └── bootstrap.sh           #   Project bootstrap
+├── style.css                  # Custom styles
 └── Makefile                   # Developer workflow targets
 ```
 

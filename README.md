@@ -22,6 +22,17 @@ make bootstrap   # installs dependencies
 make dev         # starts local dev server at http://localhost:3000
 ```
 
+## Featured developer journey: personalized company assistant
+
+This documentation contribution fixes one complete, commonly confusing path: **building an assistant that uses shared company knowledge while personalizing answers for the current user.**
+
+Follow the journey in order:
+
+1. [Choose Memory or Knowledge](./essentials/v2/memory-or-knowledge.mdx) to decide what belongs in each store and when to use `infer`.
+2. [Build a personalized company assistant](./cookbooks/v2/personalized-company-assistant.mdx) to ingest Slack and Notion content as Knowledge, save a per-user Memory, wait for indexing, and retrieve both stores safely with `type: "all"`.
+
+The cookbook includes scope design, app-source ingestion, indexing readiness, authorization guidance, expected output, and troubleshooting. It is designed to be a complete implementation path rather than a collection of disconnected endpoint examples.
+
 ## Available Make Targets
 
 | Target | Description |

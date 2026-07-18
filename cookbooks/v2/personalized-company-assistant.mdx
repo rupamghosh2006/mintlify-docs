@@ -184,6 +184,26 @@ const contextForModel = result.data.chunks.map((chunk) => ({
 
 Pass the ranked chunks to your model in their returned order. When you show the final answer, retain the `title` and `url` data so users can open the Slack message or Notion page that supported it.
 
+## Expected result
+
+For the sample sources and query above, the assistant should produce a concise, commercial answer that uses Alex's saved preference and cites the company sources. For example:
+
+> - **Starter:** $29
+> - **Pro:** $79
+> - **Enterprise:** $199; use quote-based pricing when custom terms or procurement review is needed.
+>
+> Sources: *Pricing discussion — #product* and *Pricing FAQ*.
+
+The exact wording is your model's responsibility, but a correct integration should retrieve both the pricing information from Knowledge and the preference for a concise, bulleted format from Memory. The final answer should retain source titles and URLs from `result.data.chunks` for citations.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| The query returns no Slack or Notion content | The Knowledge sources are still queued, failed indexing, or were written to a different collection. | Check `GET /context/status` for each returned ID and query the same `company_shared` collection used during ingestion. |
+| The answer has pricing facts but ignores Alex's preferred format | The Memory was not indexed, `user_alex` was omitted from `collections`, or the query used `type: "knowledge"`. | Wait for the Memory's status, include `user_alex` in `collections`, and use `type: "all"`. |
+| The assistant returns another user's Memory | Your application added an unauthorized collection to the query. | Derive the user collection from the authenticated caller on the server; never accept an arbitrary collection ID from the client. |
+
 ## Operational checklist
 
 - Use stable external IDs and `upsert: true` for Slack and Notion syncs.

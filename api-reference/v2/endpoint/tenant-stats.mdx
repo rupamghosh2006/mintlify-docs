@@ -95,7 +95,7 @@ curl -X GET 'https://api.hydradb.com/databases/stats?database=my_first_database'
 </Info>
 
 - **Both collections always exist:** Even if you've only ingested knowledge (or only memories), both collections are provisioned. Empty collections report `row_count: 0` with the configured `dimensions`.
-- **Stats are eventually consistent:** Immediately after ingestion or deletion, counts may lag until background processing completes. Check [Ingestion Status](/api-reference/v2/endpoint/source-status) for recently ingested IDs before treating counts as final.
+- **Stats are eventually consistent:** Immediately after ingestion or deletion, counts may lag until background processing completes. Check [Check indexing status](/api-reference/v2/endpoint/source-status) for recently ingested IDs before treating counts as final.
 
 <div className="api-before-related-resources" />
 

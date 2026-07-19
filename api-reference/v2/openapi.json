@@ -1009,8 +1009,7 @@
                       }
                     ]
                   }
-                ],
-                "synthesis_context": "Related entities: Acme Corp, HydraDB, production deployment."
+                ]
               },
               "sources": [
                 {
@@ -2621,11 +2620,6 @@
             },
             "type": "array",
             "uniqueItems": false
-          },
-          "synthesis_context": {
-            "description": "LLM-synthesized summary of the most relevant graph entities and relationships.",
-            "example": "Related entities: Acme Corp, HydraDB, production deployment.",
-            "type": "string"
           }
         },
         "type": "object"
@@ -3245,8 +3239,7 @@
                     }
                   ]
                 }
-              ],
-              "synthesis_context": "Related entities: Acme Corp, HydraDB, production deployment."
+              ]
             }
           },
           "sources": {

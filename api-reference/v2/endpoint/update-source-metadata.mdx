@@ -114,7 +114,7 @@ At least one of `tenant_metadata` or `additional_metadata` is required.
 - The endpoint edits one source at a time. Bulk metadata edits are not supported.
 - Updated metadata is visible to [`/query`](/api-reference/v2/endpoint/query) metadata filters and [`/context/list`](/api-reference/v2/endpoint/list-documents) filters.
 - If an edited tenant metadata field has `enable_dense_embedding` or `enable_sparse_embedding`, HydraDB synchronously refreshes the relevant vector-index metadata search lane.
-- If the edited fields are `enable_match`-only, the edit remains database-only and `vector_sync_required` is `false`.
+- If the edited fields are `enable_match`-only, the edit remains MongoDB-only and `vector_sync_required` is `false`.
 
 ## Response
 

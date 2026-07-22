@@ -16,14 +16,8 @@ When context is of `type=memory`
 Use `memories` for per-user content, scoped with `collection`. Set `infer: true` to let HydraDB extract preferences from raw signals, or `infer: false` to store the text verbatim. Read more about [ingesting memories](/essentials/v2/memories).
 
 <Note>
-- `database` and `collection` are the current field names (formerly `tenant_id` and `sub_tenant_id`). The old names remain accepted as deprecated aliases for full backward compatibility.
+`database` and `collection` are the current field names (formerly `tenant_id` and `sub_tenant_id`). The old names remain accepted as deprecated aliases for full backward compatibility.
 </Note>
-
-<Info>
-- ** `id` must not contain a comma (`,`).** The comma is reserved as the id separator on [Ingestion Status](/api-reference/v2/endpoint/source-status) (`GET /context/status?ids=a,b`), so an `id` containing a comma cannot be looked up unambiguously. This applies to every `id` you supply — `document_metadata`, `app_knowledge`, and `memories` items. Ingesting an item whose `id` contains a comma is rejected with a `400`.
-
-- **`202 Accepted` means queued, not indexed.** Ingestion is asynchronous. A successful response only confirms your sources were accepted, not that they are ready to query. Before querying, poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) with the returned IDs until each source reaches `completed` or `errored`. Alternatively, register a webhook for `indexing.status_changed` events (see [Webhooks](/essentials/v2/webhooks)). 
-</Info>
 
 <RequestExample>
 
@@ -326,6 +320,13 @@ response.raise_for_status()
 | <Field name="app_knowledge" type="string (JSON object or array)" /> | Pre-extracted source objects (Slack, Notion, web pages, etc.), **knowledge only**. See the `app_knowledge` item shape below. |
 | <Field name="graph_payload" type="string (JSON map)" /> | Map of source id → your own entities + relations - replaces LLM graph extraction for each keyed source. Works for `type=knowledge` (key = a `document_metadata` id or `app_knowledge` item id) and `type=memory` (key = a memory `id`). See [Bring Your Own Graph](/essentials/v2/bring-your-own-graph) and the shape below. |
 | <Field name="memories" type="string (JSON array)" /> | Memory items, **memory only**. Required and non-empty when `type=memory`. Use plural `memories` for the form field, even though `type` is singular `memory`. See the `memories` item shape below. |
+
+<Note>
+1. **`id` must not contain a comma (`,`).** The comma is reserved as the id separator on [Ingestion Status](/api-reference/v2/endpoint/source-status) (`GET /context/status?ids=a,b`), so an `id` containing a comma cannot be looked up unambiguously. This applies to every `id` you supply — `document_metadata`, `app_knowledge`, and `memories` items. Ingesting an item whose `id` contains a comma is rejected with a `400`.
+
+2. **`202 Accepted` means queued, not indexed.** Ingestion is asynchronous. A successful response only confirms your sources were accepted, not that they are ready to query. Before querying, poll [`GET /context/status`](/api-reference/v2/endpoint/source-status) with the returned IDs until each source reaches `completed` or `errored`. Alternatively, register a webhook for `indexing.status_changed` events (see [Webhooks](/essentials/v2/webhooks)). 
+</Note>
+
 
 ## Common use-cases and their configurations
 
